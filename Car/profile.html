@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="navbar.css" />
+    <link rel="stylesheet" href="profile.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <nav class="nav-bar">
+      <div class="logo">
+        <img src="assets/image/CH2.png" alt="nav-logo" />
+      </div>
+
+      <div class="menu-toggle" id="mobile-menu">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </div>
+
+      <ul class="nav-links" id="nav-list">
+        <li>
+          <a href="homepage.html" class="Home-btn">หน้าหลัก</a>
+        </li>
+        <li>
+          <a href="booking.html" class="book-btn">จองรอบขับ</a>
+        </li>
+        <li>
+          <a href="car-status.html" class="Check-btn">เช็กคิว</a>
+        </li>
+        <li>
+          <a href="car-details.html" class="info-btn">รายละเอียดรถยนต์</a>
+        </li>
+        <li>
+          <a href="booking-details.html" class="Rules-btn">รายละเอียดการจอง</a>
+        </li>
+        <li>
+          <a href="profile.html" class="contact-btn">ข้อมูลผู้ใช้</a>
+        </li>
+      </ul>
+    </nav>
+    <div class="status-container">
+      <div class="content-wrapper">
+        <h2 class="section-title">ข้อมูลส่วนตัวพนักงาน</h2>
+
+        <div class="profile-card">
+          <div class="profile-header">
+            <div class="avatar-container">
+              <img
+                src="assets/image/default-avatar.png"
+                id="user-avatar"
+                alt="Profile"
+              />
+              <label for="upload-photo" class="edit-avatar"
+                ><i class="fa-solid fa-camera"></i
+              ></label>
+              <input type="file" id="upload-photo" hidden />
+            </div>
+            <h3 id="display-name">สมชาย สายลุย</h3>
+            <p id="display-role">พนักงานขับรถ / หน่วยงาน A</p>
+          </div>
+
+          <div class="profile-body">
+            <div class="info-grid">
+              <div class="info-item">
+                <label><i class="fa-solid fa-id-badge"></i> รหัสพนักงาน</label>
+                <input type="text" id="emp-id" value="0000" readonly />
+              </div>
+              <div class="info-item">
+                <label><i class="fa-solid fa-envelope"></i> อีเมล</label>
+                <input
+                  type="email"
+                  id="emp-email"
+                  value="somchai@company.com"
+                />
+              </div>
+              <div class="info-item">
+                <label><i class="fa-solid fa-phone"></i> เบอร์โทรศัพท์</label>
+                <input type="text" id="emp-phone" value="081-234-5678" />
+              </div>
+              <div class="info-item">
+                <label><i class="fa-solid fa-building"></i> แผนก</label>
+                <input type="text" id="emp-dept" value="แผนก A" readonly />
+              </div>
+            </div>
+
+            <div class="profile-stats">
+              <div class="stat-box">
+                <span class="stat-num" id="stat-total">12</span>
+                <span class="stat-label">จองทั้งหมด</span>
+              </div>
+              <div class="stat-box">
+                <span class="stat-num" id="stat-complete">10</span>
+                <span class="stat-label">เสร็จสิ้น</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-footer">
+            <button class="btn-save" onclick="saveProfile()">
+              บันทึกข้อมูล
+            </button>
+            <button class="btn-logout" onclick="logout()">ออกจากระบบ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="main.js"></script>
+    <script src="profile.js"></script>
+  </body>
+</html>

@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>จองรถยนต์ - Corporate Car</title>
+    <link rel="stylesheet" href="navbar.css" />
+    <link rel="stylesheet" href="booking.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class="booking-page">
+    <nav class="nav-bar">
+      <div class="logo">
+        <img src="assets/image/CH2.png" alt="nav-logo" />
+      </div>
+      <div class="menu-toggle" id="mobile-menu">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </div>
+      <ul class="nav-links" id="nav-list">
+        <li><a href="homepage.html" class="Home-btn">หน้าหลัก</a></li>
+        <li><a href="booking.html" class="book-btn">จองรอบขับ</a></li>
+        <li><a href="car-status.html" class="Check-btn">เช็กคิว</a></li>
+        <li>
+          <a href="car-details.html" class="info-btn">รายละเอียดรถยนต์</a>
+        </li>
+        <li>
+          <a href="booking-details.html" class="Rules-btn">รายละเอียดการจอง</a>
+        </li>
+        <li><a href="profile.html" class="contact-btn">ข้อมูลผู้ใช้</a></li>
+      </ul>
+    </nav>
+
+    <div class="booking-card">
+      <div class="form-tabs">
+        <button type="button" class="tab-btn active" id="btn-checkout">
+          ขาไป (ยืมรถ)
+        </button>
+        <button type="button" class="tab-btn" id="btn-return">
+          ขากลับ (คืนรถ)
+        </button>
+      </div>
+
+      <form id="car-form">
+        <div id="checkout-fields">
+          <h2 class="form-title">บันทึกการยืมรถ (ขาออก)</h2>
+
+          <div class="stepper-wrapper">
+            <div class="stepper-item active" id="step-1">
+              <div class="step-counter">1</div>
+              <div class="step-name">เลือกแผนก</div>
+            </div>
+            <div class="stepper-item" id="step-2">
+              <div class="step-counter">2</div>
+              <div class="step-name">เลือกรถ</div>
+            </div>
+            <div class="stepper-item" id="step-3">
+              <div class="step-counter">3</div>
+              <div class="step-name">ยืนยัน</div>
+            </div>
+          </div>
+
+          <div class="input-row-group">
+            <div class="field-group">
+              <label>ชื่อผู้ขับ:</label>
+              <input
+                type="text"
+                id="driver-name"
+                class="form-control"
+                placeholder="ระบุชื่อคนขับ"
+              />
+            </div>
+            <div class="field-group">
+              <label>รหัสพนักงาน:</label>
+              <input
+                type="text"
+                id="employee-id"
+                class="form-control"
+                maxlength="4"
+                placeholder="0000"
+              />
+            </div>
+          </div>
+
+          <div class="field-group full-width" style="margin-top: 15px">
+            <label class="form-label">ผู้ร่วมเดินทาง (คนนั่ง):</label>
+            <div id="passenger-list">
+              <div
+                class="passenger-row input-row-group"
+                style="
+                  display: flex;
+                  gap: 10px;
+                  margin-bottom: 10px;
+                  align-items: center;
+                "
+              >
+                <input
+                  type="text"
+                  name="passengers[]"
+                  class="form-control"
+                  placeholder="ชื่อคนที่ 1"
+                  style="flex: 2"
+                />
+                <input
+                  type="text"
+                  name="passenger_ids[]"
+                  class="form-control"
+                  placeholder="รหัส"
+                  maxlength="4"
+                  style="flex: 1"
+                />
+                <button
+                  type="button"
+                  class="btn-plus-style"
+                  onclick="addMorePassenger()"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group full-width">
+            <label>1. หน่วยงานหลัก</label>
+            <select
+              id="main_dept"
+              name="main_dept"
+              class="form-control"
+              onchange="updateSubDept()"
+            >
+              <option value="" disabled selected>
+                -- เลือกหน่วยงานหลัก --
+              </option>
+              <option value="บริหาร">บริหาร</option>
+              <option value="วิศวกรรมและเทคโนโลยี">วิศวกรรมและเทคโนโลยี</option>
+              <option value="ผลิตและบริหารคุณภาพ">ผลิตและบริหารคุณภาพ</option>
+            </select>
+          </div>
+
+          <div class="field-group full-width">
+            <label>2. ฝ่าย</label>
+            <select
+              id="sub_dept"
+              name="sub_dept"
+              class="form-control"
+              onchange="updateSection()"
+            >
+              <option value="" disabled selected>-- เลือกฝ่าย --</option>
+            </select>
+          </div>
+
+          <div class="field-group full-width">
+            <label>3. แผนก/หน่วยย่อย</label>
+            <select id="section" name="section" class="form-control">
+              <option value="" disabled selected>-- เลือกแผนก --</option>
+            </select>
+          </div>
+
+          <div class="input-row-group">
+            <div class="field-group">
+              <label>ทะเบียนรถ</label>
+              <select
+                id="car-plate-select"
+                onchange="updateCarDetails(this.value)"
+              >
+                <option value="" disabled selected>เลือกทะเบียนรถ</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label>เลขไมล์เริ่มต้น</label>
+              <input type="number" id="start-mile" />
+            </div>
+          </div>
+
+          <div class="input-row-group" style="margin-top: 15px">
+            <div class="field-group">
+              <label>วันที่ใช้งาน:</label>
+              <input type="date" id="use-date" class="form-control" />
+            </div>
+            <div class="field-group">
+              <label>เวลาที่ออก:</label>
+              <input type="time" id="out-time" class="form-control" />
+            </div>
+          </div>
+
+          <div class="field-group full-width">
+            <label>สถานที่ไป</label>
+            <input type="text" id="destination" />
+          </div>
+
+          <div class="field-group full-width">
+            <label>รายละเอียดงาน</label>
+            <textarea id="work-type" rows="2"></textarea>
+          </div>
+
+          <div class="field-group full-width">
+            <label style="color: #ff4d4d"
+              >พบปัญหา/สภาพรถก่อนออก (แจ้งศูนย์)</label
+            >
+            <textarea
+              id="out-remark"
+              rows="2"
+              placeholder="ระบุปัญหาที่พบก่อนนำรถออก..."
+            ></textarea>
+          </div>
+
+          <button
+            type="button"
+            class="confirm-btn"
+            onclick="submitBooking()"
+            style="
+              width: 100%;
+              background: #ff4d4d;
+              color: white;
+              padding: 15px;
+              border-radius: 8px;
+              border: none;
+              margin-top: 20px;
+              cursor: pointer;
+            "
+          >
+            ยืนยันการยืมรถ
+          </button>
+        </div>
+
+        <div id="return-fields" class="hidden">
+          <h2 class="form-title" style="color: #27ae60">
+            บันทึกการคืนรถ (ขาเข้า)
+          </h2>
+          <div class="input-container">
+            <div class="field-group full-width">
+              <label>ทะเบียนรถที่จะคืน</label>
+              <input
+                type="text"
+                id="return-car-plate"
+                readonly
+                style="
+                  background: #333;
+                  color: #fff;
+                  padding: 10px;
+                  border-radius: 5px;
+                  border: 1px solid #444;
+                "
+              />
+            </div>
+            <div class="field-group">
+              <label>วันที่คืน</label><input type="date" id="return-date" />
+            </div>
+            <div class="field-group">
+              <label>เวลาที่คืน</label><input type="time" id="return-time" />
+            </div>
+            <div class="field-group full-width">
+              <label>เลขไมล์ตอนคืน</label
+              ><input type="number" id="end-mile" value="0" />
+            </div>
+            <div class="field-group full-width">
+              <label style="color: #27ae60">แจ้งปัญหาที่พบหลังการใช้งาน</label>
+              <textarea
+                id="return-remark"
+                rows="3"
+                placeholder="ระบุปัญหาที่พบหลังใช้งาน..."
+              ></textarea>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="confirm-btn"
+            onclick="submitReturn()"
+            style="
+              width: 100%;
+              background: #27ae60;
+              color: white;
+              padding: 15px;
+              border-radius: 8px;
+              border: none;
+              margin-top: 20px;
+              cursor: pointer;
+            "
+          >
+            ยืนยันการคืนรถ
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <script src="car-data.js"></script>
+    <script src="booking.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>

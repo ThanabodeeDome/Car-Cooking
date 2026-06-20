@@ -1,0 +1,152 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.status-container {
+  background-color: #0c0c0c !important;
+  min-height: 100vh;
+  padding: 100px 5% 50px;
+}
+
+.profile-card {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+  overflow: hidden;
+  text-align: center;
+}
+
+.profile-header {
+  background: #252525;
+  padding: 40px 20px;
+  border-bottom: 1px solid #333;
+}
+
+.avatar-container {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 15px;
+}
+
+.avatar-container img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #ff4d4d;
+}
+
+.edit-avatar {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
+  background: #ff4d4d;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.profile-body {
+  padding: 30px;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  text-align: left;
+  margin-bottom: 30px;
+}
+
+.info-item label {
+  color: #888;
+  font-size: 0.85rem;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.info-item input {
+  width: 100%;
+  background: #252525;
+  border: 1px solid #444;
+  color: white;
+  padding: 10px;
+  border-radius: 8px;
+  outline: none;
+}
+
+.info-item input[readonly] {
+  color: #666;
+  border-color: #333;
+}
+
+.profile-stats {
+  display: flex;
+  justify-content: space-around;
+  background: #222;
+  padding: 20px;
+  border-radius: 12px;
+}
+
+.stat-num {
+  display: block;
+  font-size: 1.5rem;
+  color: #ff4d4d;
+  font-weight: bold;
+}
+
+.stat-label {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.profile-footer {
+  padding: 20px;
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.btn-save {
+  background: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 10px 30px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-logout {
+  background: transparent;
+  color: #ff4d4d;
+  border: 1px solid #ff4d4d;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-logout {
+  background: transparent;
+  color: #ff4d4d; /* สีแดงประจำธีม */
+  border: 1px solid #ff4d4d;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-family: "Prompt", sans-serif;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.btn-logout:hover {
+  background: #ff4d4d;
+  color: white;
+  box-shadow: 0 0 15px rgba(255, 77, 77, 0.4);
+}

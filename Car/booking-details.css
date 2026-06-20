@@ -1,0 +1,139 @@
+* {
+  /*ทุก Element ในหน้าเว็บ*/
+  margin: 0; /*เป็นการเอาช่องว่างที่ Browser แถมมาให้ออกไป*/
+  padding: 0; /* " */
+  box-sizing: border-box; /*ถ้าเราใส่ Padding หรือ Border ให้คำนวณรวมไปในขนาดความกว้างเลย*/
+  font-family: "Prompt", sans-serif; /* เปลี่ยนมาใช้ตัวนี้แล้วนะนาย */
+}
+
+body {
+  font-family: "Poppins", "Prompt", sans-serif;
+  margin: 0;
+  padding-top: 60px; /*เผื่อพื้นที่ให้ NavBar ที่ Fixed อยู่ด้านบน*/
+  /* เปลี่ยนจากสีเทากลาง เป็นสีเทาเข้มลึกๆ */
+  background-color: #06080a;
+  /* เปลี่ยนสีตัวอักษรหลักเป็นสีขาวนวล เพื่อให้อ่านง่ายบนพื้นหลังมืด */
+  color: #111827;
+  /* แถม: ความสูงขั้นต่ำของหน้าจอเพื่อให้พื้นหลังเต็มจอเสมอ */
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden; /* ป้องกันหน้าจอเลื่อนซ้ายขวาในมือถือ */
+}
+
+/* --------------------------------------------------------------------------------------------------------------*/
+
+/* หัวข้อหลัก */
+h3.text-danger {
+  color: #ff4d4d;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+/* ส่วนของ Tabs ปุ่มกด */
+.booking-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.tab-btn {
+  display: flex;
+  background-color: #1f2937;
+  color: #9ca3af;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.tab-btn.active,
+.tab-btn:hover {
+  background-color: #ff4d4d;
+  color: #ffffff;
+}
+
+/* รายการประวัติการจอง */
+.booking-list {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.booking-row-container {
+  margin-bottom: 12px;
+  background-color: #111827;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #1f2937;
+}
+
+.booking-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s;
+}
+
+.booking-header-row:hover {
+  background-color: #1f2937;
+}
+
+/* สีข้อความในหน้าแรก */
+.bk-id {
+  color: #9ca3af;
+  font-weight: 600;
+}
+.bk-user {
+  color: #ffffff;
+}
+.bk-car {
+  color: #10b981;
+  font-weight: bold;
+} /* สีเขียว */
+.bk-date {
+  color: #9ca3af;
+}
+.arrow-icon {
+  color: #ffffff;
+  transition: color 0.2s;
+}
+
+/* ส่วนแสดงรายละเอียดย่อย (Dropdown) */
+.booking-detail-dropdown {
+  background-color: #1f2937;
+  padding: 20px;
+  border-top: 1px solid #374151;
+}
+
+.card-dropdown-content h5 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #ffffff;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.col-md-6 {
+  flex: 1;
+  min-width: 250px;
+}
+
+.col-md-6 p {
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #d1d5db;
+}
+
+.col-md-6 p strong {
+  color: #9ca3af;
+}

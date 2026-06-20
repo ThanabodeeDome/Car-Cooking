@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>สถานะรถยนต์ - Corporate Car</title>
+    <link rel="stylesheet" href="navbar.css" />
+    <link rel="stylesheet" href="car-status.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="booking-page">
+    <nav class="nav-bar">
+      <div class="logo">
+        <img src="assets/image/CH2.png" alt="nav-logo" />
+      </div>
+
+      <div class="menu-toggle" id="mobile-menu">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </div>
+
+      <ul class="nav-links" id="nav-list"> 
+        <li>
+          <a href="homepage.html" class="Home-btn">หน้าหลัก</a>
+        </li>
+        <li>
+          <a href="booking.html" class="book-btn">จองรอบขับ</a>
+        </li>
+        <li>
+          <a href="car-status.html" class="Check-btn">เช็กคิว</a>
+        </li>
+        <li>
+          <a href="car-details.html" class="info-btn">รายละเอียดรถยนต์</a>
+        </li>
+        <li>
+          <a href="booking-details.html" class="Rules-btn">รายละเอียดการจอง</a>
+        </li>
+        <li>
+          <a href="profile.html" class="contact-btn">ข้อมูลผู้ใช้</a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="status-container">
+      <section class="car-section">
+        <h2 class="section-title">รถยนต์ที่พร้อมใช้งาน</h2>
+        <div class="scroll-container">
+          <div id="car-grid" class="car-grid-horizontal"></div>
+        </div>
+      </section>
+
+      <div class="main-content-wrapper" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+    
+          <section class="calendar-section">
+              <h2 class="section-title">ปฏิทินการใช้รถยนต์</h2>
+              <div id="calendar-full"></div>
+          </section>
+
+          <section class="timeline-section" style="margin-top: 30px; background: white; padding: 20px; border-radius: 15px;">
+              <div id="calendar-timeline"></div>
+          </section>
+
+       </div>
+    <script src="main.js"></script>
+    <script src="car-status.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  </body>
+</html>

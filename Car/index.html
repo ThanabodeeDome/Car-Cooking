@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>เข้าสู่ระบบ | Premium Car Booking</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="index.css" />
+  </head>
+  <body>
+    <div class="bg-glow-1"></div>
+    <div class="bg-glow-2"></div>
+
+    <div class="auth-container">
+      <div id="login-form" class="auth-box">
+        <div class="brand-logo">
+          <i class="fa-solid fa-car-side"></i>
+          <span>CAR<span>ADMIN</span></span>
+        </div>
+        <h2>ยินดีต้อนรับกลับมา</h2>
+        <p class="subtitle">กรุณากรอกข้อมูลเพื่อเข้าสู่ระบบจัดการรถยนต์</p>
+
+        <form action="../login_process.php" method="POST">
+          <div class="input-group">
+            <label>ชื่อผู้ใช้งาน</label>
+            <div class="input-wrapper">
+              <i class="fa-regular fa-user"></i>
+              <input
+                type="text"
+                name="username"
+                placeholder="กรอก Username ของคุณ"
+                required
+              />
+            </div>
+          </div>
+          <div class="input-group">
+            <label>รหัสผ่าน</label>
+            <div class="input-wrapper">
+              <i class="fa-solid fa-lock"></i>
+              <input
+                type="password"
+                name="password"
+                placeholder="กรอกรหัสผ่าน"
+                required
+              />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">
+            เข้าสู่ระบบล็อกอิน <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </form>
+        <div class="auth-links">
+          <a href="#" onclick="switchForm('register-form')">สร้างบัญชีใหม่</a>
+          <a href="#" onclick="switchForm('reset-form')">ลืมรหัสผ่านใช่ไหม?</a>
+        </div>
+      </div>
+
+      <div
+        id="register-form"
+        class="auth-box"
+        style="display: none; max-width: 600px"
+      >
+        <h2>สมัครสมาชิกพนักงาน</h2>
+        <p class="subtitle">
+          กรุณากรอกข้อมูลพนักงานให้ครบถ้วนเพื่อสร้างบัญชีผู้ใช้
+        </p>
+
+        <form action="../register_process.php" method="POST">
+          <div class="form-grid">
+            <div class="input-group">
+              <label>ชื่อผู้ใช้งาน (Username)</label>
+              <div class="input-wrapper">
+                <i class="fa-regular fa-user"></i>
+                <input
+                  type="text"
+                  name="username"
+                  placeholder="ภาษาอังกฤษเท่านั้น"
+                  required
+                />
+              </div>
+            </div>
+            <div class="input-group">
+              <label>รหัสผ่าน (Password)</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-lock"></i>
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="ตั้งรหัสผ่าน"
+                  required
+                />
+              </div>
+            </div>
+            <div class="input-group">
+              <label>ชื่อจริง</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-id-card"></i>
+                <input
+                  type="text"
+                  name="first_name"
+                  placeholder="ชื่อภาษาไทย"
+                  required
+                />
+              </div>
+            </div>
+            <div class="input-group">
+              <label>นามสกุล</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-id-card"></i>
+                <input
+                  type="text"
+                  name="last_name"
+                  placeholder="นามสกุลภาษาไทย"
+                  required
+                />
+              </div>
+            </div>
+            <div class="input-group">
+              <label>รหัสพนักงาน</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-address-card"></i>
+                <input
+                  type="text"
+                  name="employee_id"
+                  placeholder="เช่น EMP-6900"
+                  required
+                />
+              </div>
+            </div>
+            <div class="input-group">
+              <label>หน่วยงาน / แผนก</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-building"></i>
+                <input
+                  type="text"
+                  name="department"
+                  placeholder="ระบุหน่วยงานของคุณ"
+                  required
+                />
+              </div>
+            </div>
+            <div class="input-group">
+              <label>เบอร์โทรศัพท์</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-phone"></i>
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="0XXXXXXXXX"
+                  required
+                />
+              </div>
+            </div>
+            <div class="input-group">
+              <label>อีเมล (Email)</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-envelope"></i>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="name@company.com"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-success"
+            style="margin-top: 15px"
+          >
+            <i class="fa-solid fa-user-plus"></i> ส่งข้อมูลลงทะเบียนพนักงาน
+          </button>
+        </form>
+        <div class="auth-links center">
+          <a href="#" onclick="switchForm('login-form')"
+            ><i class="fa-solid fa-chevron-left"></i> กลับไปหน้าเข้าสู่ระบบ</a
+          >
+        </div>
+      </div>
+
+      <div id="reset-form" class="auth-box" style="display: none">
+        <h2>ตั้งรหัสผ่านใหม่</h2>
+        <p class="subtitle">
+          กรอกชื่อผู้ใช้เพื่อทำการรีเซ็ตรหัสผ่านความปลอดภัย
+        </p>
+
+        <form id="reset-password-form">
+          <div class="input-group">
+            <label>ชื่อผู้ใช้งานยืนยันตัวตน</label>
+            <div class="input-wrapper">
+              <i class="fa-regular fa-user"></i>
+              <input type="text" name="username" placeholder="Dome" required />
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>รหัสพนักงาน</label>
+            <div class="input-wrapper">
+              <i class="fa-solid fa-address-card"></i>
+              <input
+                type="text"
+                name="employee_id"
+                placeholder="กรอกรหัสพนักงานของคุณ"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>รหัสผ่านใหม่</label>
+            <div class="input-wrapper">
+              <i class="fa-solid fa-key"></i>
+              <input
+                type="password"
+                name="new_password"
+                placeholder="ตั้งรหัสผ่านใหม่"
+                required
+              />
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-warning">
+            บันทึกรหัสผ่านใหม่
+          </button>
+        </form>
+
+        <div class="auth-links center">
+          <a href="#" onclick="switchForm('login-form')">
+            <i class="fa-solid fa-chevron-left"></i> กลับไปหน้าเข้าสู่ระบบ
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <script src="index.js"></script>
+  </body>
+</html>

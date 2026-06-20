@@ -1,0 +1,373 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;600&display=swap");
+/* 1. จัดการโครงสร้างหน้าจอหลัก */
+.booking-page {
+  background-color: #0c0c0c;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* ให้กล่องเริ่มจากด้านบน */
+  min-height: 100vh;
+  padding: 140px 20px 50px 20px; /* รวม padding-top 140px ไว้ในบรรทัดเดียว เพื่อดันให้พ้น Navbar */
+  box-sizing: border-box;
+}
+
+/* 2. กล่อง Card สำหรับกรอกข้อมูล */
+.booking-card {
+  background: #1a1a1a;
+  padding: 40px;
+  border-radius: 60px;
+  width: 95%;
+  max-width: 600px;
+  margin: 0 auto; /* จัดกลาง */
+  border: 1px solid #333;
+  border-top: 5px solid #ff4d4d; /* เส้นแดงด้านบนตามดีไซน์ */
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  box-sizing: border-box;
+}
+
+/* 3. หัวข้อและแท็บสลับฟอร์ม */
+.booking-card h2 {
+  color: #ff4d4d;
+  margin-bottom: 25px;
+  font-size: 1.8rem;
+  text-align: center;
+}
+
+/* คลุมแถบปุ่มทั้งหมด */
+.form-tabs {
+  display: flex;
+  width: 100%; /* ขยายให้เต็มความกว้างของฟอร์ม */
+  background: #1a1a1a; /* พื้นหลังเข้มๆ ใต้ปุ่ม */
+  border-radius: 12px;
+  overflow: hidden; /* ให้มุมโค้งตัดตามปุ่ม */
+  margin-bottom: 30px;
+  border: 1px solid #333;
+}
+
+/* ปรับแต่งปุ่มแต่ละข้าง */
+.tab-btn {
+  flex: 1; /* บังคับให้ขนาดเท่ากัน 50/50 */
+  padding: 20px 0 !important; /* เพิ่มความสูงให้ปุ่มดูหนานุ่ม */
+  font-size: 18px !important; /* ตัวหนังสือใหญ่สะใจ */
+  font-weight: bold !important;
+  border: none !important;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* ปุ่มที่ถูกเลือก (Active) */
+.tab-btn.active {
+  background: #ff4d4d !important; /* สีแดงสว่างตามธีมพี่ */
+  color: white !important;
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.2); /* เพิ่มมิตินิดหน่อย */
+}
+
+/* เอฟเฟกต์ตอนเอาเมาส์ไปวาง */
+.tab-btn:hover:not(.active) {
+  background: #252525;
+  color: #eee;
+}
+/* --- ส่วนที่ 4. จัด Layout ใหม่ให้ยาวเท่ากันเป๊ะ --- */
+
+.input-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* แบ่งเป็น 2 เสาหลัก */
+  gap: 15px;
+}
+
+/* บังคับให้แถวที่มี 2 ช่อง ขยายยาวเต็มพื้นที่ Card */
+.input-row-group {
+  grid-column: span 2;
+  display: flex !important;
+  gap: 15px; /* ระยะห่างระหว่างช่อง */
+  width: 100%;
+  align-items: center;
+}
+
+/* แบ่งพื้นที่ในแถวคนละครึ่ง 50/50 ให้เท่ากันทุกแถว */
+.input-row-group .field-group,
+.passenger-row.input-row-group input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* หัวใจสำคัญ: แบ่งพื้นที่คนละครึ่ง 50/50 */
+.input-row-group .field-group,
+.passenger-row input {
+  flex: 1 !important; /* ทุกช่องจะกว้างเท่ากันเป๊ะ */
+  min-width: 0; /* ป้องกันช่องดันกันจนเบี้ยว */
+}
+
+/* ปุ่มบวก/ลบ ให้คงขนาดเดิมไว้ ไม่ไปแย่งที่ช่องกรอก */
+.btn-plus-style {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  margin-left: 10px;
+}
+
+/* ช่องที่ต้องการให้ยาวเดี่ยวๆ เต็มบรรทัด */
+.full-width {
+  grid-column: span 2;
+}
+
+/* ปุ่มบวก/ลบ ไม่ให้ไปแย่งพื้นที่ช่องกรอก */
+.btn-plus-style {
+  flex-shrink: 0;
+  margin-left: 10px;
+}
+/* 5. สไตล์ของ Label และ Input */
+label {
+  display: block;
+  color: #ff4d4d;
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 12px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: white;
+  border-radius: 8px;
+  box-sizing: border-box;
+  font-size: 1rem;
+  transition: 0.3s;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #ff4d4d;
+  outline: none;
+  box-shadow: 0 0 8px rgba(255, 77, 77, 0.2);
+}
+
+/* 6. ปุ่มกดยืนยัน */
+.btn-submit {
+  width: 100%;
+  padding: 15px;
+  margin-top: 20px;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+  background: #ff4d4d;
+  color: white;
+  font-size: 1.1rem;
+  transition: 0.3s;
+  justify-content: center;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-submit:hover {
+  background: #e60000;
+  transform: translateY(-2px);
+}
+
+.btn-submit.return {
+  background: #27ae60;
+}
+
+/* 7. ส่วนเสริมอื่นๆ */
+.calc-result {
+  background: #000;
+  padding: 15px;
+  margin-top: 15px;
+  border-radius: 8px;
+  text-align: center;
+  color: #27ae60;
+  font-weight: bold;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.passenger-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.passenger-input {
+  flex: 1; /* ให้ช่องกรอกขยายเต็มพื้นที่ */
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background: #222;
+  color: white;
+}
+.btn-add,
+.btn-remove {
+  padding: 5px 15px;
+  cursor: pointer;
+  border-radius: 4px;
+  border: none;
+}
+.btn-add {
+  background-color: #28a745;
+  color: white;
+}
+.btn-remove {
+  background-color: #dc3545;
+  color: white;
+}
+
+/* จัดระเบียบแถวผู้ร่วมเดินทาง */
+.passenger-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* ตัวแปรปุ่ม Plus: วงกลมขอบแดง สไตล์ Dark Mode */
+.btn-plus-style {
+  background-color: #1a1a1a; /* ดำสนิท */
+  border: 2px solid #ff4d4d; /* ขอบแดงสว่าง */
+  color: #ff4d4d; /* เครื่องหมาย + สีแดง */
+  width: 38px; /* ขนาดเท่าความสูงช่อง Input */
+  height: 38px;
+  border-radius: 50%; /* วงกลมเป๊ะ */
+  font-size: 22px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-left: 10px; /* ห่างจากช่อง Input นิดหน่อย */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.3s;
+  padding: 0;
+}
+
+/* เอฟเฟกต์ตอนเอาเมาส์จี้ */
+.btn-plus-style:hover {
+  background-color: #ff4d4d;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(255, 77, 77, 0.6);
+}
+
+/* --- โทนสีและสไตล์ Progress Bar --- */
+/* --- ส่วนของ Stepper (แถบสถานะ) --- */
+.stepper-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin: 40px 0; /* เพิ่มระยะห่างบนล่าง */
+  position: relative;
+  width: 100%;
+}
+
+/* เส้นเชื่อมสีเทา */
+.stepper-wrapper::before {
+  content: "";
+  position: absolute;
+  top: 20px;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: #444;
+  z-index: 1;
+}
+
+.stepper-item {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 33.33%;
+}
+
+.step-counter {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #1a1a1a; /* พื้นหลังวงกลมเข้ม */
+  border: 2px solid #555; /* ขอบเทาสว่าง */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  font-weight: bold;
+  margin-bottom: 8px;
+  transition: all 0.3s ease;
+}
+
+.step-name {
+  font-size: 13px;
+  color: #aaa; /* สีข้อความให้ออกขาวเทา */
+}
+
+/* เมื่อขั้นตอนนั้นทำงาน (Active) */
+.stepper-item.active .step-counter {
+  background: #ff4d4d; /* สีแดงตามธีมพี่ */
+  border-color: #ff4d4d;
+  box-shadow: 0 0 15px rgba(255, 77, 77, 0.6);
+}
+
+.stepper-item.active .step-name {
+  color: #ff4d4d;
+  font-weight: bold;
+}
+
+/* --- ส่วนของช่องกรอก (Input) ให้หายดำมืด --- */
+/* ปรับพื้นหลังช่องกรอกทั้งหมดให้เป็นสีเทาเข้ม */
+.form-control,
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+select,
+textarea {
+  background-color: #1e1e1e !important; /* สีเทาเข้มเกือบดำ */
+  border: 1px solid #444 !important; /* ขอบสีเทาหม่น */
+  color: #ffffff !important; /* ตัวหนังสือข้างในสีขาว */
+  border-radius: 8px !important;
+  padding: 10px !important;
+}
+
+/* เวลาเอาเมาส์ไปคลิก (Focus) ให้ขอบเรืองแสงสีแดง */
+.form-control:focus,
+select:focus,
+textarea:focus {
+  border-color: #ff4d4d !important;
+  box-shadow: 0 0 10px rgba(255, 77, 77, 0.5) !important;
+  outline: none;
+}
+
+/* ปรับสีตัวหนังสือจางๆ (Placeholder) */
+::placeholder {
+  color: #666 !important;
+}
+
+/* สำหรับช่องวันที่และเวลา (Chrome/Edge) ให้ไอคอนเป็นสีขาว */
+input::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+}
+
+/* --- ใส่ไอคอนในช่อง Input --- */
+.input-with-icon {
+  position: relative;
+}
+.input-with-icon i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+}
+.form-control-icon {
+  padding-left: 40px !important; /* เว้นที่ให้ไอคอน */
+  border-radius: 8px;
+  border: 1px solid #ced4da;
+}

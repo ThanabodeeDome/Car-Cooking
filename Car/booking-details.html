@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>จองรถยนต์ - Corporate Car</title>
+    <link rel="stylesheet" href="navbar.css" />
+    <link rel="stylesheet" href="booking-details.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <nav class="nav-bar">
+      <div class="logo">
+        <img src="assets/image/CH2.png" alt="nav-logo" />
+      </div>
+
+      <div class="menu-toggle" id="mobile-menu">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </div>
+
+      <ul class="nav-links" id="nav-list">
+        <li>
+          <a href="homepage.html" class="Home-btn">หน้าหลัก</a>
+        </li>
+        <li>
+          <a href="booking.html" class="book-btn">จองรอบขับ</a>
+        </li>
+        <li>
+          <a href="car-status.html" class="Check-btn">เช็กคิว</a>
+        </li>
+        <li>
+          <a href="car-details.html" class="info-btn">รายละเอียดรถยนต์</a>
+        </li>
+        <li>
+          <a href="booking-details.html" class="Rules-btn">รายละเอียดการจอง</a>
+        </li>
+        <li>
+          <a href="profile.html" class="contact-btn">ข้อมูลผู้ใช้</a>
+        </li>
+      </ul>
+    </nav>
+
+    <div class="container mt-4">
+      <h3 class="text-danger">ประวัติและรายละเอียดการจอง</h3>
+
+      <div class="main-history-layout">
+        <div class="side-menu-container">
+          <button class="tab-btn active" onclick="filterHistory('outbound')">
+            ประวัติการยืมรถ (ขาไป)
+          </button>
+          <button class="tab-btn" onclick="filterHistory('inbound')">
+            ประวัติการคืนรถ (ขากลับ)
+          </button>
+        </div>
+
+        <div class="booking-list-wrapper">
+          <div class="booking-row-container outbound-item">
+            <div
+              class="booking-header-row"
+              onclick="toggleDropdown('bk-670512')"
+            >
+              <span class="bk-id">#BK-670512</span>
+              <span class="bk-user">สมชาย สายลุย</span>
+              <span class="bk-car text-success">กข-1234</span>
+              <span class="bk-date">12/05/2026</span>
+              <span class="arrow-icon">▼</span>
+            </div>
+
+            <div
+              id="bk-670512"
+              class="booking-detail-dropdown"
+              style="display: none"
+            >
+              <div class="card-dropdown-content">
+                <h5
+                  class="text-danger"
+                  style="font-weight: bold; margin-bottom: 15px"
+                >
+                  รายละเอียดการจอง #BK-670512
+                </h5>
+                <hr style="border-color: #333" />
+                <div class="row">
+                  <div class="col-md-6">
+                    <p><strong>ชื่อผู้ขับ:</strong> สมชาย สายลุย</p>
+                    <p><strong>หน่วยงาน/แผนก:</strong> หน่วยงาน A / แผนก A</p>
+                    <p><strong>สถานที่ไป:</strong> นิคมอุตสาหกรรมบางปู</p>
+                  </div>
+                  <div class="col-md-6">
+                    <p><strong>ทะเบียนรถ:</strong> กข-1234</p>
+                    <p><strong>เลขไมล์เริ่มต้น:</strong> 120,500 กม.</p>
+                    <p><strong>ผู้ร่วมเดินทาง:</strong> นายเอ, นายบี (2 คน)</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="booking-row-container inbound-item" style="display: none">
+            <div
+              class="booking-header-row"
+              onclick="toggleDropdown('bk-670513')"
+            >
+              <span class="bk-id">#BK-670513</span>
+              <span class="bk-user">ธนบดี อาสานอก</span>
+              <span class="bk-car text-warning">กง-6677</span>
+              <span class="bk-date">14/05/2026</span>
+              <span class="arrow-icon">▼</span>
+            </div>
+
+            <div
+              id="bk-670513"
+              class="booking-detail-dropdown"
+              style="display: none"
+            >
+              <div class="card-dropdown-content">
+                <h5
+                  class="text-success"
+                  style="font-weight: bold; margin-bottom: 15px"
+                >
+                  รายละเอียดการคืนรถ #BK-670513
+                </h5>
+                <hr style="border-color: #333" />
+                <div class="row">
+                  <div class="col-md-6">
+                    <p><strong>ผู้คืนรถ:</strong> ธนบดี อาสานอก</p>
+                    <p><strong>วันที่คืน:</strong> 14/05/2026</p>
+                  </div>
+                  <div class="col-md-6">
+                    <p><strong>เลขไมล์ตอนคืน:</strong> 121,200 กม.</p>
+                    <p><strong>ปัญหาที่พบ:</strong> ยางล้อหน้าซ้ายอ่อน</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="main.js"></script>
+    <script src="booking-details.js"></script>
+  </body>
+</html>

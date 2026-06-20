@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="navbar.css" />
+    <link rel="stylesheet" href="homepage.css" />
+    <title>Car Booking</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <nav class="nav-bar">
+      <div class="logo">
+        <img src="assets/image/CH2.png" alt="nav-logo" />
+      </div>
+
+      <div class="menu-toggle" id="mobile-menu">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </div>
+
+      <ul class="nav-links" id="nav-list">
+        <li>
+          <a href="homepage.html" class="Home-btn">หน้าหลัก</a>
+        </li>
+        <li>
+          <a href="booking.html" class="book-btn">จองรอบขับ</a>
+        </li>
+        <li>
+          <a href="car-status.html" class="Check-btn">เช็กคิว</a>
+        </li>
+        <li>
+          <a href="car-details.html" class="info-btn">รายละเอียดรถยนต์</a>
+        </li>
+        <li>
+          <a href="booking-details.html" class="Rules-btn">รายละเอียดการจอง</a>
+        </li>
+        <li>
+          <a href="profile.html" class="contact-btn">ข้อมูลผู้ใช้</a>
+        </li>
+      </ul>
+    </nav>
+
+    <main class="hero">
+      <div class="hero-content">
+        <h1>CORPORATE <span class="highlight">CAR</span> BOOKING</h1>
+        <p>ระบบจัดการการจองรถยนต์บริษัท สะดวก รวดเร็ว ตรวจสอบสถานะได้ทันที</p>
+
+        <div class="hero-btns">
+          <div class="hero-btns">
+            <a href="booking.html" class="secondary-btn">
+              <span>จองรถทันที</span>
+            </a>
+
+            <a href="car-status.html" class="secondary-btn">
+              <span>ดูคิวรถว่าง</span>
+            </a>
+          </div>
+          >
+        </div>
+      </div>
+    </main>
+
+    <section class="history-section">
+      <div class="history-top-bar">
+        <h2 class="history-title">HISTORY</h2>
+        <div class="search-wrapper-full">
+          <input
+            type="text"
+            id="history-search"
+            placeholder="ค้นหาประวัติการจองด้วยทะเบียนรถ..."
+            class="search-input"
+          />
+          <button class="search-btn">🔍</button>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th>เวลา</th>
+              <th>การจอง</th>
+              <th>ประเภท</th>
+              <th>ยี่ห้อ</th>
+              <th>ทะเบียน</th>
+              <th>คนขับ</th>
+              <th>ผู้ร่วมเดินทาง</th>
+              <th>รหัสพนักงาน</th>
+            </tr>
+          </thead>
+          <tbody id="history-table-body"></tbody>
+        </table>
+      </div>
+    </section>
+    <script src="main.js"></script>
+    <script src="homepage.js"></script>
+  </body>
+</html>

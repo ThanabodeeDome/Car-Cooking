@@ -1,0 +1,250 @@
+:root {
+  --bg-main: #05050a;
+  --card-bg: rgba(17, 24, 39, 0.7);
+  --cyan-glow: #00f2fe;
+  --blue-glow: #4facfe;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-color: rgba(255, 255, 255, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-main);
+  font-family: "Plus Jakarta Sans", "Sarabun", sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* แสงไฟออร่าด้านหลัง (Ambient Light) */
+.bg-glow-1,
+.bg-glow-2 {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  filter: blur(150px);
+  opacity: 0.15;
+  z-index: 0;
+}
+.bg-glow-1 {
+  top: -10%;
+  left: -10%;
+  background: var(--cyan-glow);
+}
+.bg-glow-2 {
+  bottom: -10%;
+  right: -10%;
+  background: var(--blue-glow);
+}
+
+/* กล่องกระจกฝ้า (Glassmorphism Container) */
+.auth-container {
+  background: var(--card-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+  padding: 45px 40px;
+  border-radius: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  width: 100%;
+  max-width: 420px;
+  z-index: 10;
+}
+
+/* อนิเมชัน Fade-In ตอนสลับฟอร์ม */
+@keyframes formFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-box {
+  animation: formFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* โลโก้แบรนด์ */
+.brand-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  margin-bottom: 25px;
+  color: var(--text-main);
+}
+.brand-logo i {
+  color: var(--cyan-glow);
+}
+.brand-logo span span {
+  color: var(--cyan-glow);
+}
+
+.auth-box h2 {
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+/* จัดสไตล์ช่องอินพุต */
+.input-group {
+  margin-bottom: 22px;
+}
+
+.input-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-main);
+  margin-bottom: 8px;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-wrapper i {
+  position: absolute;
+  left: 16px;
+  color: var(--text-muted);
+  font-size: 16px;
+  transition: color 0.3s;
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: 14px 16px 14px 48px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-main);
+  font-size: 15px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.input-wrapper input::placeholder {
+  color: #475569;
+}
+
+/* เอฟเฟกต์ตอนกดโฟกัสช่องกรอกข้อมูล */
+.input-wrapper input:focus {
+  border-color: var(--cyan-glow);
+  box-shadow: 0 0 15px rgba(0, 242, 254, 0.15);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.input-wrapper input:focus + i {
+  color: var(--cyan-glow);
+}
+
+/* ปุ่มกดสไตล์พรีเมียม ไล่สี */
+.btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--blue-glow), var(--cyan-glow));
+  color: #05050a;
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 242, 254, 0.3);
+}
+
+.btn-success {
+  background: #10b981;
+  color: white;
+}
+.btn-success:hover {
+  background: #059669;
+  transform: translateY(-2px);
+}
+
+.btn-warning {
+  background: #f59e0b;
+  color: white;
+}
+.btn-warning:hover {
+  background: #d97706;
+  transform: translateY(-2px);
+}
+
+/* ลิงก์สลับหน้า */
+.auth-links {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 25px;
+  font-size: 13px;
+}
+
+.auth-links.center {
+  justify-content: center;
+}
+
+.auth-links a {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.auth-links a:hover {
+  color: var(--cyan-glow);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+/* ถ้าหน้าจอเล็ก ยุบเหลือคอลัมน์เดียวอัตโนมัติ */
+@media (max-width: 580px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+/* ขยายขนาดกล่องถ้าเปิดหน้าสมัครสมาชิก */
+.auth-container:has(#register-form:not([style*="display: none"])) {
+  max-width: 650px;
+}

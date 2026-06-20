@@ -1,0 +1,53 @@
+/* ส่วนตกแต่งกล่องข้อมูลประกันและข้อมูลซ่อมเพิ่ม */
+.extra-info-container {
+  margin-top: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.info-sub-box {
+  flex: 1;
+  min-width: 200px;
+  background: #222222;
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid #333333;
+}
+
+/* ขอบเหลืองสไตล์ซ่อมแซม */
+.info-sub-box.repair-box {
+  border-left: 4px solid #f1c40f;
+}
+
+/* ขอบแดงตามธีมหลักของประกันภัย */
+.info-sub-box.insurance-box {
+  border-left: 4px solid #ff4d4d;
+}
+
+.info-sub-box h4 {
+  font-size: 0.9rem;
+  color: #ffffff;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info-sub-box p {
+  font-size: 0.8rem;
+  color: #cccccc;
+  margin: 4px 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.info-sub-box p span {
+  color: #777777;
+}
+
+@media (max-width: 768px) {
+  .extra-info-container {
+    flex-direction: column;
+  }
+}
