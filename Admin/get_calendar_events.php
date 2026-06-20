@@ -1,3 +1,1 @@
-[
-  { "title": "กจ 9393 (คุณสมชาย จอง)", "start": "2026-06-15", "end": "2026-06-18", "color": "#ff4d4d" }
-]
+<?php include_once "../auth_check.php"; ?>

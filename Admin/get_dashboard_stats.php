@@ -24,13 +24,14 @@ $busy_count  = ($stmt = sqlsrv_query($conn, $sql_busy)) ? sqlsrv_fetch_array($st
 $maint_count = ($stmt = sqlsrv_query($conn, $sql_maint)) ? sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)['total'] : 0;
 $today_count = ($stmt = sqlsrv_query($conn, $sql_today)) ? sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)['total'] : 0;
 
-// ── PART 2: ดึงข้อมูลรถทั้งหมดออกมาทำ Card (ตัดเงื่อนไขออก เพื่อให้ดึงมาทุกคันชัวร์ๆ)
+// ── PART 2: ดึงข้อมูลรถทั้งหมดออกมาทำ Card 
 $sql_cars_list = "SELECT [CarID], [Plate], [Brand], [Model], [Color], [Mileage], [CarImage], [CarStatus] FROM [CarBookingDB].[dbo].[Cars]";
 $stmt_list = sqlsrv_query($conn, $sql_cars_list);
 $cars_array = array();
 
 if ($stmt_list) {
     while ($row = sqlsrv_fetch_array($stmt_list, SQLSRV_FETCH_ASSOC)) {
+        // แปะป้ายตัวแปรพิมพ์เล็ก เพื่อส่งให้ JavaScript (app.js) เอาไปวนลูปรอบคันรถได้ถูกต้อง
         $cars_array[] = array(
             "id"       => $row['CarID'],
             "plate"    => $row['Plate'],
@@ -38,13 +39,13 @@ if ($stmt_list) {
             "model"    => $row['Model'],
             "color"    => $row['Color'],
             "mileage"  => $row['Mileage'],
-            "image"    => $row['CarImage'],
+            "image"    => $row['CarImage'], // ชื่อคีย์รูปภาพตัวพิมพ์เล็ก
             "status"   => $row['CarStatus']
         );
     }
 }
 
-// ── PART 3: มัดรวมส่งออกไปให้ JavaScript
+// ── PART 3: มัดรวมส่งออกไปให้ JavaScript (ส่งทีเดียวท้ายไฟล์ให้เคลียร์ๆ)
 $response_data = array(
     "available"   => $avail_count,
     "busy"        => $busy_count,
