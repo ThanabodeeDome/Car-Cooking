@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Dashboard - Car Booking</title>
     <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;700&family=Urbanist:wght@400;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;600&display=swap"
       rel="stylesheet"
     />
     <link
@@ -26,32 +26,31 @@
           style="margin-bottom: 25px; text-align: center"
         >
           <img
-            src="../Car/assets/image/CH2.png"
+            src="../Car/assets/image/CHR-Logo1.png"
             alt="Logo"
             style="max-width: 80%; height: auto"
           />
         </div>
-
-        <a href="#" class="menu-link active" onclick="switchTab('dashboard')">
-          <i class="fa-solid fa-chart-pie"></i>
-          <span>หน้าหลัก (Dashboard)</span>
-        </a>
-        <a href="#" class="menu-link" onclick="switchTab('cars')">
-          <i class="fa-solid fa-car"></i> <span>จัดการข้อมูลรถยนต์</span>
-        </a>
-        <a href="#" class="menu-link" onclick="switchTab('calendar-tab')">
-          <i class="fa-solid fa-calendar-days"></i> <span>ปฏิทินงานวิ่งรถ</span>
-        </a>
+        <a href="#" class="menu-link active" onclick="switchTab('dashboard')"
+          ><i class="fa-solid fa-chart-pie"></i>
+          <span>หน้าหลัก (Dashboard)</span></a
+        >
+        <a href="#" class="menu-link" onclick="switchTab('cars')"
+          ><i class="fa-solid fa-car"></i> <span>จัดการข้อมูลรถยนต์</span></a
+        >
+        <a href="#" class="menu-link" onclick="switchTab('calendar-tab')"
+          ><i class="fa-solid fa-calendar-days"></i>
+          <span>ปฏิทินงานวิ่งรถ</span></a
+        >
       </div>
-
       <div class="sidebar-logout-wrapper">
-        <a href="logout.php" class="btn-sidebar-logout">
-          <i
+        <a href="../Car/index.html" class="btn-sidebar-logout"
+          ><i
             class="fa-solid fa-right-from-bracket"
             style="color: #ef4444; font-size: 16px"
           ></i>
-          <span>ออกจากระบบ</span>
-        </a>
+          <span>ออกจากระบบ</span></a
+        >
       </div>
     </aside>
 
@@ -84,7 +83,6 @@
 
       <div id="cars" class="tab-content">
         <h1 class="page-title">จัดการ <span>ข้อมูลรถยนต์</span></h1>
-
         <div class="workspace-vertical-view">
           <div class="workspace-top-form-card">
             <div class="card-form-header">
@@ -92,18 +90,21 @@
                 <i class="fa-solid fa-square-plus" style="color: #00f2fe"></i>
                 เพิ่มข้อมูลรถยนต์ใหม่
               </h2>
-              <p class="desc">
-                กรอกข้อมูลรายละเอียดด้านล่างให้ครบถ้วนเพื่ออัปเดตระบบประวัติฐานข้อมูล
-              </p>
             </div>
 
             <form id="crud-car-form" enctype="multipart/form-data">
               <input type="hidden" id="form-car-id" name="CarID" />
-
-              <div class="form-grid-layout">
+              <div
+                class="form-grid-layout"
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(5, 1fr);
+                  gap: 15px;
+                "
+              >
                 <div class="field-box">
-                  <label>ทะเบียนรถยนต์ <span class="danger">*</span></label>
-                  <input
+                  <label>ทะเบียนรถยนต์ *</label
+                  ><input
                     type="text"
                     id="form-car-plate"
                     name="Plate"
@@ -112,10 +113,9 @@
                     required
                   />
                 </div>
-
                 <div class="field-box">
-                  <label>ยี่ห้อรถยนต์ <span class="danger">*</span></label>
-                  <input
+                  <label>ยี่ห้อรถยนต์ *</label
+                  ><input
                     type="text"
                     id="form-car-brand"
                     name="Brand"
@@ -124,10 +124,9 @@
                     required
                   />
                 </div>
-
                 <div class="field-box">
-                  <label>รุ่นรถยนต์ <span class="danger">*</span></label>
-                  <input
+                  <label>รุ่นรถยนต์ *</label
+                  ><input
                     type="text"
                     id="form-car-model"
                     name="Model"
@@ -136,55 +135,78 @@
                     required
                   />
                 </div>
-
                 <div class="field-box">
-                  <label>สีตัวถังรถยนต์</label>
-                  <input
+                  <label>สีตัวถังรถยนต์</label
+                  ><input
                     type="text"
                     id="form-car-color"
                     name="Color"
                     class="ctrl-input"
-                    placeholder="เช่น ดำ / ขาวนวล"
                   />
                 </div>
-
                 <div class="field-box">
-                  <label>เลขไมล์ล่าสุด (กม.)</label>
-                  <input
+                  <label>เลขไมล์ล่าสุด</label
+                  ><input
                     type="number"
                     id="form-car-mileage"
                     name="Mileage"
                     class="ctrl-input"
-                    placeholder="เช่น 85000"
                   />
                 </div>
 
                 <div class="field-box">
+                  <label>ประกันภัย</label
+                  ><input
+                    type="date"
+                    name="InsuranceExpiry"
+                    class="ctrl-input"
+                  />
+                </div>
+                <div class="field-box">
+                  <label>พ.ร.บ.</label
+                  ><input type="date" name="ActExpiry" class="ctrl-input" />
+                </div>
+                <div class="field-box">
+                  <label>เช็กระยะล่าสุด</label
+                  ><input
+                    type="date"
+                    name="LastMaintenance"
+                    class="ctrl-input"
+                  />
+                </div>
+
+                <div class="field-box" style="grid-column: span 2">
                   <label>สถานะของรถยนต์</label>
                   <select
                     id="form-car-status"
                     name="CarStatus"
                     class="ctrl-select"
                   >
-                    <option value="ว่าง">🟢 ว่าง (Available)</option>
-                    <option value="ไม่ว่าง">🔴 ไม่ว่าง (In Use)</option>
-                    <option value="เช็คระยะ">🟡 เช็คระยะ (Maintenance)</option>
+                    <option value="ว่าง">🟢 ว่าง</option>
+                    <option value="ไม่ว่าง">🔴 ไม่ว่าง</option>
+                    <option value="เช็คระยะ">🟡 เช็คระยะ</option>
                   </select>
                 </div>
-
-                <div class="field-box grid-span-2">
-                  <label>อัปโหลดรูปภาพตัวเครื่องรถยนต์</label>
+                <div class="field-box" style="grid-column: span 3">
+                  <label>อัปโหลดรูปภาพ</label>
                   <input
                     type="file"
                     id="form-car-image"
                     name="CarImage"
                     class="ctrl-input"
-                    style="padding: 8px 12px"
-                    accept="../Car/assets/img-car"
                   />
                 </div>
 
-                <div class="form-actions-wrapper">
+                <div
+                  class="form-actions-wrapper"
+                  style="
+                    grid-column: span 5;
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 10px;
+                    margin-top: 15px;
+                  "
+                >
                   <button
                     type="button"
                     class="btn-clear"
@@ -192,7 +214,7 @@
                   >
                     ล้างข้อมูลฟอร์ม
                   </button>
-                  <button type="submit" class="btn-submit">
+                  <button type="submit" class="btn btn-primary">
                     <span>บันทึกข้อมูลรถ</span>
                     <i class="fa-solid fa-arrow-right"></i>
                   </button>
@@ -202,27 +224,26 @@
           </div>
 
           <div class="workspace-bottom-table-card">
-            <div
-              class="card-form-header"
-              style="border: none; margin-bottom: 15px"
-            >
+            <div class="card-form-header">
               <h2>
-                <i class="fa-solid fa-clock-history" style="color: #00f2fe"></i>
+                <i class="fa-solid fa-clock-history"></i>
                 ประวัติฐานข้อมูลรถยนต์ในระบบ
               </h2>
             </div>
-
             <div class="table-scroll-container">
               <table class="car-data-table">
                 <thead>
                   <tr>
-                    <th style="width: 10%">รูปภาพ</th>
-                    <th style="width: 14%">ทะเบียนรถยนต์</th>
-                    <th style="width: 13%">ยี่ห้อ</th>
-                    <th style="width: 13%">รุ่นย่อย</th>
-                    <th style="width: 12%">สีรถยนต์</th>
-                    <th style="width: 12%">เลขไมล์ล่าสุด</th>
-                    <th style="width: 11%">สถานะงาน</th>
+                    <th style="width: 8%">รูปภาพ</th>
+                    <th style="width: 12%">ทะเบียนรถ</th>
+                    <th style="width: 12%">ยี่ห้อ</th>
+                    <th style="width: 12%">รุ่น</th>
+                    <th style="width: 12%">สีรถ</th>
+                    <th style="width: 10%">เลขไมล์</th>
+                    <th style="width: 12%">ประกันภัย</th>
+                    <th style="width: 12%">พ.ร.บ.</th>
+                    <th style="width: 12%">เช็คระยะล่าสุด</th>
+                    <th style="width: 10%">สถานะ</th>
                     <th style="width: 15%">การจัดการ</th>
                   </tr>
                 </thead>
@@ -235,9 +256,7 @@
 
       <div id="calendar-tab" class="tab-content">
         <h1 class="page-title">ปฏิทิน <span>ตารางการจองรถ</span></h1>
-        <div class="calendar-wrapper">
-          <div id="calendar"></div>
-        </div>
+        <div class="calendar-wrapper"><div id="calendar"></div></div>
       </div>
     </div>
 

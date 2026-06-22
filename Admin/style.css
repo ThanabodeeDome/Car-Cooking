@@ -1,17 +1,22 @@
 /* ========================================================
-   💎 1. GLOBAL VARIABLES & BASE STYLES
-   ======================================================== */
+    💎 1. GLOBAL VARIABLES & BASE STYLES (ปรับธีมสีใหม่ที่นี่)
+    ======================================================== */
 :root {
-  --bg-main: #0a192f;
-  --bg-card: #112240;
-  --bg-sidebar: #0f1422;
-  --bg-input: #090d16;
-  --text-primary: #ccd6f6;
-  --text-secondary: #8892b0;
-  --cyan: #64ffda;
-  --red: #ff4d4d;
-  --yellow: #ffb703;
-  --blue: #00b4d8;
+  /* ปรับพื้นหลังแดชบอร์ดด้านขวา และการ์ดให้เป็นสีสว่าง/ขาว */
+  --bg-main: #ffffff; /* ⬜ พื้นหลังหลักเปลี่ยนเป็นสีขาว */
+  --bg-card: #f8f9fa; /* ปรับการ์ดสรุปผลเป็นสีขาวอมเทานิดๆ เพื่อให้มีมิติ */
+  --bg-sidebar: #ffcccc; /* 🟥 แถบเมนูด้านซ้ายเปลี่ยนเป็นสีแดงอ่อนพาสเทล */
+  --bg-input: #ffffff; /* ช่องกรอกข้อมูลเป็นสีขาว */
+
+  /* ปรับสีตัวหนังสือให้เข้มขึ้นเพื่อให้อ่านง่ายบนพื้นหลังสว่าง */
+  --text-primary: #1e293b; /* สีฟอนต์หลัก (เทาเข้มเกือบดำ) */
+  --text-secondary: #64748b; /* สีฟอนต์รอง (เทากลาง) */
+
+  /* สีสันเน้นจุดสำคัญ (ปรับโทนให้เข้ากับหน้าจอสว่าง) */
+  --cyan: #0ea5e9; /* เปลี่ยนเป็นสีฟ้าเข้ม/น้ำเงินสดเพื่อให้ตัดกับพื้นขาวสวยๆ */
+  --red: #dc2626; /* สีแดงมาตรฐาน */
+  --yellow: #d97706; /* สีเหลืองเข้มปานกลาง */
+  --blue: #2563eb; /* สีน้ำเงินเข้ม */
 }
 
 * {
@@ -26,12 +31,12 @@ body {
   color: var(--text-primary);
   display: flex;
   min-height: 100vh;
-  overflow-x: hidden; /* ป้องกันหน้าจอเลื่อนซ้าย-ขวา */
+  overflow-x: hidden;
 }
 
 /* ========================================================
-   🧭 2. SIDEBAR NAVIGATION (แถบเมนูด้านซ้าย)
-   ======================================================== */
+    🧭 2. SIDEBAR NAVIGATION (แถบเมนูด้านซ้าย - สีแดงอ่อน)
+    ======================================================== */
 .sidebar {
   width: 260px;
   height: 100vh;
@@ -41,9 +46,9 @@ body {
   left: 0;
   display: flex;
   flex-direction: column;
-  justify-content: space-between; /* ดันเมนูขึ้นบน และดันปุ่ม Logout ลงล่างสุด */
+  justify-content: space-between;
   padding: 24px 16px;
-  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  border-right: 1px solid rgba(0, 0, 0, 0.06); /* เปลี่ยนเป็นเส้นขอบเข้มจางๆ */
   z-index: 100;
 }
 
@@ -55,48 +60,50 @@ body {
 }
 
 .sidebar h2 {
-  color: var(--text-primary);
+  color: #7f1d1d; /* สีแดงเข้มเลือดหมูเพื่อให้เด่นบนพื้นแดงอ่อน */
   margin-bottom: 40px;
   font-size: 22px;
 }
 .sidebar h2 span {
-  color: var(--cyan);
+  color: var(--red); /* ให้ตัว Span เด่นขึ้นด้วยสีแดงชัดเจน */
 }
 
 /* ลิงก์ปุ่มเมนูทั่วไป */
 .menu-link {
   display: flex;
   align-items: center;
-  color: var(--text-secondary);
+  color: #451a03; /* ปรับฟอนต์เมนูเป็นสีน้ำตาลเข้ม/แดงเข้ม */
   padding: 12px 14px;
   text-decoration: none;
   border-radius: 8px;
   transition: all 0.3s ease;
   font-size: 15px;
+  font-weight: 500;
 }
 .menu-link i {
   margin-right: 12px;
   font-size: 16px;
   width: 20px;
   text-align: center;
+  color: #7f1d1d;
 }
 
 /* สเตทเมื่อเปิดใช้งาน หรือนำเมาส์มาโฮเวอร์ */
 .menu-link:hover,
 .menu-link.active {
-  background: rgba(100, 255, 218, 0.05);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.4); /* ไฮไลต์ด้วยแถบขาวโปร่งแสงนุ่มๆ */
+  color: #000000;
 }
 .menu-link:hover i,
 .menu-link.active i {
-  color: var(--cyan);
+  color: var(--red);
 }
 
 /* 🟥 กรอบปุ่มออกจากระบบสีแดงเด่นชัดเจนล่างสุด */
 .sidebar-logout-wrapper {
   width: 100%;
   padding-top: 15px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 .btn-sidebar-logout {
   width: 100%;
@@ -105,7 +112,7 @@ body {
   justify-content: center;
   gap: 12px;
   padding: 14px;
-  background: rgba(255, 77, 77, 0.04);
+  background: #ffffff; /* เปลี่ยนเป็นพื้นหลังขาวเพื่อให้ตัดกับขอบแดง */
   border: 2px solid var(--red);
   border-radius: 10px;
   color: var(--red);
@@ -118,7 +125,7 @@ body {
 .btn-sidebar-logout:hover {
   background: var(--red);
   color: #ffffff;
-  box-shadow: 0 0 15px rgba(255, 77, 77, 0.3);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
   transform: translateY(-2px);
 }
 .btn-sidebar-logout:hover i {
@@ -126,10 +133,10 @@ body {
 }
 
 /* ========================================================
-   💻 3. MAIN CONTENT AREA (พื้นที่แสดงผลฝั่งขวา)
-   ======================================================== */
+    💻 3. MAIN CONTENT AREA (พื้นที่แสดงผลฝั่งขวา - สีขาว)
+    ======================================================== */
 .main-content {
-  margin-left: 260px; /* FIXED: ขยับหลบ Sidebar ความกว้าง 260px พอดีเป๊ะ */
+  margin-left: 260px;
   padding: 40px;
   width: calc(100% - 260px);
   min-height: 100vh;
@@ -138,9 +145,10 @@ body {
 .page-title {
   font-size: 36px;
   margin-bottom: 30px;
+  color: var(--text-primary);
 }
 .page-title span {
-  color: var(--cyan);
+  color: var(--blue);
 }
 
 /* ระบบสลับหน้า */
@@ -153,8 +161,8 @@ body {
 }
 
 /* ========================================================
-   📊 4. DASHBOARD CARDS (การ์ดสรุปตัวเลขสถิติ)
-   ======================================================== */
+    📊 4. DASHBOARD CARDS (การ์ดสรุปตัวเลขสถิติสีสว่างมีเงา)
+    ======================================================== */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -166,14 +174,15 @@ body {
   background: var(--bg-card);
   padding: 24px;
   border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e2e8f0; /* เพิ่มเส้นขอบจางๆ */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); /* เปลี่ยนเป็นเงาละมุนสไตล์มินิมอล */
 }
 
 .stat-card.total {
-  border-bottom: 4px solid var(--text-primary);
+  border-bottom: 4px solid #64748b;
 }
 .stat-card.available {
-  border-bottom: 4px solid var(--cyan);
+  border-bottom: 4px solid #10b981;
 }
 .stat-card.busy {
   border-bottom: 4px solid var(--yellow);
@@ -186,10 +195,10 @@ body {
 }
 
 .stat-card.total p {
-  color: var(--text-primary);
+  color: #334155;
 }
 .stat-card.available p {
-  color: var(--cyan);
+  color: #10b981;
 }
 .stat-card.busy p {
   color: var(--yellow);
@@ -202,8 +211,8 @@ body {
 }
 
 /* ========================================================
-   📝 5. WORKSPACE FORM (ฟอร์มบันทึกข้อมูลด้านบน)
-   ======================================================== */
+    📝 5. WORKSPACE FORM (ฟอร์มบันทึกข้อมูลด้านบน)
+    ======================================================== */
 #cars.tab-content {
   width: 100%;
   max-width: 100%;
@@ -221,21 +230,41 @@ body {
 .workspace-top-form-card {
   width: 100%;
   background: var(--bg-card);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   border-radius: 14px;
   padding: 22px;
 }
 
+/* จัดระยะห่างระหว่างฟอร์มกับตาราง */
+.workspace-top-form-card {
+  margin-bottom: 40px; /* เพิ่มระยะห่างด้านล่างฟอร์ม */
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+/* ปรับความกว้างของคอลัมน์ในตารางให้สวยงาม */
+.car-data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.car-data-table th,
+.car-data-table td {
+  padding: 12px;
+  text-align: center;
+  border-bottom: 1px solid #f0f0f0;
+}
+
 .card-form-header {
   margin-bottom: 18px;
-  border-bottom: 1px solid rgba(100, 255, 218, 0.1);
+  border-bottom: 1px solid #e2e8f0;
   padding-bottom: 10px;
 }
 .card-form-header h2 {
   font-size: 18px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -246,7 +275,6 @@ body {
   margin-top: 3px;
 }
 
-/* จัดกรอบ Grid ป้องกันช่องป้อนขยายทะลักเบียดกัน */
 .form-grid-layout {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -278,69 +306,233 @@ body {
 .ctrl-select {
   width: 100%;
   padding: 10px 12px;
-  background: var(--bg-main);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg-input);
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 14px;
   outline: none;
   transition: all 0.2s ease;
 }
 .ctrl-input:focus,
 .ctrl-select:focus {
-  border-color: var(--cyan);
-  box-shadow: 0 0 10px rgba(100, 255, 218, 0.2);
+  border-color: var(--blue);
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.15);
 }
 
-.form-actions-wrapper {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  grid-column: 1 / -1;
-  margin-top: 8px;
+.custom-card {
+  border: none !important;
+  border-radius: 10px !important;
+  background: #ffffff !important;
 }
 
-/* ปุ่มฟอร์ม */
-.btn {
-  border: none;
-  padding: 11px 24px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: bold;
-  font-size: 13.5px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s ease;
+/* ปรับหัวข้อตัวเล็กและผอมลง */
+.custom-card .card-header {
+  border: none !important;
+  font-size: 0.85rem !important;
+  letter-spacing: 0.3px;
 }
-.btn-primary {
-  background: var(--cyan);
-  color: var(--bg-main);
-  box-shadow: 0 4px 15px rgba(100, 255, 218, 0.2);
+
+/* ลดขนาดช่องกรอกวันที่ให้เล็กกะทัดรัด */
+.custom-input-group .form-control {
+  padding: 6px 10px !important;
+  font-size: 0.82rem !important;
 }
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(100, 255, 218, 0.35);
+
+.custom-input-group .input-group-text {
+  padding: 6px 12px !important;
+  font-size: 0.85rem !important;
 }
-.btn-clear {
-  padding: 11px 18px;
-  background: #1e2638;
-  color: #cbd5e1;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+
+.form-label-custom {
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+  color: #475569 !important;
+  margin-bottom: 4px !important;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.btn-clear:hover {
-  background: #28334d;
-  color: #ffffff;
+
+/* การ์ดแนวนอน บังคับขยายเต็มพื้นที่คอลัมน์ตัวเอง */
+.custom-horizontal-card {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  background-color: #ffffff !important;
+  width: 100% !important;
+  display: block !important;
+}
+
+.custom-horizontal-card .card-header {
+  border: none !important;
+  font-size: 13px !important;
+}
+
+/* สีแถบหัวข้อพาสเทล */
+.header-document {
+  background-color: #eff6ff !important;
+  color: #1e40af !important;
+}
+.header-history {
+  background-color: #ecfdf5 !important;
+  color: #065f46 !important;
+}
+.header-maintenance {
+  background-color: #fffbeb !important;
+  color: #92400e !important;
+}
+
+/* จัดการความสูงและช่องอินพุตให้กระชับสมส่วน */
+.custom-input-group {
+  border: 1px solid #ced4da !important;
+  border-radius: 6px !important;
+}
+
+.custom-input-group .form-control {
+  font-size: 0.85rem !important;
+  padding: 6px 10px !important;
+  border: none !important;
+}
+
+.custom-input-group .input-group-text {
+  background-color: #f8fafc !important;
+  border: none !important;
+  color: #64748b !important;
+}
+
+.form-label-custom {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: #475569 !important;
+  margin-bottom: 4px !important;
 }
 
 /* ========================================================
-   📊 6. DATA TABLE (ตารางฐานข้อมูลประวัติ)
+   🔘 ปรับแต่งปุ่มกด FORM ACTIONS (ล้างข้อมูล & บันทึก)
    ======================================================== */
+.form-actions-wrapper {
+  display: flex;
+  gap: 16px; /* เพิ่มระยะห่างระหว่างสองปุ่มไม่ให้เบียดกันเกินไป */
+  justify-content: flex-end;
+  grid-column: 1 / -1;
+  margin-top: 20px; /* เพิ่มระยะห่างด้านบนของปุ่ม */
+}
+
+/* Base Style ของปุ่มทั้งหมด */
+.btn {
+  border: none;
+  padding: 12px 28px; /* เพิ่มความหนานุ่มให้ปุ่มดูมีมิติระดับสากล */
+  border-radius: 10px; /* ปรับความโค้งมนให้ดูทันสมัย เข้ากับกรอบอินพุต */
+  cursor: pointer;
+  font-family: "Urbanist", "Noto Sans Thai", sans-serif;
+  font-size: 14px;
+  font-weight: 600; /* ปรับตัวอักษรให้หนากำลังดีอ่านง่าย */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px; /* ระยะห่างระหว่างไอคอนกับตัวหนังสือ */
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); /* เอฟเฟกต์การเคลื่อนไหวนุ่มนวล */
+  letter-spacing: 0.5px;
+}
+
+/* 🔵 1. ปุ่มบันทึกข้อมูลรถ (Primary Button) */
+.btn-primary {
+  background: linear-gradient(
+    135deg,
+    #2563eb,
+    #1d4ed8
+  ); /* เล่นเฉดสีน้ำเงินไล่ระดับหรูหรา */
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25); /* ใส่เงาสีน้ำเงินฟุ้งๆ ใต้ปุ่ม */
+}
+
+/* เอฟเฟกต์ตอนเอาเมาส์ไปชี้ปุ่มบันทึก */
+.btn-primary:hover {
+  background: linear-gradient(
+    135deg,
+    #1d4ed8,
+    #1e40af
+  ); /* เข้มขึ้นเล็กน้อยเมื่อชี้ */
+  transform: translateY(-2px); /* ลอยขึ้นมา 2 พิกเซลดูมีมิติ */
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4); /* เงาหนาขึ้นเพิ่มแรงดึงดูด */
+}
+
+/* เอฟเฟกต์ตอนกดคลิก (Active) */
+.btn-primary:active {
+  transform: translateY(0); /* ยุบตัวลงเมื่อกด */
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.2);
+}
+
+/* ⚪ ปรับแต่งปุ่มล้างข้อมูลฟอร์มให้โมเดิร์น (สไตล์โดดเดี่ยวตาม HTML ของนาย) */
+.btn-clear {
+  border: 1px solid #cbd5e1 !important; /* เส้นขอบชัดเจนสะอาดตา */
+  padding: 12px 24px !important; /* เพิ่มความหนานุ่มเท่าปุ่มบันทึก */
+  border-radius: 10px !important; /* ปรับมุมโค้งมนเท่ากัน */
+  background-color: #f8fafc !important; /* พื้นหลังขาวนวลจางๆ */
+  color: #64748b !important; /* ตัวหนังสือสีเทาเข้มอ่านง่าย */
+  font-family: "Urbanist", "Noto Sans Thai", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+}
+
+/* เอฟเฟกต์ตอนเอาเมาส์ไปชี้ปุ่มล้างข้อมูล */
+.btn-clear:hover {
+  background-color: #f1f5f9 !important; /* เปลี่ยนเป็นสีเทาอ่อนเมื่อชี้ */
+  color: #334155 !important; /* ตัวหนังสือเข้มขึ้น */
+  border-color: #94a3b8 !important; /* เส้นขอบเข้มขึ้น */
+  transform: translateY(-2px); /* ยกตัวลอยขึ้นมาเหมือนปุ่มบันทึก */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* เอฟเฟกต์ตอนกดคลิก */
+.btn-clear:active {
+  transform: translateY(0);
+  background-color: #e2e8f0 !important;
+}
+
+/* 📂 ปรับแต่งกล่องและปุ่มอัปโหลดรูปภาพ (Choose File) */
+input[type="file"].ctrl-input {
+  padding: 8px 12px !important; /* จัดพื้นที่ด้านในให้บาลานซ์ */
+  background-color: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #64748b !important;
+  cursor: pointer;
+}
+
+/* 🪄 แต่งตัวให้ปุ่มกดคำว่า "Choose File" ข้างในกล่อง */
+input[type="file"].ctrl-input::file-selector-button {
+  border: none;
+  background: #2563eb; /* ปุ่มข้างในเป็นสีน้ำเงิน */
+  color: #ffffff; /* ตัวหนังสือขาว */
+  padding: 6px 14px; /* ความหนาปุ่ม */
+  border-radius: 6px; /* มนกำลังดี */
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: "Urbanist", "Noto Sans Thai", sans-serif;
+  margin-right: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* เอฟเฟกต์ตอนชี้เมาส์ที่ปุ่ม Choose File ข้างใน */
+input[type="file"].ctrl-input::file-selector-button:hover {
+  background: #1d4ed8; /* น้ำเงินเข้มขึ้น */
+}
+
+/* ========================================================
+    📊 6. DATA TABLE (ตารางฐานข้อมูลประวัติ)
+    ======================================================== */
 .workspace-bottom-table-card {
   width: 100%;
-  background: var(--bg-card);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   border-radius: 14px;
   padding: 20px;
 }
@@ -348,7 +540,7 @@ body {
 .table-scroll-container {
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden; /* ปิดการสกรอลล์ซ้ายขวาทิ้งอย่างถาวร */
+  overflow-x: hidden;
   border-radius: 8px;
 }
 
@@ -356,10 +548,10 @@ body {
   width: 100%;
   border-collapse: collapse;
   text-align: center;
-  table-layout: fixed; /* บังคับสัดส่วนตาม % ด้านล่างอย่างคงที่ */
+  table-layout: fixed;
 }
 
-/* สัดส่วนคอลลัมน์เฉลี่ยรวมกันได้ 100% ลงตัวพอดีจอ */
+/* สัดส่วนคอลัมน์คงเดิม */
 .car-data-table th:nth-child(1),
 .car-data-table td:nth-child(1) {
   width: 10%;
@@ -394,12 +586,12 @@ body {
 }
 
 .car-data-table th {
-  background-color: #171e2e;
-  color: var(--cyan);
+  background-color: #f1f5f9;
+  color: var(--text-primary);
   padding: 14px 10px;
   font-size: 13.5px;
   font-weight: 600;
-  border-bottom: 2px solid rgba(100, 255, 218, 0.15);
+  border-bottom: 2px solid #cbd5e1;
 }
 .car-data-table td {
   padding: 12px 10px;
@@ -408,14 +600,13 @@ body {
   vertical-align: middle;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis; /* หากชื่อยาวเกินกรอบจะใส่ ... ป้องกันตารางพัง */
-  border-bottom: 1px solid rgba(100, 255, 218, 0.05);
+  text-overflow: ellipsis;
+  border-bottom: 1px solid #e2e8f0;
 }
 .car-data-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: #f8f9fa;
 }
 
-/* 🛠️ ปุ่มแก้ไข-ลบในแถวตารางแบบเรียงนอนคู่ */
 .action-buttons-group {
   display: flex;
   gap: 6px;
@@ -449,7 +640,6 @@ body {
   background: #ef4444;
 }
 
-/* 🏷️ ป้าย Badge ป้ายบอกสถานะรถยนต์ */
 .status-pill {
   padding: 4px 10px;
   border-radius: 20px;
@@ -474,52 +664,55 @@ body {
 }
 
 /* ========================================================
-   🛑 7. MODAL OVERLAY & POPUP WINDOWS
-   ======================================================== */
+    🛑 7. MODAL OVERLAY & POPUP WINDOWS
+    ======================================================== */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(5px);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(3px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 999;
 }
 .modal-content {
-  background: var(--bg-card);
+  background: #ffffff;
   width: 450px;
   padding: 30px;
   border-radius: 12px;
-  border: 1px solid var(--cyan);
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 .modal-content input {
   width: 100%;
   padding: 12px;
   margin-bottom: 15px;
-  background: var(--bg-main);
-  border: 1px solid var(--text-secondary);
-  color: white;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: var(--text-primary);
   border-radius: 6px;
 }
 
 /* ========================================================
-   📅 8. EXTERNAL PLUGIN (ปฏิทินงาน)
-   ======================================================== */
+    📅 8. EXTERNAL PLUGIN (ปฏิทินงาน)
+    ======================================================== */
 .calendar-wrapper {
-  background: var(--bg-card);
+  background: #ffffff;
   padding: 20px;
   border-radius: 12px;
-  color: white;
+  color: var(--text-primary);
+  border: 1px solid #e2e8f0;
 }
 .fc {
-  --fc-border-color: rgba(100, 255, 218, 0.15);
+  --fc-border-color: #e2e8f0;
+  --fc-button-bg-color: var(--blue);
+  --fc-button-border-color: var(--blue);
 }
 
-/* รองรับขนาดหน้าจอมือถือ-แท็บเล็ต */
 @media (max-width: 992px) {
   .form-grid-layout {
     grid-template-columns: 1fr 1fr;
