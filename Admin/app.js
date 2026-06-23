@@ -28,8 +28,16 @@ function switchTab(tabId) {
  * ⚡ 2. เริ่มทำงานเมื่อหน้าเว็บโหลดเสร็จ (Initial Load)
  */
 document.addEventListener("DOMContentLoaded", () => {
+  // โหลดข้อมูลตารางจัดการรถยนต์
   loadCarsToWorkspaceTable();
   fetchDashboardStats();
+
+  // 🛠️ เช็คและสั่งดึงข้อมูลสถิติจากไฟล์ dashboard.js ทันทีเมื่อเปิดหน้าแรก
+  if (typeof window.fetchDashboardStats === "function") {
+    window.fetchDashboardStats();
+  } else if (typeof fetchDashboardStats === "function") {
+    fetchDashboardStats();
+  }
 
   const carForm = document.getElementById("crud-car-form");
   if (carForm) {
@@ -195,6 +203,37 @@ function editCar(carData) {
   document.getElementById("MaintenanceEndDate").value =
     carData.MaintenanceEndDate || "";
 }
+
+/**
+ * 🧹 ฟังก์ชันสำหรับล้างข้อมูลในฟอร์มทั้งหมดและกลับสู่โหมดเพิ่มข้อมูลใหม่
+ */
+function clearToInputMode() {
+  const carForm = document.getElementById("crud-car-form");
+  if (carForm) {
+    carForm.reset(); // ล้างช่องกรอกข้อความทั่วไป
+  }
+
+  // 1. ล้าง ID ซ่อน (เพื่อไม่ให้ระบบจำว่าเป็นโหมดแก้ไข)
+  const carIdInput = document.getElementById("form-car-id");
+  if (carIdInput) carIdInput.value = "";
+
+  // 2. ล้างช่องที่เป็นประเภท Date (ปฏิทิน) ทั้งหมดให้กลับเป็นว่างเปล่า (mm/dd/yyyy)
+  const dateInputs = document.querySelectorAll(
+    "#crud-car-form input[type='date']",
+  );
+  dateInputs.forEach((input) => (input.value = ""));
+
+  // 3. รีเซ็ตสถานะตัวเลือกกลับไปที่ค่าแรก ("ว่าง")
+  const statusSelect = document.getElementById("form-car-status");
+  if (statusSelect) statusSelect.selectedIndex = 0;
+
+  // 4. เปลี่ยนหัวข้อฟอร์มกลับมาเป็นโหมดเพิ่มรถใหม่
+  const modeTitle = document.getElementById("action-mode-title");
+  if (modeTitle) {
+    modeTitle.innerHTML = `<i class="fa-solid fa-square-plus" style="color: #00f2fe"></i> เพิ่มข้อมูลรถยนต์ใหม่`;
+  }
+}
+
 /**
  * ❌ 5. ฟังก์ชันลบรถยนต์ออกจากระบบ
  */

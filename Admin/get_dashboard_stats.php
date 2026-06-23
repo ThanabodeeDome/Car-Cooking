@@ -22,7 +22,7 @@ $sql_today = "SELECT COUNT(*) as total FROM [CarBookingDB].[dbo].[CarBookings] W
 $avail_count = ($stmt = sqlsrv_query($conn, $sql_avail)) ? sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)['total'] : 0;
 $busy_count  = ($stmt = sqlsrv_query($conn, $sql_busy)) ? sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)['total'] : 0;
 $maint_count = ($stmt = sqlsrv_query($conn, $sql_maint)) ? sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)['total'] : 0;
-$today_count = ($stmt = sqlsrv_query($conn, $sql_today)) ? sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)['total'] : 0;
+$today_count = 0;
 
 // ── PART 2: ดึงข้อมูลรถทั้งหมดออกมาทำ Card 
 $sql_cars_list = "SELECT [CarID], [Plate], [Brand], [Model], [Color], [Mileage], [CarImage], [CarStatus] FROM [CarBookingDB].[dbo].[Cars]";
