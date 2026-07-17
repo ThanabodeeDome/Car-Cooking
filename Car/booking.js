@@ -1,5 +1,6 @@
 let btnCheckout, btnReturn, plateSelect, checkoutFields, returnFields;
 let dbCarData = []; // เก็บข้อมูลรถที่ดึงมาจาก DB
+let pendingReturnsMap = {}; // 🌟 เก็บ StartMileage ผูกกับ BookingID
 
 const companyData = {
   บริหาร: {
@@ -85,22 +86,31 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- 2. โหลดทะเบียนรถจาก Database ---
   loadAvailableCars();
 
+  // 🌟 โหลดรหัสพนักงานจาก session มาโชว์ (อ่านอย่างเดียว)
+  fetch("get_current_user.php")
+    .then((res) => res.json())
+    .then((u) => {
+      const empIdInput = document.getElementById("employee-id");
+      if (u.success && empIdInput) {
+        empIdInput.value = u.employee_id;
+      }
+    });
+
   // ปุ่มสลับหน้า
   if (btnCheckout) btnCheckout.addEventListener("click", showCheckout);
   if (btnReturn) btnReturn.addEventListener("click", showReturn);
 });
 
-// ฟังก์ชันดึงรถจาก get_cars.php
 function loadAvailableCars() {
   fetch("get_cars.php")
     .then((res) => res.json())
     .then((data) => {
-      dbCarData = data; // เก็บข้อมูลไว้ใช้ตอนอัปเดตไมล์
+      dbCarData = data;
       if (plateSelect) {
         plateSelect.innerHTML =
           '<option value="" disabled selected>เลือกทะเบียนรถ</option>';
         data.forEach((car) => {
-          const opt = new Option(`${car.plate} (${car.brand})`, car.plate);
+          const opt = new Option(`${car.Plate} (${car.Brand})`, car.Plate);
           plateSelect.add(opt);
         });
       }
@@ -108,42 +118,136 @@ function loadAvailableCars() {
     .catch((err) => console.error("Error loading cars:", err));
 }
 
-// อัปเดตเลขไมล์อัตโนมัติ (แก้ไขจุดที่พี่แจ้ง)
 function updateCarDetails(plate) {
   const startMileInput = document.getElementById("start-mile");
-  const car = dbCarData.find((c) => c.plate === plate);
+  const car = dbCarData.find((c) => c.Plate === plate);
   if (car && startMileInput) {
-    startMileInput.value = car.mileage;
-    startMileInput.min = car.mileage;
+    startMileInput.value = car.Mileage;
+    startMileInput.min = car.Mileage;
   }
 }
 
 // --- ปุ่มยืนยันยืมรถ (ขาออก) ---
 function submitBooking() {
-  const data = {
-    driver_name: document.getElementById("driver-name").value,
-    employee_id: document.getElementById("employee-id").value,
-    main_dept: document.getElementById("main_dept").value,
-    sub_dept: document.getElementById("sub_dept").value,
-    section: document.getElementById("section").value,
-    car_plate: document.getElementById("car-plate-select").value,
-    start_mile: document.getElementById("start-mile").value,
-    use_date: document.getElementById("use-date").value,
-    out_time: document.getElementById("out-time").value,
-    destination: document.getElementById("destination").value,
-    work_type: document.getElementById("work-type").value,
-    passengers: getPassengerNames(),
-    out_remark: document.getElementById("out-remark").value || "-",
-  };
+  fetch("get_current_user.php")
+    .then((res) => res.json())
+    .then((sessionUser) => {
+      if (!sessionUser.success) {
+        alert("กรุณาเข้าสู่ระบบก่อนทำการจอง");
+        return;
+      }
 
-  if (!data.car_plate || !data.driver_name || !data.section) {
+      const data = {
+        driver_name: document.getElementById("driver-name").value,
+        employee_id: sessionUser.employee_id, // 🌟 ใช้จาก session แทนช่องพิมพ์เอง
+        main_dept: document.getElementById("main_dept").value,
+        sub_dept: document.getElementById("sub_dept").value,
+        section: document.getElementById("section").value,
+        car_plate: document.getElementById("car-plate-select").value,
+        start_mile: document.getElementById("start-mile").value,
+        use_date: document.getElementById("use-date").value,
+        out_time: document.getElementById("out-time").value,
+        destination: document.getElementById("destination").value,
+        work_type: document.getElementById("work-type").value,
+        passengers: getPassengerNames(),
+        out_remark: document.getElementById("out-remark").value || "-",
+      };
+
+      if (!data.car_plate || !data.driver_name || !data.section) {
+        return alert(
+          "กรุณากรอกข้อมูล ชื่อผู้ขับ, หน่วยงาน และ เลือกทะเบียนรถ ให้ครบถ้วน!",
+        );
+      }
+
+      fetch("save_booking.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+        .then((res) => res.json())
+        .then((result) => {
+          if (result.success) {
+            alert("🚀 บันทึกการจองสำเร็จ!");
+            showReturn();
+          } else {
+            alert("Error: " + result.message);
+          }
+        })
+        .catch((err) => alert("ติดต่อ Server ไม่ได้: " + err));
+    });
+}
+
+function showReturn() {
+  btnReturn.classList.add("active");
+  btnCheckout.classList.remove("active");
+  returnFields.classList.remove("hidden");
+  checkoutFields.classList.add("hidden");
+  loadPendingReturns(); // 🌟 โหลดรถที่ยังไม่คืนทุกครั้งที่กดแท็บนี้
+}
+
+function loadPendingReturns() {
+  const select = document.getElementById("return-car-plate");
+  if (!select) return;
+
+  select.innerHTML = '<option value="" disabled selected>กำลังโหลด...</option>';
+
+  fetch("get_pending_returns.php")
+    .then((res) => res.json())
+    .then((data) => {
+      select.innerHTML = "";
+      pendingReturnsMap = {};
+
+      if (!data.success) {
+        select.innerHTML = `<option value="" disabled selected>${data.message}</option>`;
+        return;
+      }
+      if (!data.pending || data.pending.length === 0) {
+        select.innerHTML =
+          '<option value="" disabled selected>ไม่มีรถที่ต้องคืน</option>';
+        return;
+      }
+      select.innerHTML =
+        '<option value="" disabled selected>-- เลือกรถที่ต้องการคืน --</option>';
+      data.pending.forEach((bk) => {
+        const opt = new Option(
+          `${bk.CarPlate} (${bk.BookingNumber})`,
+          bk.BookingID,
+        );
+        select.add(opt);
+        pendingReturnsMap[bk.BookingID] = bk.StartMileage; // 🌟 จำไมล์ตอนออกไว้เช็คทีหลัง
+      });
+    })
+    .catch((err) => {
+      console.error("Error loading pending returns:", err);
+      select.innerHTML =
+        '<option value="" disabled selected>โหลดข้อมูลไม่สำเร็จ</option>';
+    });
+}
+
+function submitReturn() {
+  const bookingId = document.getElementById("return-car-plate").value;
+  const endMile = Number(document.getElementById("end-mile").value);
+  const startMile = Number(pendingReturnsMap[bookingId] || 0);
+
+  if (!bookingId) {
+    return alert("กรุณาเลือกรถที่ต้องการคืน");
+  }
+
+  if (endMile <= startMile) {
     return alert(
-      "กรุณากรอกข้อมูล ชื่อผู้ขับ, หน่วยงาน และ เลือกทะเบียนรถ ให้ครบถ้วน!",
+      `เลขไมล์ตอนคืน (${endMile}) ต้องมากกว่าเลขไมล์ตอนออก (${startMile})`,
     );
   }
 
-  // ส่งข้อมูลไป PHP
-  fetch("save_booking.php", {
+  const data = {
+    booking_id: bookingId,
+    return_date: document.getElementById("return-date").value,
+    return_time: document.getElementById("return-time").value,
+    end_mile: endMile,
+    return_remark: document.getElementById("return-remark").value || "-",
+  };
+
+  fetch("save_return.php", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -151,7 +255,7 @@ function submitBooking() {
     .then((res) => res.json())
     .then((result) => {
       if (result.success) {
-        alert("🚀 บันทึกการจองสำเร็จ!");
+        alert("🚗 บันทึกการคืนรถสำเร็จ!");
         window.location.href = "car-status.html";
       } else {
         alert("Error: " + result.message);
@@ -175,13 +279,6 @@ function showCheckout() {
   btnReturn.classList.remove("active");
   checkoutFields.classList.remove("hidden");
   returnFields.classList.add("hidden");
-}
-
-function showReturn() {
-  btnReturn.classList.add("active");
-  btnCheckout.classList.remove("active");
-  returnFields.classList.remove("hidden");
-  checkoutFields.classList.add("hidden");
 }
 
 function addMorePassenger() {
@@ -261,4 +358,26 @@ function checkUserStatus(employeeId) {
       }
     })
     .catch((err) => console.error("Error checking status:", err));
+}
+
+function showStartMileHint(bookingId) {
+  const hint = document.getElementById("start-mile-hint");
+  const endMileInput = document.getElementById("end-mile");
+  if (!hint) return;
+
+  const startMile = pendingReturnsMap[bookingId];
+
+  if (!bookingId || startMile === undefined) {
+    hint.innerText = "เลือกรถก่อนเพื่อดูเลขไมล์ตอนยืม";
+    return;
+  }
+
+  hint.innerText = `เลขไมล์ตอนยืม: ${startMile.toLocaleString()} กม.`;
+  hint.style.color = "#27ae60"; // เขียวให้เด่นขึ้นตอนมีค่าจริง
+
+  // 🌟 ตั้งค่าเริ่มต้นในช่องคืนให้เท่ากับตอนยืม กันลืมว่าฐานอยู่ที่เท่าไหร่
+  if (endMileInput) {
+    endMileInput.value = startMile;
+    endMileInput.min = startMile + 1; // บังคับกรอกมากกว่าเดิมอย่างน้อย 1
+  }
 }

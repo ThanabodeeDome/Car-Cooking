@@ -54,21 +54,20 @@
       <div id="dashboard" class="tab-content active">
         <h1 class="page-title">ภาพรวมระบบ <span>Dashboard</span></h1>
         <div class="stats-grid">
-          <div class="stat-card total">
-            <h3>รถยนต์ทั้งหมด</h3>
-            <p id="total-cars">0 คัน</p>
-          </div>
           <div class="stat-card available">
             <h3>รถที่พร้อมใช้งาน (ว่าง)</h3>
             <p id="available-cars">0 คัน</p>
+            <div class="stat-car-list" id="available-cars-list"></div>
           </div>
           <div class="stat-card busy">
             <h3>อยู่ระหว่างซ่อมบำรุง</h3>
-            <p id="busy-cars">0 คัน</p>
+            <p id="maintenance-cars">0 คัน</p>
+            <div class="stat-car-list" id="maintenance-cars-list"></div>
           </div>
           <div class="stat-card maintenance">
             <h3>รถที่ถูกจอง (ไม่ว่าง)</h3>
-            <p id="maintenance-cars">0 คัน</p>
+            <p id="busy-cars">0 คัน</p>
+            <div class="stat-car-list" id="busy-cars-list"></div>
           </div>
           <div class="stat-card today">
             <h3>รายการจองวันนี้</h3>

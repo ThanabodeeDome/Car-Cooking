@@ -1,152 +1,376 @@
+/* =========================================
+   1. Global Styles & Background
+   ========================================= */
+@import url("https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap");
+
+:root {
+  --primary-color: #ff4d4d;
+  --primary-hover: #e60000;
+  --bg-dark: #0a0a0a;
+  --bg-card: #141414;
+  --bg-input: #1f1f1f;
+  --text-main: #ffffff;
+  --text-muted: #a0a0a0;
+  --border-color: #2a2a2a;
+  --font-family: "Kanit", sans-serif;
+}
+
 * {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
-.status-container {
-  background-color: #0c0c0c !important;
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-dark);
+  color: var(--text-main);
   min-height: 100vh;
-  padding: 100px 5% 50px;
+  /* เพิ่มพื้นหลังแบบ Gradient และลายน้ำจางๆ */
+  background-image:
+    radial-gradient(at 10% 10%, rgba(255, 77, 77, 0.05) 0px, transparent 50%),
+    radial-gradient(at 90% 90%, rgba(255, 77, 77, 0.05) 0px, transparent 50%),
+    linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%);
+  background-attachment: fixed;
 }
 
-.profile-card {
-  background: #1a1a1a;
-  border: 1px solid #333;
-  border-radius: 20px;
+/* Container หลักเพื่อให้เนื้อหาอยู่ตรงกลาง */
+.status-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 80px 20px; /* เว้นระยะจาก Navbar */
+  min-height: calc(100vh - 80px); /* ลบความสูง Navbar โดยประมาณ */
+}
+
+.content-wrapper {
+  width: 100%;
   max-width: 600px;
-  margin: 0 auto;
-  overflow: hidden;
-  text-align: center;
 }
 
+/* หัวข้อหน้า */
+.section-title {
+  text-align: center;
+  color: var(--text-main);
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 30px;
+  letter-spacing: 1px;
+  position: relative;
+  display: inline-block;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.section-title::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--primary-color),
+    transparent
+  );
+}
+
+/* =========================================
+   2. Profile Card Styling
+   ========================================= */
+.profile-card {
+  background: var(--bg-card);
+  border-radius: 24px;
+  /* เงาแบบลึกและนุ่มนวล */
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+  backdrop-filter: blur(5px); /* เพิ่ม Effect กระจกฝ้าเบาๆ */
+}
+
+/* ทริคเล็กน้อยให้การ์ดดูลอยขึ้นเมื่อ Hover */
+.profile-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 35px 80px -15px rgba(0, 0, 0, 0.8);
+  border-color: rgba(255, 77, 77, 0.2);
+}
+
+/* =========================================
+   3. Profile Header
+   ========================================= */
 .profile-header {
-  background: #252525;
-  padding: 40px 20px;
-  border-bottom: 1px solid #333;
+  /* Gradient พื้นหลังหัวการ์ด */
+  background: linear-gradient(
+    135deg,
+    rgba(31, 31, 31, 1) 0%,
+    rgba(16, 16, 16, 1) 100%
+  );
+  padding: 50px 20px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-color);
+  position: relative;
+}
+
+/* เพิ่มลายน้ำขีดๆ ด้านหลังรูปโปรไฟล์ */
+.profile-header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.5;
 }
 
 .avatar-container {
   position: relative;
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 15px;
+  width: 130px;
+  height: 130px;
+  margin: 0 auto 20px;
+  z-index: 1; /* ให้อยู่เหนือลายน้ำ */
 }
 
 .avatar-container img {
-  width: 100%;
-  height: 100%;
+  width: 130px;
+  height: 130px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid #ff4d4d;
+  /* เส้นขอบและ Glow */
+  border: 4px solid var(--primary-color);
+  box-shadow: 0 0 25px rgba(255, 77, 77, 0.5);
+  transition: 0.3s ease;
+}
+
+/* หมุนรูปเบาๆ เมื่อ Hover */
+.avatar-container:hover img {
+  transform: scale(1.05) rotate(5deg);
+  box-shadow: 0 0 35px rgba(255, 77, 77, 0.7);
 }
 
 .edit-avatar {
   position: absolute;
   bottom: 5px;
   right: 5px;
-  background: #ff4d4d;
-  width: 30px;
-  height: 30px;
+  background: var(--primary-color);
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #fff;
   cursor: pointer;
+  border: 4px solid var(--bg-card); /* ใช้สีพื้นหลังการ์ดมาทำขอบ */
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
+.edit-avatar:hover {
+  background: var(--primary-hover);
+  transform: scale(1.1) rotate(-10deg);
+}
+
+#display-name {
+  color: var(--text-main);
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+#display-role {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+  position: relative;
+  z-index: 1;
+}
+
+/* =========================================
+   4. Profile Body (Info & Stats)
+   ========================================= */
 .profile-body {
-  padding: 30px;
+  padding: 40px 30px;
 }
 
 .info-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(240px, 1fr)
+  ); /* Responsive grid */
   gap: 20px;
-  text-align: left;
-  margin-bottom: 30px;
+  margin-bottom: 35px;
 }
 
 .info-item label {
-  color: #888;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--primary-color);
   font-size: 0.85rem;
-  display: block;
-  margin-bottom: 5px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-item label i {
+  font-size: 1rem;
+  opacity: 0.8;
 }
 
 .info-item input {
   width: 100%;
-  background: #252525;
-  border: 1px solid #444;
-  color: white;
-  padding: 10px;
-  border-radius: 8px;
+  padding: 14px 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-main);
+  font-family: var(--font-family);
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+/* State: Focus */
+.info-item input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(255, 77, 77, 0.15);
   outline: none;
+  background: #252525;
 }
 
+/* State: Readonly */
 .info-item input[readonly] {
-  color: #666;
-  border-color: #333;
+  background: #181818;
+  color: #888;
+  border-style: dashed; /* ทำให้รู้ว่าแก้ไม่ได้ */
+  cursor: not-allowed;
+  opacity: 0.8;
 }
 
+/* Stats Section */
 .profile-stats {
   display: flex;
-  justify-content: space-around;
-  background: #222;
-  padding: 20px;
-  border-radius: 12px;
+  gap: 15px;
+  background: rgba(22, 22, 22, 0.5); /* Semi-transparent */
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 25px;
+  margin-bottom: 35px;
+  position: relative;
+}
+
+.stat-box {
+  flex: 1;
+  text-align: center;
+  border-right: 1px solid var(--border-color);
+}
+
+.stat-box:last-child {
+  border-right: none;
 }
 
 .stat-num {
   display: block;
-  font-size: 1.5rem;
-  color: #ff4d4d;
-  font-weight: bold;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  line-height: 1;
+  margin-bottom: 5px;
+  /* Neon glow effect */
+  text-shadow: 0 0 10px rgba(255, 77, 77, 0.3);
 }
 
 .stat-label {
-  color: #888;
-  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 300;
 }
 
+/* =========================================
+   5. Profile Footer (Buttons)
+   ========================================= */
 .profile-footer {
-  padding: 20px;
   display: flex;
-  gap: 10px;
-  justify-content: center;
+  gap: 15px;
+  padding: 0 30px 40px; /* แยก padding ออกมาจากการ์ด body */
 }
 
-.btn-save {
-  background: #ff4d4d;
-  color: white;
+.btn-save,
+.btn-logout {
+  flex: 1;
+  padding: 16px;
+  border-radius: 12px;
   border: none;
-  padding: 10px 30px;
-  border-radius: 8px;
+  font-family: var(--font-family);
+  font-weight: 600;
+  font-size: 1rem;
   cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.btn-logout {
-  background: transparent;
-  color: #ff4d4d;
-  border: 1px solid #ff4d4d;
-  padding: 10px 20px;
-  border-radius: 8px;
-  cursor: pointer;
+/* Button: Save */
+.btn-save {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff4d4d 100%);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(255, 77, 77, 0.3);
 }
 
+.btn-save:hover {
+  background: linear-gradient(135deg, #ff4d4d 0%, #e60000 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 77, 77, 0.4);
+}
+
+.btn-save:active {
+  transform: translateY(0);
+}
+
+/* Button: Logout */
 .btn-logout {
   background: transparent;
-  color: #ff4d4d; /* สีแดงประจำธีม */
-  border: 1px solid #ff4d4d;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-family: "Prompt", sans-serif;
-  cursor: pointer;
-  transition: 0.3s;
+  border: 2px solid #444;
+  color: #bbb;
 }
 
 .btn-logout:hover {
-  background: #ff4d4d;
-  color: white;
-  box-shadow: 0 0 15px rgba(255, 77, 77, 0.4);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: rgba(255, 77, 77, 0.05);
+}
+
+/* =========================================
+   6. Media Queries (Mobile Responsive)
+   ========================================= */
+@media (max-width: 480px) {
+  .profile-body {
+    padding: 30px 20px;
+  }
+
+  .profile-footer {
+    padding: 0 20px 30px;
+    flex-direction: column; /* ปุ่มเรียงล่างบน */
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr; /* ช่องใส่ข้อมูลเต็มความกว้าง */
+  }
+
+  .stat-num {
+    font-size: 2rem;
+  }
 }

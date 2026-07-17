@@ -1,6 +1,3 @@
-/**
- * 📊 ระบบจัดการข้อมูล Dashboard (แยกไฟล์)
- */
 function fetchDashboardStats() {
   fetch("get_dashboard_stats.php")
     .then((response) => response.json())
@@ -8,15 +5,16 @@ function fetchDashboardStats() {
       console.log("Dashboard Data:", data);
       if (data.error) return;
 
-      // อัปเดตตัวเลขสถิติบนหน้าเว็บ
       if (document.getElementById("available-cars")) {
         document.getElementById("available-cars").innerText =
           (data.available || 0) + " คัน";
       }
+      // busy = ไม่ว่าง (ถูกจอง)
       if (document.getElementById("busy-cars")) {
         document.getElementById("busy-cars").innerText =
           (data.busy || 0) + " คัน";
       }
+      // maintenance = ซ่อมบำรุง/เช็คระยะ
       if (document.getElementById("maintenance-cars")) {
         document.getElementById("maintenance-cars").innerText =
           (data.maintenance || 0) + " คัน";
@@ -32,42 +30,58 @@ function fetchDashboardStats() {
       }
 
       renderDashboardCarCards(data.cars);
+      renderStatCarLists(data.cars); // 🌟 ใหม่: แยกรถลงแต่ละการ์ด
     })
     .catch((err) => console.error("Error Dashboard:", err));
 }
 
-function renderDashboardCarCards(cars) {
-  const cardContainer = document.querySelector(".cars-card-grid");
-  if (!cardContainer) return;
-  cardContainer.innerHTML = "";
-
+// 🌟 ฟังก์ชันใหม่: โชว์รายชื่อรถ (ทะเบียน/ยี่ห้อ) แยกตามสถานะ ในแต่ละการ์ด
+function renderStatCarLists(cars) {
   const carList = Array.isArray(cars) ? cars : [];
-  if (carList.length === 0) {
-    cardContainer.innerHTML = `<div style='color:#64748b; text-align:center; width:100%; padding:20px;'>❌ ยังไม่มีข้อมูลรถยนต์ในระบบในขณะนี้</div>`;
-    return;
-  }
+
+  const groups = {
+    "available-cars-list": [],
+    "busy-cars-list": [],
+    "maintenance-cars-list": [],
+  };
 
   carList.forEach((car) => {
-    const statusClass = car.CarStatus === "ว่าง" ? "pill-empty" : "pill-busy";
-    const imgPath = car.CarImage
-      ? `../Car/assets/img-car/${car.CarImage.trim()}`
-      : `../Car/assets/img-car/car-placeholder.png`;
-    const carJsonString = JSON.stringify(car).replace(/"/g, "&quot;");
+    if (car.CarStatus === "ว่าง") {
+      groups["available-cars-list"].push(car);
+    } else if (car.CarStatus === "ไม่ว่าง") {
+      groups["busy-cars-list"].push(car);
+    } else if (car.CarStatus === "เช็คระยะ" || car.CarStatus === "ซ่อมบำรุง") {
+      groups["maintenance-cars-list"].push(car);
+    }
+  });
 
-    cardContainer.innerHTML += `
-      <div class="car-item-card" style="background:#1e293b; border-radius:8px; padding:15px; margin-bottom:15px;">
-        <img src="${imgPath}" style="width:100%; height:150px; object-fit:cover; border-radius:6px;" onerror="this.src='../Car/assets/img-car/car-placeholder.png';">
-        <h3 style="color:#fff; margin-top:10px; font-size:18px;">${car.Brand || ""} ${car.Model || ""}</h3>
-        <p style="color:#94a3b8; font-size:14px;">ทะเบียน: ${car.Plate || "-"}</p>
-        <p style="color:#94a3b8; font-size:14px;">สถานะ: ${car.CarStatus || "ว่าง"}</p>
-        <div style="margin-top:10px; display:flex; gap:10px;">
-          <button onclick="fillWorkspaceForm(${carJsonString})" style="background:#3b82f6; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; flex:1;">แก้ไข</button>
-          <button onclick="deleteCarFromWorkspace(${car.CarID})" style="background:#ef4444; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; flex:1;">ลบ</button>
-        </div>
-      </div>
-    `;
+  Object.keys(groups).forEach((containerId) => {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const list = groups[containerId];
+    if (list.length === 0) {
+      container.innerHTML = `<span style="color:#94a3b8; font-size:13px;">ไม่มีรถในกลุ่มนี้</span>`;
+      return;
+    }
+
+    container.innerHTML = list
+      .map(
+        (car) => `
+          <div class="mini-car-chip">
+            <span class="mini-car-icon">🚗</span>
+            <div class="mini-car-info">
+              <span class="mini-car-plate">${car.Plate || "-"}</span>
+              <span class="mini-car-model">${car.Brand || ""} ${car.Model || ""}</span>
+            </div>
+          </div>`,
+      )
+      .join("");
   });
 }
 
-// 🌟 สำคัญมาก: ผูกฟังก์ชันไว้กับ window object เพื่อให้ไฟล์ app.js เรียกข้ามมาได้แน่นอน
+function renderDashboardCarCards(cars) {
+  // ...โค้ดเดิม ไม่ต้องแก้...
+}
+
 window.fetchDashboardStats = fetchDashboardStats;

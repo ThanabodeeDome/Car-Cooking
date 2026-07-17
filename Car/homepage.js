@@ -13,16 +13,19 @@ function updateHistoryTable() {
   fetch("get_history.php")
     .then((res) => res.json())
     .then((data) => {
+      if (data && data.error) {
+        console.error("get_history.php error:", data.error);
+        tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">เกิดข้อผิดพลาด: ${data.error}</td></tr>`;
+        return;
+      }
+
       const bookings = Array.isArray(data) ? data : [];
       if (bookings.length === 0) {
-        tableBody.innerHTML =
-          '<tr><td colspan="9" style="text-align:center;">ไม่พบประวัติการจอง</td></tr>';
-        return;
       }
 
       tableBody.innerHTML = bookings
         .map((item) => {
-          const isOutbound = item.booking_status === "Checked-Out";
+          const isOutbound = item.booking_status === "ขาไป";
 
           return `
       <tr>
@@ -134,11 +137,10 @@ function updateStatsCounters(bookings) {
 
   const total = bookings.length;
   const active = bookings.filter(
-    (item) => item.booking_status === "Checked-Out",
+    (item) => item.booking_status === "ขาไป",
   ).length;
   const complete = bookings.filter(
-    (item) =>
-      item.booking_status === "Returned" || item.booking_status === "returned",
+    (item) => item.booking_status === "ขากลับ",
   ).length;
 
   totalElement.innerText = total;

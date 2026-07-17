@@ -1,31 +1,54 @@
 <?php
-// save_return.php
 header('Content-Type: application/json; charset=utf-8');
+require_once 'db_connect.php';
 
-// 1. เชื่อมต่อ DB ผ่านไฟล์ส่วนกลาง
-require_once('db_connect.php');
+$json = file_get_contents('php://input');
+$data = json_decode($json, true);
 
-$data = json_decode(file_get_contents('php://input'), true);
-
-if ($data) {
-    // 2. อัปเดตข้อมูลการคืนในตารางจอง (อิงตามชื่อตาราง CarBookings ของเพื่อน)
-    $sql1 = "UPDATE CarBookings 
-             SET ReturnDate = ?, ReturnTime = ?, EndMile = ?, ReturnRemark = ?, BookingStatus = 'Returned' 
-             WHERE CarPlate = ? AND BookingStatus = 'Checked-Out'";
-             
-    $params1 = array($data['date'], $data['time'], $data['return_mileage'], $data['issue_report'], $data['car_plate']);
-    $stmt1 = sqlsrv_query($conn, $sql1, $params1);
-
-    // 3. อัปเดตเลขไมล์ล่าสุดกลับไปที่ตารางรถ (อิงตามตาราง Cars และคอลัมน์ Mileage / Plate)
-    $sql2 = "UPDATE Cars SET Mileage = ? WHERE Plate = ?";
-    $stmt2 = sqlsrv_query($conn, $sql2, array($data['return_mileage'], $data['car_plate']));
-
-    if ($stmt1 && $stmt2) {
-        echo json_encode(["success" => true]);
-    } else {
-        echo json_encode(["success" => false, "message" => "Query Failed", "errors" => sqlsrv_errors()]);
-    }
-    
-    sqlsrv_close($conn);
+if (!$data || empty($data['booking_id'])) {
+    echo json_encode(["success" => false, "message" => "ไม่พบรายการที่จะคืน"]);
+    exit;
 }
-?>
+
+try {
+    // 🌟 ดึง StartMileage + CarPlate มาเช็คก่อน update
+    $check = $conn->prepare("SELECT StartMileage, CarPlate FROM CarBookings WHERE BookingID = :id AND BookingStatus = 'ขาไป'");
+    $check->execute([':id' => $data['booking_id']]);
+    $booking = $check->fetch(PDO::FETCH_ASSOC);
+
+    if (!$booking) {
+        echo json_encode(["success" => false, "message" => "รายการนี้ถูกคืนไปแล้ว หรือไม่พบข้อมูล"]);
+        exit;
+    }
+
+    $endMile = (int)($data['end_mile'] ?? 0);
+    if ($endMile <= (int)$booking['StartMileage']) {
+        echo json_encode(["success" => false, "message" => "เลขไมล์ตอนคืนต้องมากกว่าเลขไมล์ตอนออก (" . $booking['StartMileage'] . ")"]);
+        exit;
+    }
+
+    // 1. อัปเดตประวัติการจอง
+    $sql = "UPDATE CarBookings 
+            SET ReturnDate = :return_date, ReturnTime = :return_time, EndMileage = :end_mileage, 
+                ReturnRemark = :return_remark, BookingStatus = 'ขากลับ'
+            WHERE BookingID = :id AND BookingStatus = 'ขาไป'";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([
+        ':return_date'   => $data['return_date'] ?? null,
+        ':return_time'   => $data['return_time'] ?? null,
+        ':end_mileage'   => $endMile,
+        ':return_remark' => $data['return_remark'] ?? null,
+        ':id'            => $data['booking_id'],
+    ]);
+
+    // 2. 🌟 อัปเดตเลขไมล์ปัจจุบันของรถในตาราง Cars ให้เป็นค่าล่าสุด
+    $updateCar = $conn->prepare("UPDATE Cars SET Mileage = :mileage WHERE Plate = :plate");
+    $updateCar->execute([
+        ':mileage' => $endMile,
+        ':plate'   => $booking['CarPlate'],
+    ]);
+
+    echo json_encode(["success" => true]);
+} catch (PDOException $e) {
+    echo json_encode(["success" => false, "message" => $e->getMessage()]);
+}

@@ -1,31 +1,39 @@
 <?php
-header('Content-Type: application/json'); // บอกว่าเราจะส่ง JSON กลับไป
-$serverName = ".\SQLEXPRESS";
-$connectionInfo = array("Database"=>"CarBookingDB", "UID"=>"sa", "PWD"=>"รหัสผ่านพี่", "CharacterSet"=>"UTF-8");
-$conn = sqlsrv_connect($serverName, $connectionInfo);
+header('Content-Type: application/json; charset=utf-8');
+require_once 'db_connect.php';
 
-// --- แก้จุดนี้: รับข้อมูลแบบ JSON ---
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
-if ($data) {
-    $sql = "INSERT INTO CarBookings (DriverName, EmployeeID, MainDept, SubDept, Section, CarPlate, OutDate, OutTime, StartMile, Destination, JobDetail, OutRemark, Passengers, BookingStatus) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Checked-Out')";
-    
-    $params = array(
-        $data['driver_name'], $data['employee_id'], $data['main_dept'], 
-        $data['sub_dept'], $data['section'], $data['car_plate'],
-        $data['use_date'], $data['out_time'], $data['start_mile'],
-        $data['destination'], $data['work_type'], $data['out_remark'], 
-        $data['passengers']
-    );
-    
-    $stmt = sqlsrv_query($conn, $sql, $params);
-    
-    if($stmt) {
-        echo json_encode(["success" => true]);
-    } else {
-        echo json_encode(["success" => false, "message" => sqlsrv_errors()]);
-    }
+if (!$data || empty($data['car_plate']) || empty($data['driver_name'])) {
+    echo json_encode(["success" => false, "message" => "ข้อมูลไม่ครบ"]);
+    exit;
 }
-?>
+
+$department = trim(($data['main_dept'] ?? '') . ' / ' . ($data['sub_dept'] ?? '') . ' / ' . ($data['section'] ?? ''));
+$bookingNumber = 'BK-' . date('ymdHis');
+
+try {
+    $sql = "INSERT INTO CarBookings 
+            (BookingNumber, DriverName, EmployeeID, Department, Destination, CarPlate, StartMileage, Passengers, OutDate, OutTime, JobDetail, OutRemark, BookingStatus)
+            VALUES 
+            (:booking_number, :driver_name, :employee_id, :department, :destination, :car_plate, :start_mileage, :passengers, :out_date, :out_time, :job_detail, :out_remark, 'ขาไป')";
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([
+        ':booking_number' => $bookingNumber,
+        ':driver_name'    => $data['driver_name'],
+        ':employee_id'    => $data['employee_id'] ?? null,
+        ':department'     => $department,
+        ':destination'    => $data['destination'] ?? null,
+        ':car_plate'      => $data['car_plate'],
+        ':start_mileage'  => $data['start_mile'] ?? 0,
+        ':passengers'     => $data['passengers'] ?? null,
+        ':out_date'       => $data['use_date'] ?? null,
+        ':out_time'       => $data['out_time'] ?? null,
+        ':job_detail'     => $data['work_type'] ?? null,
+        ':out_remark'     => $data['out_remark'] ?? null,
+    ]);
+    echo json_encode(["success" => true, "booking_number" => $bookingNumber]);
+} catch (PDOException $e) {
+    echo json_encode(["success" => false, "message" => $e->getMessage()]);
+}
