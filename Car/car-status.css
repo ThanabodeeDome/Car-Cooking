@@ -97,6 +97,7 @@ body {
   position: relative;
   height: 150px;
   margin-bottom: 15px;
+  overflow: hidden;
 }
 
 .card-image img {
@@ -108,8 +109,9 @@ body {
 
 /* 4. ป้ายสถานะ (Status Tags) */
 .status-tag {
-  display: inline-block;
-  margin-top: 10px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
   padding: 5px 15px;
   border-radius: 15px;
   font-size: 0.8rem;
@@ -244,4 +246,39 @@ td {
 /* 6. ซ่อนเส้นขอบตารางเดิมของ FullCalendar */
 .fc-list-table {
   border: none !important;
+}
+
+.car-item {
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  border-radius: 12px;
+}
+.car-item:hover {
+  transform: translateY(-4px);
+}
+.car-card.is-off .car-item {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.car-card .car-item.is-selected,
+.car-item.is-selected {
+  outline: 3px solid #ff4d4d;
+  outline-offset: 2px;
+}
+
+.card-body {
+  color: #fff;
+}
+
+.card-body h4 {
+  font-size: 1.1rem;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.card-body p {
+  font-size: 0.9rem;
+  color: #9ca3af;
 }

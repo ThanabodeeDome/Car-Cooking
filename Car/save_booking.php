@@ -5,19 +5,56 @@ require_once 'db_connect.php';
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
-if (!$data || empty($data['car_plate']) || empty($data['driver_name'])) {
+if (!$data || empty($data['car_plate']) || empty($data['driver_name']) || empty($data['time_slot'])) {
     echo json_encode(["success" => false, "message" => "ข้อมูลไม่ครบ"]);
     exit;
 }
 
-$department = trim(($data['main_dept'] ?? '') . ' / ' . ($data['sub_dept'] ?? '') . ' / ' . ($data['section'] ?? ''));
-$bookingNumber = 'BK-' . date('ymdHis');
 
 try {
+    // 🌟 เช็คสถานะรถก่อน ต้อง "ว่าง" เท่านั้นถึงจะจองได้
+    $carCheck = $conn->prepare("SELECT CarStatus FROM Cars WHERE Plate = :plate");
+    $carCheck->execute([':plate' => $data['car_plate']]);
+    $carRow = $carCheck->fetch(PDO::FETCH_ASSOC);
+
+    if (!$carRow || $carRow['CarStatus'] !== 'ว่าง') {
+        echo json_encode(["success" => false, "message" => "รถคันนี้ไม่พร้อมให้จอง (สถานะ: " . ($carRow['CarStatus'] ?? 'ไม่พบข้อมูล') . ")"]);
+        exit;
+    }
+
+    $requestedSlot = $data['time_slot'];
+
+    // 🌟 กำหนดว่า slot ที่ขอจอง จะไปชนกับ slot ไหนบ้างที่มีอยู่แล้ว
+    if ($requestedSlot === 'ทั้งวัน') {
+        // จองทั้งวัน ชนกับทุก slot ที่มีอยู่ในวันนั้น (เช้า, บ่าย, หรือทั้งวันเดิม)
+        $conflictSlots = ['เช้า', 'บ่าย', 'ทั้งวัน'];
+    } else {
+        // จองเช้า/บ่าย ชนกับ slot เดียวกัน หรือถ้ามี "ทั้งวัน" จองไว้แล้วก็ชนด้วย
+        $conflictSlots = [$requestedSlot, 'ทั้งวัน'];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($conflictSlots), '?'));
+    $sql_check = "SELECT COUNT(*) as total FROM CarBookings 
+                  WHERE CarPlate = ? AND BookingDate = ? AND TimeSlot IN ($placeholders)
+                  AND (BookingStatus IS NULL OR BookingStatus != 'ยกเลิก')";
+
+    $params_check = array_merge([$data['car_plate'], $data['use_date']], $conflictSlots);
+    $check = $conn->prepare($sql_check);
+    $check->execute($params_check);
+    $exists = $check->fetch(PDO::FETCH_ASSOC)['total'];
+
+    if ($exists > 0) {
+        echo json_encode(["success" => false, "message" => "ช่วงเวลานี้ถูกจองไปแล้ว กรุณาเลือกช่วงเวลาอื่น"]);
+        exit;
+    }
+
+    $department = trim(($data['main_dept'] ?? '') . ' / ' . ($data['sub_dept'] ?? '') . ' / ' . ($data['section'] ?? ''));
+    $bookingNumber = 'BK-' . date('ymdHis');
+
     $sql = "INSERT INTO CarBookings 
-            (BookingNumber, DriverName, EmployeeID, Department, Destination, CarPlate, StartMileage, Passengers, OutDate, OutTime, JobDetail, OutRemark, BookingStatus)
+            (BookingNumber, DriverName, EmployeeID, Department, Destination, CarPlate, StartMileage, Passengers, OutDate, JobDetail, OutRemark, BookingStatus, BookingDate, TimeSlot)
             VALUES 
-            (:booking_number, :driver_name, :employee_id, :department, :destination, :car_plate, :start_mileage, :passengers, :out_date, :out_time, :job_detail, :out_remark, 'ขาไป')";
+            (:booking_number, :driver_name, :employee_id, :department, :destination, :car_plate, :start_mileage, :passengers, :out_date, :job_detail, :out_remark, 'ขาไป', :booking_date, :time_slot)";
     $stmt = $conn->prepare($sql);
     $stmt->execute([
         ':booking_number' => $bookingNumber,
@@ -29,9 +66,10 @@ try {
         ':start_mileage'  => $data['start_mile'] ?? 0,
         ':passengers'     => $data['passengers'] ?? null,
         ':out_date'       => $data['use_date'] ?? null,
-        ':out_time'       => $data['out_time'] ?? null,
         ':job_detail'     => $data['work_type'] ?? null,
         ':out_remark'     => $data['out_remark'] ?? null,
+        ':booking_date'   => $data['use_date'] ?? null,
+        ':time_slot'      => $data['time_slot'] ?? null,
     ]);
     echo json_encode(["success" => true, "booking_number" => $bookingNumber]);
 } catch (PDOException $e) {

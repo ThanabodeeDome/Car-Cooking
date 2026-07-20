@@ -184,8 +184,13 @@
               <input type="date" id="use-date" class="form-control" />
             </div>
             <div class="field-group">
-              <label>เวลาที่ออก:</label>
-              <input type="time" id="out-time" class="form-control" />
+              <label>ช่วงเวลา:</label>
+              <select id="time-slot" class="form-control">
+                <option value="" disabled selected>-- เลือกช่วงเวลา --</option>
+                <option value="เช้า">🌅 เช้า (08:00-12:00)</option>
+                <option value="บ่าย">☀️ บ่าย (13:00-17:00)</option>
+                <option value="ทั้งวัน">🌞 ทั้งวัน (08:00-17:00)</option>
+              </select>
             </div>
           </div>
 

@@ -2,6 +2,8 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once 'db_connect.php';
+require_once 'auto_cancel_noshows.php';
+autoCancelNoShows($conn);
 
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(["success" => false, "message" => "กรุณาเข้าสู่ระบบก่อน"]);

@@ -20,6 +20,7 @@ function updateHistoryTable() {
       }
 
       const bookings = Array.isArray(data) ? data : [];
+
       if (bookings.length === 0) {
       }
 
@@ -30,13 +31,13 @@ function updateHistoryTable() {
           return `
       <tr>
           <td>${item.out_date || "-"}</td>
-          <td>${item.out_time || "-"}</td>
+          <td>${item.checkin_time || "-"}</td>
           <td>
               <span class="status-badge ${isOutbound ? "status-out" : "status-in"}">
                   ${isOutbound ? "🔴 ขาไป" : "🟢 คืนแล้ว"}
               </span>
           </td>
-          <td>${item.car_type || "-"}</td>
+          <td>${item.return_time || "-"}</td>
           <td>${item.car_brand || "-"}</td>
           <td>${item.car_plate || "-"}</td>
           <td>${item.driver_name || "-"}</td>

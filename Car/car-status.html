@@ -23,7 +23,7 @@
         <span class="bar"></span>
       </div>
 
-      <ul class="nav-links" id="nav-list"> 
+      <ul class="nav-links" id="nav-list">
         <li>
           <a href="homepage.html" class="Home-btn">หน้าหลัก</a>
         </li>
@@ -53,20 +53,26 @@
         </div>
       </section>
 
-      <div class="main-content-wrapper" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
-    
-          <section class="calendar-section">
-              <h2 class="section-title">ปฏิทินการใช้รถยนต์</h2>
-              <div id="calendar-full"></div>
-          </section>
+      <div
+        class="main-content-wrapper"
+        style="max-width: 1200px; margin: 0 auto; padding: 20px"
+      >
+        <section class="calendar-section">
+          <h2 class="section-title">ปฏิทินการใช้รถยนต์</h2>
+          <p
+            id="calendar-selected-car-label"
+            style="color: #94a3b8; margin-bottom: 10px"
+          >
+            👆 กดเลือกรถด้านบนเพื่อดูตารางการจอง
+          </p>
+          <div id="calendar-full"></div>
+        </section>
+      </div>
+    </div>
 
-          <section class="timeline-section" style="margin-top: 30px; background: white; padding: 20px; border-radius: 15px;">
-              <div id="calendar-timeline"></div>
-          </section>
-
-       </div>
+    <!-- 🌟 ต้องโหลด FullCalendar ก่อน car-status.js เสมอ ไม่งั้น FullCalendar เป็น undefined -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
     <script src="main.js"></script>
     <script src="car-status.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
   </body>
 </html>

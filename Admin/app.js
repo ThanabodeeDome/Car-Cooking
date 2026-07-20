@@ -22,6 +22,9 @@ function switchTab(tabId) {
   if (tabId === "dashboard-tab" && typeof fetchDashboardStats === "function") {
     fetchDashboardStats();
   }
+  if (tabId === "bookings-tab") {
+    loadAdminBookings();
+  }
 }
 
 /**
@@ -265,4 +268,76 @@ function deleteCarFromWorkspace(carId) {
         alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์เพื่อลบข้อมูล");
       });
   }
+}
+
+function loadAdminBookings() {
+  const tbody = document.getElementById("admin-bookings-tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px;">กำลังโหลด...</td></tr>`;
+
+  fetch("admin_get_bookings.php")
+    .then((res) => res.json())
+    .then((data) => {
+      if (!data.success) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#ef4444;">${data.message}</td></tr>`;
+        return;
+      }
+
+      if (!data.bookings || data.bookings.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;">ไม่มีรายการจอง</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.bookings
+        .map((bk) => {
+          const canCancel = bk.BookingStatus === "ขาไป";
+          let statusClass = "pill-empty";
+          if (bk.BookingStatus === "ขากลับ") statusClass = "pill-busy";
+          if (bk.BookingStatus && bk.BookingStatus.includes("ยกเลิก"))
+            statusClass = "pill-maintenance";
+
+          return `
+            <tr>
+              <td>${bk.BookingNumber}</td>
+              <td>${bk.DriverName}</td>
+              <td>${bk.CarPlate}</td>
+              <td>${bk.BookingDate || "-"}</td>
+              <td>${bk.TimeSlot || "-"}</td>
+              <td><span class="status-pill ${statusClass}">${bk.BookingStatus || "-"}</span></td>
+              <td>
+                ${
+                  canCancel
+                    ? `<button class="op-del" onclick="adminCancelBooking(${bk.BookingID})">ยกเลิก</button>`
+                    : `<span style="color:#64748b;">-</span>`
+                }
+              </td>
+            </tr>`;
+        })
+        .join("");
+    })
+    .catch((err) => {
+      console.error("Error loading admin bookings:", err);
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#ef4444;">เชื่อมต่อเซิร์ฟเวอร์ไม่ได้</td></tr>`;
+    });
+}
+
+function adminCancelBooking(bookingId) {
+  if (!confirm("ยืนยันยกเลิกการจองนี้ในนามแอดมิน?")) return;
+
+  fetch("admin_cancel_booking.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ booking_id: bookingId }),
+  })
+    .then((res) => res.json())
+    .then((result) => {
+      if (result.success) {
+        alert("ยกเลิกการจองสำเร็จ");
+        loadAdminBookings();
+      } else {
+        alert("ยกเลิกไม่สำเร็จ: " + (result.message || ""));
+      }
+    })
+    .catch(() => alert("ติดต่อ Server ไม่ได้"));
 }

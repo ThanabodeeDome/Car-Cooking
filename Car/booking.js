@@ -104,7 +104,8 @@ document.addEventListener("DOMContentLoaded", () => {
 function loadAvailableCars() {
   fetch("get_cars.php")
     .then((res) => res.json())
-    .then((data) => {
+    .then((allData) => {
+      const data = allData.filter((car) => car.CarStatus === "ว่าง"); // 🌟 กรองเฉพาะรถว่าง
       dbCarData = data;
       if (plateSelect) {
         plateSelect.innerHTML =
@@ -146,16 +147,21 @@ function submitBooking() {
         car_plate: document.getElementById("car-plate-select").value,
         start_mile: document.getElementById("start-mile").value,
         use_date: document.getElementById("use-date").value,
-        out_time: document.getElementById("out-time").value,
+        time_slot: document.getElementById("time-slot").value,
         destination: document.getElementById("destination").value,
         work_type: document.getElementById("work-type").value,
         passengers: getPassengerNames(),
         out_remark: document.getElementById("out-remark").value || "-",
       };
 
-      if (!data.car_plate || !data.driver_name || !data.section) {
+      if (
+        !data.car_plate ||
+        !data.driver_name ||
+        !data.section ||
+        !data.time_slot
+      ) {
         return alert(
-          "กรุณากรอกข้อมูล ชื่อผู้ขับ, หน่วยงาน และ เลือกทะเบียนรถ ให้ครบถ้วน!",
+          "กรุณากรอกข้อมูล ชื่อผู้ขับ, หน่วยงาน, ทะเบียนรถ และ ช่วงเวลา ให้ครบถ้วน!",
         );
       }
 

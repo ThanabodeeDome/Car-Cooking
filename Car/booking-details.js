@@ -86,6 +86,7 @@ function renderBookingList(bookings) {
 
   bookings.forEach((bk) => {
     const isReturned = bk.BookingStatus === "ขากลับ";
+    const isCancelled = bk.BookingStatus && bk.BookingStatus.includes("ยกเลิก");
     const rowClass = isReturned ? "inbound-item" : "outbound-item";
     const dropdownId = `bk-${bk.BookingID}`;
 
@@ -93,11 +94,22 @@ function renderBookingList(bookings) {
     row.className = `booking-row-container ${rowClass}`;
 
     if (!isReturned) {
+      const actionButtons = isCancelled
+        ? `<span style="color:#94a3b8; font-size:14px; display:inline-block; margin-top:12px;">🚫 รายการนี้ถูกยกเลิกแล้ว</span>`
+        : `<div style="display:flex; gap:10px; margin-top:12px;">
+             <button onclick="checkInBooking(${bk.BookingID})" style="background:#10b981; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">
+               ✅ เช็คอิน
+             </button>
+             <button onclick="cancelBooking(${bk.BookingID})" style="background:#ef4444; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">
+               ❌ ยกเลิกการจองนี้
+             </button>
+           </div>`;
+
       row.innerHTML = `
         <div class="booking-header-row" onclick="toggleDropdown('${dropdownId}')">
           <span class="bk-id">#${bk.BookingNumber}</span>
           <span class="bk-user">${bk.DriverName}</span>
-          <span class="bk-car text-success">${bk.CarPlate}</span>
+          <span class="bk-car ${isCancelled ? "" : "text-success"}" style="${isCancelled ? "color:#6b7280; text-decoration:line-through;" : ""}">${bk.CarPlate}</span>
           <span class="bk-date">${bk.OutDate || "-"}</span>
           <span class="arrow-icon">▼</span>
         </div>
@@ -119,31 +131,7 @@ function renderBookingList(bookings) {
                 <p><strong>ปัญหาก่อนออก:</strong> ${bk.OutRemark || "-"}</p>
               </div>
             </div>
-          </div>
-        </div>`;
-    } else {
-      row.innerHTML = `
-        <div class="booking-header-row" onclick="toggleDropdown('${dropdownId}')">
-          <span class="bk-id">#${bk.BookingNumber}</span>
-          <span class="bk-user">${bk.DriverName}</span>
-          <span class="bk-car text-warning">${bk.CarPlate}</span>
-          <span class="bk-date">${bk.ReturnDate || "-"}</span>
-          <span class="arrow-icon">▼</span>
-        </div>
-        <div id="${dropdownId}" class="booking-detail-dropdown" style="display:none">
-          <div class="card-dropdown-content">
-            <h5 class="text-success" style="font-weight:bold; margin-bottom:15px;">รายละเอียดการคืนรถ #${bk.BookingNumber}</h5>
-            <hr style="border-color:#333">
-            <div class="row">
-              <div class="col-md-6">
-                <p><strong>ผู้คืนรถ:</strong> ${bk.DriverName}</p>
-                <p><strong>วันที่คืน:</strong> ${bk.ReturnDate || "-"}</p>
-              </div>
-              <div class="col-md-6">
-                <p><strong>เลขไมล์ตอนคืน:</strong> ${bk.EndMileage || "-"} กม.</p>
-                <p><strong>ปัญหาที่พบ:</strong> ${bk.ReturnRemark || "-"}</p>
-              </div>
-            </div>
+            ${actionButtons}
           </div>
         </div>`;
     }
@@ -151,4 +139,42 @@ function renderBookingList(bookings) {
   });
 
   filterHistory("outbound");
+}
+
+function cancelBooking(bookingId) {
+  if (!confirm("ยืนยันยกเลิกการจองนี้?")) return;
+
+  fetch("cancel_booking.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ booking_id: bookingId }),
+  })
+    .then((res) => res.json())
+    .then((result) => {
+      if (result.success) {
+        alert("ยกเลิกการจองสำเร็จ");
+        fetchMyBookings();
+      } else {
+        alert("ยกเลิกไม่สำเร็จ: " + (result.message || ""));
+      }
+    })
+    .catch(() => alert("ติดต่อ Server ไม่ได้"));
+}
+
+function checkInBooking(bookingId) {
+  fetch("checkin_booking.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ booking_id: bookingId }),
+  })
+    .then((res) => res.json())
+    .then((result) => {
+      alert(
+        result.success
+          ? "เช็คอินสำเร็จ! เริ่มใช้รถได้เลย"
+          : "เช็คอินไม่สำเร็จ: " + (result.message || ""),
+      );
+      if (result.success) fetchMyBookings();
+    })
+    .catch(() => alert("ติดต่อ Server ไม่ได้"));
 }

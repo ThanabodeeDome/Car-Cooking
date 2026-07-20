@@ -38,6 +38,10 @@
           ><i class="fa-solid fa-calendar-days"></i>
           <span>ปฏิทินงานวิ่งรถ</span></a
         >
+        <a href="#" class="menu-link" onclick="switchTab('bookings-tab')"
+          ><i class="fa-solid fa-clipboard-list"></i>
+          <span>จัดการการจอง</span></a
+        >
       </div>
       <div class="sidebar-logout-wrapper">
         <a href="../Car/index.html" class="btn-sidebar-logout"
@@ -253,6 +257,27 @@
         <h1 class="page-title">ปฏิทิน <span>ตารางการจองรถ</span></h1>
         <div class="calendar-wrapper"><div id="calendar"></div></div>
       </div>
+
+      <div id="bookings-tab" class="tab-content">
+        <h1 class="page-title">จัดการ <span>การจองรถทั้งหมด</span></h1>
+        <div class="table-scroll-container">
+          <table class="car-data-table">
+            <thead>
+              <tr>
+                <th>เลขที่จอง</th>
+                <th>ผู้จอง</th>
+                <th>ทะเบียนรถ</th>
+                <th>วันที่</th>
+                <th>ช่วงเวลา</th>
+                <th>สถานะ</th>
+                <th>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="admin-bookings-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
