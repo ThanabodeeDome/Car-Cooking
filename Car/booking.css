@@ -2,7 +2,7 @@
 
 /* ===== Design tokens — อิงโทนเดียวกับหน้า car-details (เข้ม เรียบ มินิมอล) ===== */
 :root {
-  --bg-dark: #0a0a0d;
+  --bg-dark: #0a0e17;
   --bg-card: #15151b;
   --bg-card-2: #1b1b22;
   --bg-input: #1e1e24;
@@ -24,15 +24,22 @@
   font-family: "Prompt", sans-serif;
 }
 
-/* 1. โครงสร้างหน้าจอหลัก */
+/* 1. โครงสร้างหน้าจอหลัก — background อิงตาม car-details.css เป๊ะ */
 .booking-page {
-  background-color: var(--bg-dark);
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
   min-height: 100vh;
   padding: 140px 20px 60px;
   box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(59, 130, 246, 0.1), transparent 45%),
+    radial-gradient(
+      circle at 90% 20%,
+      rgba(255, 77, 77, 0.05),
+      transparent 40%
+    ),
+    #0a0e17;
 }
 
 /* 2. กล่อง Card สำหรับกรอกข้อมูล */
