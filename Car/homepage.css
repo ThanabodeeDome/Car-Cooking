@@ -1,71 +1,98 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600&display=swap");
+
+/* ===== Design tokens — เข้าธีมเดียวกับหน้า car-details ===== */
+:root {
+  --primary-color: #ff4d4d;
+  --primary-hover: #ff6b6b;
+  --bg-dark: #0a0a0d;
+  --bg-card: #15151b;
+  --bg-card-2: #1b1b22;
+  --bg-input: #1e1e24;
+  --text-main: #f5f5f7;
+  --text-muted: #9a9aa5;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --success: #10b981;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --shadow-card: 0 20px 50px -12px rgba(0, 0, 0, 0.6);
+}
+
 * {
-  /*ทุก Element ในหน้าเว็บ*/
-  margin: 0; /*เป็นการเอาช่องว่างที่ Browser แถมมาให้ออกไป*/
-  padding: 0; /* " */
-  box-sizing: border-box; /*ถ้าเราใส่ Padding หรือ Border ให้คำนวณรวมไปในขนาดความกว้างเลย*/
-  font-family: "Prompt", sans-serif; /* เปลี่ยนมาใช้ตัวนี้แล้วนะนาย */
-}
-
-body {
-  font-family: "Poppins", "Prompt", sans-serif;
   margin: 0;
-  padding-top: 60px; /*เผื่อพื้นที่ให้ NavBar ที่ Fixed อยู่ด้านบน*/
-  /* เปลี่ยนจากสีเทากลาง เป็นสีเทาเข้มลึกๆ */
-  background-color: #f9fafb;
-  /* เปลี่ยนสีตัวอักษรหลักเป็นสีขาวนวล เพื่อให้อ่านง่ายบนพื้นหลังมืด */
-  color: #111827;
-  /* แถม: ความสูงขั้นต่ำของหน้าจอเพื่อให้พื้นหลังเต็มจอเสมอ */
-  min-height: 100vh;
-  width: 100%;
-  overflow-x: hidden; /* ป้องกันหน้าจอเลื่อนซ้ายขวาในมือถือ */
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Prompt", sans-serif;
 }
 
-/* ------- ส่วน Hero ------- */
+html,
+body {
+  width: 100%;
+  overflow-x: hidden;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  min-height: 100vh;
+  font-family: "Poppins", "Prompt", sans-serif;
+}
 
-/* 1. จัดการพื้นที่หลักให้ลูกอยู่กลางจอ (อันนี้ที่คุณส่งมา เป๊ะแล้วครับ) */
+/* ------- Header ------- */
+header {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background-color: rgba(10, 10, 13, 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-color);
+  z-index: 1000;
+  padding: 15px 0;
+}
+
+/* ------- Hero ------- */
 .hero {
-  min-height: 95vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center; /* จัดกลางแนวนอน */
-  justify-content: center; /* จัดกลางแนวตั้ง */
+  align-items: center;
+  justify-content: center;
   padding: 100px 20px;
-  background: #0a0a0a;
-  text-align: center; /* บังคับให้ตัวหนังสืออยู่กลาง */
-  /* --- แก้ไขตรงนี้ ใส่รูปพื้นหลัง --- */
+  background: var(--bg-dark);
+  text-align: center;
   background-image:
-    linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
-    url("assets/image/bg.jpeg"); /* ใส่ชื่อไฟล์ให้ตรงเป๊ะๆ */
-  /*รูปพื้นหลังจะถูกวางทับด้วยเลเยอร์สีดำโปร่งแสงเพื่อให้ข้อความอ่านง่ายขึ้น*/
-  background-size: cover !important; /* ให้รูปเต็มจอ */
-  background-position: center center; /* จัดกลาง */
+    linear-gradient(
+      180deg,
+      rgba(10, 10, 13, 0.55) 0%,
+      rgba(10, 10, 13, 0.75) 60%,
+      var(--bg-dark) 100%
+    ),
+    url("assets/image/bg.jpeg");
+  background-size: cover !important;
+  background-position: center center;
   background-repeat: no-repeat;
-  background-attachment: fixed; /* ทำให้รูปนิ่งเวลาเลื่อน */
-  color: #8996af; /* สีเทาอ่อนสำหรับข้อความใน Hero */
+  background-attachment: fixed;
+  color: #b8c1d6;
 }
 
-/* เปลี่ยนสีหัวข้อใหญ่ (h1) เป็นสีแดงสปอร์ต เพื่อให้เด่นที่สุด */
 .hero h1 {
-  color: #8996af !important; /* สีแดงเดียวกับปุ่ม */
-  font-size: 3.5rem; /* ปรับขนาดให้ใหญ่ */
+  color: #fff !important;
+  font-size: 3.4rem;
   font-weight: 700;
+  letter-spacing: 0.5px;
   text-transform: uppercase;
-  margin-bottom: 20px;
-  /* ใส่เงาเล็กน้อยเพื่อให้ตัวหนังสือลอยออกมาจากรูปพื้นหลัง */
-  text-shadow: 2px 2px 15px rgba(0, 0, 0, 0.7);
+  margin-bottom: 18px;
+  text-shadow: 2px 2px 20px rgba(0, 0, 0, 0.6);
 }
 
-/* เปลี่ยนสีข้อความบรรยาย (p) เป็นสีขาวเทา เพื่อให้ดูสบายตา */
 .hero p {
-  color: #8996af !important;
-  font-size: 1.2rem;
-  max-width: 700px;
-  margin-bottom: 40px;
+  color: #b8c1d6 !important;
+  font-size: 1.1rem;
+  max-width: 640px;
+  margin-bottom: 36px;
+  line-height: 1.6;
   text-shadow: 1px 1px 10px rgba(0, 0, 0, 0.5);
 }
 
-/* 2. เพิ่มส่วนนี้เพื่อให้เนื้อหาข้างใน (h1, p) เรียงกลางแนวนอนด้วย */
 .hero-content {
   display: flex;
   flex-direction: column;
@@ -73,385 +100,209 @@ body {
   width: 100%;
 }
 
-/* 3. จัดกลุ่มปุ่มให้อยู่ตรงกลาง */
 .hero-btns {
   display: flex;
-  gap: 20px; /* ระยะห่างระหว่างปุ่ม */
-  justify-content: center; /* จัดกลุ่มปุ่มให้อยู่กลางแนวนอน */
-  margin-top: 30px;
+  gap: 18px;
+  justify-content: center;
+  margin-top: 26px;
+  flex-wrap: wrap;
 }
 
-/* 4. สไตล์ปุ่มที่คุณส่งมา (ใช้เหมือนกันทั้งสองปุ่มเพื่อให้สมดุล) */
 .hero .secondary-btn {
-  background: transparent;
-  border: 2px solid #444;
-  color: #aaa;
-  padding: 14px 30px;
-  border-radius: 6px;
-  font-size: 17px;
-  font-weight: bold;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1.5px solid var(--border-strong);
+  color: #cfd3dc;
+  padding: 13px 30px;
+  border-radius: var(--radius-sm);
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  transition: 0.3s;
+  transition: 0.25s ease;
 }
 
 .hero .secondary-btn:hover {
-  border-color: #ff4d4d;
+  border-color: var(--primary-color);
   color: white;
-  box-shadow: 0 0 15px rgba(255, 77, 77, 0.2);
+  box-shadow: 0 0 18px rgba(255, 77, 77, 0.2);
+  transform: translateY(-2px);
 }
 
-/* เอฟเฟกต์ยุบตัวตอนกด */
 .hero .secondary-btn:active {
-  transform: translateY(2px);
+  transform: translateY(0);
 }
 
-/* ------- Hero ทั้งหมด ------- */
-
-/* --- ส่วนหัว HISTORY & SEARCH --- */
+/* ------- HISTORY Section ------- */
 .history-section {
   width: 100%;
-  background-color: #000;
-  margin-top: 20px;
-}
-
-/* คอนเทนเนอร์คุมตาราง */
-.history-container {
-  background-color: #1a1a1a;
-  border-radius: 8px;
-  padding: 5px;
-  margin-top: 15px;
+  background-color: var(--bg-dark);
+  padding: 34px 30px 70px;
 }
 
 .history-top-bar {
   display: flex;
-  align-items: center; /* จัดให้อยู่กลางแนวตั้ง */
-  gap: 20px; /* ระยะห่างระหว่างตัวหนังสือกับช่องค้นหา */
-  padding: 15px 0; /* ลบ padding ซ้ายขวาเพื่อให้ชิดขอบตาราง */
-  width: 100%;
-}
-
-/* ตกแต่งคำว่า HISTORY */
-.history-title {
-  color: #ffffff;
-  font-size: 2rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  margin-right: 20px;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-  border-left: 5px solid #8b0000; /* ขีดแดงด้านหน้าเพิ่มความเท่ */
-  padding-left: 15px;
-}
-
-/* คอนเทนเนอร์ของช่องค้นหา */
-.search-container {
-  position: relative;
-  flex-grow: 1; /* ให้ช่องค้นหายืดขยายเต็มพื้นที่ที่เหลือ */
-  max-width: 500px;
-}
-
-/* ช่องค้นหาดีไซน์ใหม่ */
-.search-wrapper {
-  position: relative;
-  flex: 1;
-}
-
-/* คอนเทนเนอร์หลักของส่วนหัว */
-.history-header {
-  display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 20px;
-  padding: 20px;
-  background: #111;
+  padding: 15px 0 28px;
+  flex-wrap: wrap;
 }
 
-/* ช่องค้นหาดีไซน์ใหม่ */
-.search-wrapper {
-  position: relative;
-  flex: 1;
+.history-title {
+  color: var(--text-main);
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border-left: 4px solid var(--primary-color);
+  padding-left: 16px;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.search-wrapper-full {
+  display: flex;
+  flex-grow: 1;
+  max-width: 460px;
+  background: var(--bg-input);
+  border-radius: 999px;
+  padding: 4px 6px 4px 20px;
+  align-items: center;
+  border: 1px solid var(--border-color);
+  transition: 0.25s;
+}
+
+.search-wrapper-full:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(255, 77, 77, 0.12);
 }
 
 .search-input {
-  width: 100%;
-  padding: 12px 20px 12px 45px;
-  background: #1e1e1e;
-  border: 1px solid #444;
-  border-radius: 30px;
-  color: #fff;
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
   outline: none;
-  transition: 0.3s;
-  border-left: 4px solid #8b0000; /* เพิ่มขีดแดงนำสายตา */
-}
-
-.search-input:focus {
-  border-color: #ff4d4d;
-  box-shadow: 0 0 10px rgba(255, 77, 77, 0.2);
-  background: #252525;
-}
-
-/* ไอคอนแว่นขยาย */
-.search-icon {
-  position: absolute;
-  left: 18px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #8b0000;
-  font-size: 1.2rem;
-}
-
-.search-input:focus + .search-icon {
-  color: #ff4d4d; /* ไอคอนเปลี่ยนเป็นสีแดงสว่างตอนพิมพ์ */
+  padding: 10px 0;
+  font-size: 14px;
 }
 
 .search-btn {
-  background: transparent;
+  background: var(--primary-color);
   border: none;
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 1rem;
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+  flex-shrink: 0;
 }
 
-/* --- ส่วนตาราง (ลบแถบดำและทำให้เต็มหน้าจอ) --- */
+.search-btn:hover {
+  background: var(--primary-hover);
+}
+
+/* ------- ตาราง (desktop) ------- */
 .table-container {
-  width: 100%;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
   overflow-x: auto;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-card);
   -webkit-overflow-scrolling: touch;
 }
 
 .custom-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
-  border-radius: 8px;
-  overflow: hidden; /* เพื่อให้มุมโค้งทำงาน */
+  min-width: 800px;
 }
 
-/* --- หัวข้อ (Header): แบบโมเดิร์นคุมโทน --- */
+.custom-table thead {
+  background: var(--bg-card-2);
+  border-bottom: 1px solid var(--border-color);
+}
+
 .custom-table th {
-  padding: 15px 10px;
-  text-align: center; /* จัดตัวอักษรให้อยู่กลางแนวนอน */
-  vertical-align: middle; /* จัดให้อยู่กลางแนวตั้ง */
-  background-color: #212121;
-  color: #ffffff;
-  font-weight: 600;
-}
-
-/* จัดการแถวข้อมูล (Body) */
-.custom-table td {
-  padding: 12px 10px;
-  text-align: center; /* 🔥 หัวใจสำคัญ: ทำให้ข้อมูลทุกช่องอยู่ตรงกลาง */
-  vertical-align: middle; /* 🔥 ทำให้ข้อมูลไม่ชิดขอบบนหรือขอบล่างเกินไป */
-  border: none;
-  font-size: 0.9rem;
-}
-
-/* แถวคี่ (Odd): สีเทาเข้ม */
-.custom-table tbody tr:nth-child(odd) td {
-  background-color: #333333;
-  color: #ecf0f1;
-}
-
-/* แถวคู่ (Even): สีเทาอ่อน */
-.custom-table tbody tr:nth-child(even) td {
-  background-color: #444444;
-  color: #ecf0f1;
-}
-
-/* เพิ่ม Hover effect เล็กน้อยเพื่อการใช้งานที่ดี */
-.custom-table tr:hover td {
-  background-color: #555555 !important;
-}
-
-/* --- สีสถานะ (Status Colors): ตามที่นายขอ --- */
-
-/* หากช่อง "การจอง" (ขาไป/ขากลับ) ยังไม่กลาง ให้บังคับด้วย class */
-.text-outbound,
-.text-inbound {
-  display: table-cell; /* บังคับพฤติกรรม cell */
-  text-align: center !important;
-  width: 100%;
-}
-
-/* ยกเว้นช่อง "ชื่อ" หากนายอยากให้อยู่ตรงกลางด้วย */
-.col-name-data {
-  text-align: center !important;
-}
-
-/* --- 1. บังคับพื้นที่หลักให้เต็มหน้าจอ (สำคัญมาก) --- */
-html,
-body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  overflow-x: hidden; /* ป้องกันสกอลบาร์แนวนอนโผล่ */
-  background-color: #000; /* คุมโทนดำทั้งหน้า */
-}
-
-/* หากนายมี container ตัวนอกที่บีบงานอยู่ ให้ลบออก หรือปรับให้เต็ม */
-.container,
-.main-wrapper {
-  max-width: 100% !important;
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-/* --- 2. ปรับ History Section ให้ชิดขอบรูปด้านบน --- */
-.history-section {
-  width: 100%;
-  background-color: #000;
-  /* ลบ Margin ด้านบนออกเพื่อรูปและหัวข้อชิดกัน */
-  margin-top: 0 !important;
-  padding: 0;
-}
-
-/* จัดระเบียบ HISTORY และ SEARCH BAR */
-.history-top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  padding: 20px; /* เพิ่มพื้นที่หายใจให้ตัวหนังสือ แต่ยังชิดขอบซ้ายขวา */
-  background: #111; /* ดำเข้มขึ้นมาหน่อยตามรูป 337d04 */
-}
-
-.history-title {
-  color: white;
-  margin: 0;
+  padding: 16px 14px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
   white-space: nowrap;
 }
 
-/* ช่องค้นหายาวเต็มพื้นที่ตามรูป 3383ca */
-.search-wrapper-full {
-  display: flex;
-  flex-grow: 1; /* ขยายยาวที่สุด */
-  background: #ffffff;
-  border-radius: 30px;
-  padding: 8px 20px;
-  align-items: center;
-}
-
-/* --- 3. ปรับตารางให้เต็มหน้าจอเป๊ะ (ลบติ่งดำ) --- */
-/* บังคับให้ตารางยืดขยายตามเนื้อหาแต่ยังเต็มหน้าจอ */
-.custom-table {
-  width: 100%;
-  table-layout: fixed; /* ใช้ fixed เพื่อคุมความกว้างคอลัมน์ให้แม่นยำ */
-  border-collapse: collapse;
-}
-
-/* ปรับสัดส่วนความกว้างใหม่ (รวมให้ได้ 100%) */
-.col-date {
-  width: 12%;
-} /* 2026-04-24 สั้นๆ */
-.col-time {
-  width: 10%;
-} /* 08:49 สั้นๆ */
-.col-trip {
-  width: 10%;
-} /* ขาไป/ขากลับ */
-.col-type {
-  width: 8%;
-} /* SUV/Sedan */
-.col-car-info {
-  width: 25%;
-} /* Mitsubishi Pajero (ต้องกว้างสุด) */
-.col-plate {
-  width: 15%;
-} /* ชอ-3003 */
-.col-name {
-  width: 20%;
-} /* ชื่อคนจอง (เผื่อชื่อยาว) */
-
-/* จัดระเบียบตัวหนังสือในตาราง */
-.custom-table td {
-  padding: 12px 5px;
-  font-size: 0.9rem; /* ลดขนาดลงนิดนึงเพื่อให้จุข้อมูลได้ครบ */
-  word-wrap: break-word; /* ถ้าชื่อยาวเกินให้ตัดบรรทัด ไม่ให้ดันตารางพัง */
-  vertical-align: middle;
-}
-
-/* คอนเทนเนอร์หลัก: จำกัดความกว้างไม่ให้เลยจอ */
-.table-container {
-  background: #1a1a1a; /* พื้นหลังดำเข้ม */
-  border-radius: 12px;
-  padding: 10px;
-  margin: 20px auto;
-  max-width: 95%; /* ป้องกันการเลยขอบจอ */
-  overflow-x: auto; /* เพิ่ม Scrollbar แนวนอนถ้าจอเล็กเกินไป */
-  border: 1px solid #333;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-}
-
-/* ตาราง */
-.custom-table {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 800px; /* รักษาทรงตารางไม่ให้เบียดกันเกินไป */
-}
-
-/* หัวตาราง: ใช้สีแดงให้เข้ากับแถบเมนูด้านบน */
-.custom-table thead th {
-  background: #8b0000; /* แดงเลือดหมูเข้ม */
-  color: #ffffff;
-  padding: 15px 10px;
-  font-size: 14px;
-  text-transform: uppercase;
-  border-bottom: 3px solid #ff4d4d; /* เส้นใต้แดงสว่าง */
-  position: sticky;
-  top: 0;
-}
-
-/* แถวข้อมูล: ใช้สีสลับเพื่อให้ดูง่าย (Zebra Stripe) */
 .custom-table tbody tr {
-  background: #242424;
-  border-bottom: 1px solid #333;
-  transition: 0.2s;
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.2s ease;
 }
 
-.custom-table tbody tr:nth-child(even) {
-  background: #1e1e1e;
+.custom-table tbody tr:last-child {
+  border-bottom: none;
 }
 
-/* Hover: เปลี่ยนเป็นสีแดงจางๆ ตอนเอาเมาส์ชี้ */
 .custom-table tbody tr:hover {
-  background: rgba(139, 0, 0, 0.2);
-  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .custom-table td {
-  padding: 12px 10px;
-  color: #ccc;
+  padding: 14px 14px;
+  color: #d7dae0;
+  font-size: 13.5px;
   text-align: center;
-  font-size: 14px;
-  white-space: nowrap; /* ป้องกันข้อความตัดขึ้นบรรทัดใหม่จนตารางเบี้ยว */
+  white-space: nowrap;
 }
 
-/* ป้ายสถานะ ขาไป/ขากลับ: ปรับให้เข้ากับธีม */
+/* ------- ป้ายสถานะ ------- */
 .status-badge {
-  padding: 4px 10px;
-  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-/* ขาไป: สีเขียวนีออนตัดกับดำ */
+.status-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
 .status-out {
-  background: rgba(46, 204, 113, 0.2);
-  color: #2ecc71;
-  border: 1px solid #2ecc71;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
-/* ขากลับ: สีเหลืองอำพัน */
 .status-in {
-  background: rgba(241, 196, 15, 0.2);
-  color: #f1c40f;
-  border: 1px solid #f1c40f;
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
-/* ปรับแต่ง Scrollbar ให้เข้ากับธีมดำ */
+.status-cancelled {
+  background: rgba(154, 154, 165, 0.12);
+  color: var(--text-muted);
+  border: 1px solid rgba(154, 154, 165, 0.3);
+}
+
 .table-container::-webkit-scrollbar {
   height: 8px;
 }
 .table-container::-webkit-scrollbar-thumb {
-  background: #8b0000;
+  background: var(--primary-color);
   border-radius: 10px;
 }
 
@@ -462,4 +313,123 @@ body {
   margin: 5px auto;
   background-color: white;
   transition: all 0.3s ease;
+}
+
+/* =========================================================
+   RESPONSIVE — โทรศัพท์ทุกขนาด
+   ตาราง desktop จะกลายเป็นการ์ดแนวตั้งบนมือถือ
+   ใช้คู่กับ data-label ที่ JS/HTML ต้องเติมให้ td แต่ละช่อง
+   เช่น <td data-label="สถานะ">...</td>
+   ========================================================= */
+
+@media (max-width: 992px) {
+  .hero h1 {
+    font-size: 2.5rem;
+  }
+  .history-section {
+    padding: 28px 20px 50px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 80px 16px;
+    background-attachment: scroll;
+  }
+  .hero h1 {
+    font-size: 2rem;
+  }
+  .hero p {
+    font-size: 1rem;
+  }
+  .hero-btns {
+    flex-direction: column;
+    width: 100%;
+    max-width: 320px;
+  }
+  .hero .secondary-btn {
+    width: 100%;
+  }
+
+  .history-top-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .history-title {
+    text-align: left;
+    font-size: 1.35rem;
+  }
+  .search-wrapper-full {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .history-section {
+    padding: 20px 12px 40px;
+  }
+
+  .table-container {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .custom-table {
+    min-width: 0;
+  }
+
+  .custom-table thead {
+    display: none;
+  }
+
+  .custom-table tbody tr {
+    display: block;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    margin-bottom: 14px;
+    padding: 14px 16px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .custom-table tbody tr:hover {
+    background: var(--bg-card);
+  }
+
+  .custom-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: right;
+    white-space: normal;
+    padding: 9px 0;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+    font-size: 13.5px;
+  }
+
+  .custom-table td:last-child {
+    border-bottom: none;
+  }
+
+  .custom-table td::before {
+    content: attr(data-label);
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    text-align: left;
+  }
+}
+
+@media (max-width: 400px) {
+  .hero h1 {
+    font-size: 1.6rem;
+  }
+  .history-title {
+    font-size: 1.15rem;
+  }
 }

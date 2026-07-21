@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>เข้าสู่ระบบ | Premium Car Booking</title>
+    <title>เข้าสู่ระบบ | Shift & Go</title>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&family=Poppins:ital,wght@0,600;0,700;0,800;1,600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="index.css" />
@@ -25,10 +25,12 @@
       <div id="login-form" class="auth-box">
         <div class="brand-logo">
           <i class="fa-solid fa-car-side"></i>
-          <span>CAR<span>ADMIN</span></span>
+          <span>SHIFT <span class="amp">&amp;</span> GO</span>
         </div>
-        <h2>ยินดีต้อนรับกลับมา</h2>
-        <p class="subtitle">กรุณากรอกข้อมูลเพื่อเข้าสู่ระบบจัดการรถยนต์</p>
+        <h2>คืนสู่เส้นทางของคุณ</h2>
+        <p class="subtitle">
+          ลงชื่อเข้าใช้เพื่อจัดการงานขับขี่และการจองรถทั้งหมด
+        </p>
 
         <form action="../login_process.php" method="POST">
           <div class="input-group">
@@ -70,9 +72,9 @@
         class="auth-box"
         style="display: none; max-width: 600px"
       >
-        <h2>สมัครสมาชิกพนักงาน</h2>
+        <h2>เข้าร่วมทีม Shift & Go</h2>
         <p class="subtitle">
-          กรุณากรอกข้อมูลพนักงานให้ครบถ้วนเพื่อสร้างบัญชีผู้ใช้
+          กรอกข้อมูลพนักงานให้ครบ เพื่อสร้างบัญชีสำหรับเข้าใช้งานระบบ
         </p>
 
         <form action="../register_process.php" method="POST">
@@ -191,10 +193,8 @@
       </div>
 
       <div id="reset-form" class="auth-box" style="display: none">
-        <h2>ตั้งรหัสผ่านใหม่</h2>
-        <p class="subtitle">
-          กรอกชื่อผู้ใช้เพื่อทำการรีเซ็ตรหัสผ่านความปลอดภัย
-        </p>
+        <h2>ลืมรหัสผ่าน?</h2>
+        <p class="subtitle">ยืนยันตัวตนแล้วตั้งรหัสผ่านใหม่ได้เลย</p>
 
         <form id="reset-password-form">
           <div class="input-group">

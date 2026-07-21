@@ -6,8 +6,6 @@
    ========================================= */
 function updateHistoryTable() {
   const tableBody = document.getElementById("history-table-body");
-
-  // ถ้าหน้านี้ไม่มีตารางประวัติ (id="history-table-body") ให้หยุดทำงานทันที
   if (!tableBody) return;
 
   fetch("get_history.php")
@@ -20,23 +18,35 @@ function updateHistoryTable() {
       }
 
       const bookings = Array.isArray(data) ? data : [];
-
       if (bookings.length === 0) {
+        tableBody.innerHTML =
+          '<tr><td colspan="9" style="text-align:center;">ไม่พบประวัติการจอง</td></tr>';
+        return;
       }
 
       tableBody.innerHTML = bookings
         .map((item) => {
-          const isOutbound = item.booking_status === "ขาไป";
+          const status = item.booking_status || "";
+          const isCancelled = status.includes("ยกเลิก");
+          const isReturned = status === "ขากลับ";
+
+          let badgeClass, badgeText;
+          if (isCancelled) {
+            badgeClass = "status-cancelled";
+            badgeText = "🚫 ยกเลิก";
+          } else if (isReturned) {
+            badgeClass = "status-in";
+            badgeText = "🟢 คืนแล้ว";
+          } else {
+            badgeClass = "status-out";
+            badgeText = "🔴 กำลังใช้งาน";
+          }
 
           return `
       <tr>
           <td>${item.out_date || "-"}</td>
           <td>${item.checkin_time || "-"}</td>
-          <td>
-              <span class="status-badge ${isOutbound ? "status-out" : "status-in"}">
-                  ${isOutbound ? "🔴 ขาไป" : "🟢 คืนแล้ว"}
-              </span>
-          </td>
+          <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
           <td>${item.return_time || "-"}</td>
           <td>${item.car_brand || "-"}</td>
           <td>${item.car_plate || "-"}</td>
@@ -122,8 +132,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // ดึงข้อมูลประวัติ (ถ้ามีตาราง)
   updateHistoryTable();
 
-  // ตั้งเวลาอัปเดตประวัติทุก 3 วินาที
-  setInterval(updateHistoryTable, 3000);
+  // ตั้งเวลาอัปเดตประวัติทุก 5 วินาที
+  setInterval(updateHistoryTable, 5000);
 });
 
 /* =========================================

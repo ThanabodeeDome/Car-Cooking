@@ -1,10 +1,124 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const today = new Date();
+  selectedYear = today.getFullYear();
+  selectedMonth = today.getMonth();
+  selectedDate = formatDate(today);
+
+  populateMonthDropdown();
+  renderDayStrip();
   fetchCarsData();
-  renderCalendar();
+  setInterval(fetchCarsData, 15000); // 🌟 รีเฟรชการ์ดรถทุก 15 วิ
 });
 
-let selectedCarPlate = null;
-let monthlyCalendar;
+const thaiMonths = [
+  "มกราคม",
+  "กุมภาพันธ์",
+  "มีนาคม",
+  "เมษายน",
+  "พฤษภาคม",
+  "มิถุนายน",
+  "กรกฎาคม",
+  "สิงหาคม",
+  "กันยายน",
+  "ตุลาคม",
+  "พฤศจิกายน",
+  "ธันวาคม",
+];
+const thaiWeekdays = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
+
+let selectedYear,
+  selectedMonth,
+  selectedDate,
+  selectedCarPlate = null;
+let allCarBookings = [];
+
+document.addEventListener("DOMContentLoaded", () => {
+  const today = new Date();
+  selectedYear = today.getFullYear();
+  selectedMonth = today.getMonth();
+  selectedDate = formatDate(today);
+
+  populateMonthDropdown();
+  renderDayStrip();
+  fetchCarsData();
+});
+
+function formatDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// ---------- Dropdown เดือน ----------
+function populateMonthDropdown() {
+  const select = document.getElementById("month-select");
+  if (!select) return;
+  select.innerHTML = "";
+
+  const base = new Date();
+  base.setDate(1);
+
+  for (let i = -1; i <= 6; i++) {
+    const d = new Date(base.getFullYear(), base.getMonth() + i, 1);
+    const y = d.getFullYear();
+    const m = d.getMonth();
+    const opt = new Option(`${thaiMonths[m]} ${y + 543}`, `${y}-${m}`);
+    if (y === selectedYear && m === selectedMonth) opt.selected = true;
+    select.add(opt);
+  }
+
+  select.addEventListener("change", () => {
+    const [y, m] = select.value.split("-").map(Number);
+    selectedYear = y;
+    selectedMonth = m;
+    renderDayStrip();
+  });
+}
+
+// ---------- แถบวันเลื่อนแนวนอน ----------
+function renderDayStrip() {
+  const strip = document.getElementById("day-strip");
+  if (!strip) return;
+  strip.innerHTML = "";
+
+  const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+  const today = formatDate(new Date());
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(selectedYear, selectedMonth, day);
+    const dateStr = formatDate(d);
+    const weekday = thaiWeekdays[d.getDay()];
+    const isToday = dateStr === today;
+
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className =
+      "day-pill" +
+      (dateStr === selectedDate ? " active" : "") +
+      (isToday ? " is-today" : "");
+    btn.innerHTML = `<span class="day-weekday">${weekday}</span><span class="day-num">${day}</span>`;
+    btn.onclick = () => selectDate(dateStr, btn);
+    strip.appendChild(btn);
+  }
+
+  const activeEl = strip.querySelector(".day-pill.active");
+  if (activeEl)
+    activeEl.scrollIntoView({
+      inline: "center",
+      behavior: "smooth",
+      block: "nearest",
+    });
+}
+
+function selectDate(dateStr, btnEl) {
+  selectedDate = dateStr;
+  document
+    .querySelectorAll(".day-pill")
+    .forEach((el) => el.classList.remove("active"));
+  if (btnEl) btnEl.classList.add("active");
+  renderBookingStatusPanel();
+}
 
 // ---------- การ์ดรถ ----------
 function fetchCarsData() {
@@ -15,22 +129,24 @@ function fetchCarsData() {
     .then((res) => res.json())
     .then((data) => {
       grid.innerHTML = "";
-
-      const order = { ว่าง: 1, ไม่ว่าง: 2, เช็คระยะ: 3 };
+      const order = { ว่าง: 1, จองแล้ว: 2, กำลังใช้งาน: 3, เช็คระยะ: 4 };
       const sortedCars = data.sort(
-        (a, b) => (order[a.CarStatus] || 99) - (order[b.CarStatus] || 99),
+        (a, b) => (order[a.RealStatus] || 99) - (order[b.RealStatus] || 99),
       );
 
       sortedCars.forEach((car) => {
-        const isMaintenance = car.CarStatus === "เช็คระยะ";
+        const status = car.RealStatus;
+        const isMaintenance = status === "เช็คระยะ";
         const imageSrc =
           "assets/img-car/" + (car.Carimage || "car-placeholder.png");
         const statusClass =
-          car.CarStatus === "ว่าง"
+          status === "ว่าง"
             ? "available"
-            : car.CarStatus === "ไม่ว่าง"
+            : status === "กำลังใช้งาน"
               ? "busy"
-              : "repair";
+              : status === "จองแล้ว"
+                ? "reserved"
+                : "repair";
 
         const card = document.createElement("div");
         card.className = `car-card ${isMaintenance ? "is-off" : ""}`;
@@ -38,7 +154,7 @@ function fetchCarsData() {
           <div class="car-item" onclick="selectCarForCalendar('${car.Plate}', this)">
             <div class="card-image">
               <img src="${imageSrc}" alt="${car.Brand}" onerror="this.onerror=null; this.src='assets/img-car/car-placeholder.png';">
-              <span class="status-tag tag-${statusClass}">${car.CarStatus}</span>
+              <span class="status-tag tag-${statusClass}">${status}</span>
             </div>
             <div class="card-body">
               <h4>${car.Brand} ${car.Model}</h4>
@@ -52,77 +168,79 @@ function fetchCarsData() {
     .catch((err) => console.error("Error loading cars:", err));
 }
 
-// ---------- เลือกรถ -> โหลดปฏิทิน ----------
 function selectCarForCalendar(plate, cardEl) {
   selectedCarPlate = plate;
-
   document
     .querySelectorAll(".car-item")
     .forEach((el) => el.classList.remove("is-selected"));
   if (cardEl) cardEl.classList.add("is-selected");
-
-  const label = document.getElementById("calendar-selected-car-label");
-  if (label) label.innerText = `📅 กำลังแสดงตารางของรถ: ${plate}`;
-
-  loadCarBookingsForCalendar(plate);
+  loadCarBookings(plate);
 }
 
-function loadCarBookingsForCalendar(plate) {
+function loadCarBookings(plate) {
+  const panel = document.getElementById("booking-status-panel");
+  if (panel)
+    panel.innerHTML = `<p style="color:#94a3b8; text-align:center;">กำลังโหลดข้อมูล...</p>`;
+
   fetch(`get_car_bookings.php?plate=${encodeURIComponent(plate)}`)
     .then((res) => res.json())
     .then((data) => {
       if (!data.success) {
-        alert(data.message || "โหลดข้อมูลการจองไม่สำเร็จ");
+        if (panel)
+          panel.innerHTML = `<p style="color:#ef4444; text-align:center;">${data.message || "โหลดข้อมูลไม่สำเร็จ"}</p>`;
         return;
       }
-      updateCalendarEvents(data.bookings.map(bookingToEvent));
+      allCarBookings = data.bookings || [];
+      renderBookingStatusPanel();
     })
-    .catch((err) => console.error("Error loading car bookings:", err));
+    .catch((err) => {
+      console.error("Error loading car bookings:", err);
+      if (panel)
+        panel.innerHTML = `<p style="color:#ef4444; text-align:center;">เชื่อมต่อเซิร์ฟเวอร์ไม่ได้</p>`;
+    });
 }
 
-function bookingToEvent(bk) {
-  let start, end, color;
+// ---------- แผงสถานะเช้า/บ่าย ----------
+function renderBookingStatusPanel() {
+  const panel = document.getElementById("booking-status-panel");
+  if (!panel) return;
 
-  if (bk.TimeSlot === "เช้า") {
-    start = `${bk.BookingDate}T08:00:00`;
-    end = `${bk.BookingDate}T12:00:00`;
-    color = "#3b82f6";
-  } else if (bk.TimeSlot === "บ่าย") {
-    start = `${bk.BookingDate}T13:00:00`;
-    end = `${bk.BookingDate}T17:00:00`;
-    color = "#f59e0b";
-  } else {
-    start = `${bk.BookingDate}T08:00:00`;
-    end = `${bk.BookingDate}T17:00:00`;
-    color = "#ef4444";
+  if (!selectedCarPlate) {
+    panel.innerHTML = `<p style="color:#94a3b8; text-align:center;">👆 กรุณาเลือกรถด้านบนก่อน</p>`;
+    return;
   }
 
-  return {
-    title: `${bk.TimeSlot || "-"} • ${bk.DriverName}`,
-    start,
-    end,
-    color,
-  };
-}
+  const bookingsToday = allCarBookings.filter(
+    (bk) => bk.BookingDate === selectedDate,
+  );
+  const findSlot = (slot) =>
+    bookingsToday.find(
+      (bk) => bk.TimeSlot === slot || bk.TimeSlot === "ทั้งวัน",
+    );
 
-// ---------- ปฏิทิน ----------
-function renderCalendar() {
-  const calendarEl = document.getElementById("calendar-full");
-  if (!calendarEl) return;
+  const morning = findSlot("เช้า");
+  const afternoon = findSlot("บ่าย");
 
-  monthlyCalendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: "dayGridMonth",
-    locale: "th",
-    headerToolbar: { left: "prev,next today", center: "title", right: "" },
-    events: [],
-    eventDidMount: (info) => (info.el.title = info.event.title),
-  });
+  const dateObj = new Date(selectedDate);
+  const dateLabel = `${dateObj.getDate()} ${thaiMonths[dateObj.getMonth()]} ${dateObj.getFullYear() + 543}`;
 
-  monthlyCalendar.render();
-}
-
-function updateCalendarEvents(events) {
-  if (!monthlyCalendar) return;
-  monthlyCalendar.removeAllEvents();
-  events.forEach((ev) => monthlyCalendar.addEvent(ev));
+  panel.innerHTML = `
+    <h3 style="color:#fff; margin-bottom:15px;">📅 ${selectedCarPlate} — วันที่ ${dateLabel}</h3>
+    <div class="slot-grid">
+      <div class="slot-card ${morning ? "slot-busy" : "slot-free"}">
+        <div class="slot-icon">🌅</div>
+        <div class="slot-info">
+          <h4>เช้า (08:00-12:00)</h4>
+          ${morning ? `<p>ไม่ว่าง — จองโดย ${morning.DriverName}</p>` : `<p>ว่าง</p>`}
+        </div>
+      </div>
+      <div class="slot-card ${afternoon ? "slot-busy" : "slot-free"}">
+        <div class="slot-icon">☀️</div>
+        <div class="slot-info">
+          <h4>บ่าย (13:00-17:00)</h4>
+          ${afternoon ? `<p>ไม่ว่าง — จองโดย ${afternoon.DriverName}</p>` : `<p>ว่าง</p>`}
+        </div>
+      </div>
+    </div>
+  `;
 }

@@ -137,3 +137,45 @@ h3.text-danger {
 .col-md-6 p strong {
   color: #9ca3af;
 }
+
+/* =========================================
+   Responsive — โทรศัพท์ทุกขนาด
+   ========================================= */
+@media (max-width: 768px) {
+  .booking-list {
+    padding: 0 14px;
+  }
+  .booking-tabs {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tab-btn {
+    flex: 1 1 auto;
+    padding: 9px 14px;
+    font-size: 13px;
+  }
+  .booking-header-row {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 14px 16px;
+  }
+  .booking-detail-dropdown {
+    padding: 16px;
+  }
+  .row {
+    gap: 12px;
+  }
+  .col-md-6 {
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  h3.text-danger {
+    font-size: 1.1rem;
+  }
+  .bk-id,
+  .bk-date {
+    font-size: 12.5px;
+  }
+}

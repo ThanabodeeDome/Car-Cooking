@@ -105,7 +105,7 @@ function loadAvailableCars() {
   fetch("get_cars.php")
     .then((res) => res.json())
     .then((allData) => {
-      const data = allData.filter((car) => car.CarStatus === "ว่าง"); // 🌟 กรองเฉพาะรถว่าง
+      const data = allData.filter((car) => car.RealStatus === "ว่าง"); // 🌟 กรองเฉพาะรถว่างจริง (คำนวณสด)
       dbCarData = data;
       if (plateSelect) {
         plateSelect.innerHTML =

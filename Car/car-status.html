@@ -10,68 +10,60 @@
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;600&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
   </head>
   <body class="booking-page">
     <nav class="nav-bar">
       <div class="logo">
         <img src="assets/image/CH2.png" alt="nav-logo" />
       </div>
-
       <div class="menu-toggle" id="mobile-menu">
         <span class="bar"></span>
         <span class="bar"></span>
         <span class="bar"></span>
       </div>
-
       <ul class="nav-links" id="nav-list">
-        <li>
-          <a href="homepage.html" class="Home-btn">หน้าหลัก</a>
-        </li>
-        <li>
-          <a href="booking.html" class="book-btn">จองรอบขับ</a>
-        </li>
-        <li>
-          <a href="car-status.html" class="Check-btn">เช็กคิว</a>
-        </li>
+        <li><a href="homepage.html" class="Home-btn">หน้าหลัก</a></li>
+        <li><a href="booking.html" class="book-btn">จองรอบขับ</a></li>
+        <li><a href="car-status.html" class="Check-btn">เช็กคิว</a></li>
         <li>
           <a href="car-details.html" class="info-btn">รายละเอียดรถยนต์</a>
         </li>
         <li>
           <a href="booking-details.html" class="Rules-btn">รายละเอียดการจอง</a>
         </li>
-        <li>
-          <a href="profile.html" class="contact-btn">ข้อมูลผู้ใช้</a>
-        </li>
+        <li><a href="profile.html" class="contact-btn">ข้อมูลผู้ใช้</a></li>
       </ul>
     </nav>
 
     <div class="status-container">
       <section class="car-section">
-        <h2 class="section-title">รถยนต์ที่พร้อมใช้งาน</h2>
+        <h2 class="section-title">เลือกรถที่ต้องการเช็ค</h2>
         <div class="scroll-container">
           <div id="car-grid" class="car-grid-horizontal"></div>
         </div>
       </section>
 
-      <div
-        class="main-content-wrapper"
-        style="max-width: 1200px; margin: 0 auto; padding: 20px"
-      >
-        <section class="calendar-section">
-          <h2 class="section-title">ปฏิทินการใช้รถยนต์</h2>
-          <p
-            id="calendar-selected-car-label"
-            style="color: #94a3b8; margin-bottom: 10px"
-          >
-            👆 กดเลือกรถด้านบนเพื่อดูตารางการจอง
+      <section class="date-picker-section">
+        <div class="date-picker-header">
+          <h2 class="section-title" style="margin-bottom: 0">เลือกวันที่</h2>
+          <select id="month-select" class="month-dropdown"></select>
+        </div>
+        <div id="day-strip" class="day-strip"></div>
+      </section>
+
+      <section class="booking-status-section">
+        <div id="booking-status-panel" class="booking-status-panel">
+          <p style="color: #94a3b8; text-align: center">
+            👆 กรุณาเลือกรถด้านบนก่อน
           </p>
-          <div id="calendar-full"></div>
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
 
-    <!-- 🌟 ต้องโหลด FullCalendar ก่อน car-status.js เสมอ ไม่งั้น FullCalendar เป็น undefined -->
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
     <script src="main.js"></script>
     <script src="car-status.js"></script>
   </body>

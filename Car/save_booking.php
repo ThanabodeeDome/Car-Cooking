@@ -34,9 +34,12 @@ try {
     }
 
     $placeholders = implode(',', array_fill(0, count($conflictSlots), '?'));
+    // เดิมกันแค่ 'ยกเลิก' ออก ทำให้ booking ที่คืนแล้ว (BookingStatus='ขากลับ')
+    // ยังถูกนับว่าชนกับการจองใหม่ จองซ้ำไม่ได้ทั้งที่รถว่างแล้วจริง ๆ
+    // แก้ให้เช็คว่า "ยังใช้อยู่จริง" (BookingStatus = 'ขาไป') เท่านั้นถึงจะถือว่าชน
     $sql_check = "SELECT COUNT(*) as total FROM CarBookings 
                   WHERE CarPlate = ? AND BookingDate = ? AND TimeSlot IN ($placeholders)
-                  AND (BookingStatus IS NULL OR BookingStatus != 'ยกเลิก')";
+                  AND BookingStatus = 'ขาไป'";
 
     $params_check = array_merge([$data['car_plate'], $data['use_date']], $conflictSlots);
     $check = $conn->prepare($sql_check);

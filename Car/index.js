@@ -9,15 +9,14 @@ function switchForm(formId) {
 }
 
 /**
- * 🎛️ 2. คอนฟิกพื้นฐานสำหรับแจ้งเตือนด่วน (SweetAlert2 Toast)
- * เด้งมุมขวาบน สวย นุ่มนวล และไม่ต้องค้างรอให้ผู้ใช้งานกดปุ่ม OK
+ * 🎛️ 2. คอนฟิกพื้นฐานสำหรับ Modal กลางจอ (success / error / warning)
+ * เข้าธีมกระจกม่วงเดียวกันทั้งหมด
  */
-const AppToast = Swal.mixin({
-  toast: true,
-  position: "top-end",
-  showConfirmButton: false,
-  timer: 1500,
-  timerProgressBar: true,
+const AppModal = Swal.mixin({
+  customClass: { popup: "swal-night" },
+  confirmButtonColor: "#a563c9",
+  background: "#1b1140",
+  color: "#f5f2ff",
 });
 
 /**
@@ -37,17 +36,20 @@ document
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          // แจ้งเตือนสำเร็จ แล้วดีดกลับไปหน้า Login อัตโนมัติ
-          AppToast.fire({
+          // สมัครสมาชิกสำเร็จ modal กลางจอ แล้วดีดกลับหน้า Login
+          AppModal.fire({
             icon: "success",
-            title: data.message || "สมัครสมาชิกสำเร็จเรียบร้อย",
+            title: "สมัครสมาชิกสำเร็จ",
+            text: data.message || "สร้างบัญชีพนักงานเรียบร้อยแล้ว",
+            confirmButtonText: "ไปเข้าสู่ระบบ",
+            iconColor: "#ff9ecb",
           }).then(() => {
             this.reset(); // เคลียร์ฟอร์ม
             switchForm("login-form"); // สลับไปหน้าล็อกอิน
           });
         } else {
           // แจ้งเตือนกรณีเกิดข้อผิดพลาดจากฝั่งเซิร์ฟเวอร์ (เช่น ชื่อผู้ใช้ซ้ำ)
-          Swal.fire({
+          AppModal.fire({
             icon: "warning",
             title: "คำแนะนำระบบ",
             text: data.message || "กรุณาตรวจสอบข้อมูลอีกครั้ง",
@@ -56,7 +58,7 @@ document
       })
       .catch((err) => {
         console.error("Register Error:", err);
-        Swal.fire({
+        AppModal.fire({
           icon: "error",
           title: "เกิดข้อผิดพลาด",
           text: "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง",
@@ -81,16 +83,19 @@ document
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          // เข้าสู่ระบบสำเร็จ สไลด์แจ้งเตือนแล้วย้ายหน้าอัตโนมัติเมื่อแถบโหลดเต็ม
-          AppToast.fire({
+          // เข้าสู่ระบบสำเร็จ modal กลางจอ แล้วย้ายหน้าเมื่อกด OK
+          AppModal.fire({
             icon: "success",
-            title: data.message || "เข้าสู่ระบบสำเร็จ",
+            title: "เข้าสู่ระบบสำเร็จ",
+            text: data.message || "ยินดีต้อนรับกลับมา",
+            confirmButtonText: "เข้าใช้งาน",
+            iconColor: "#ff9ecb",
           }).then(() => {
             window.location.href = data.redirect;
           });
         } else {
           // กรณีรหัสผ่านผิด หรือไม่พบผู้ใช้งาน
-          Swal.fire({
+          AppModal.fire({
             icon: "error",
             title: "เข้าสู่ระบบไม่สำเร็จ",
             text: data.message || "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
@@ -99,7 +104,7 @@ document
       })
       .catch((err) => {
         console.error("Login Error:", err);
-        Swal.fire({
+        AppModal.fire({
           icon: "error",
           title: "เกิดข้อผิดพลาด",
           text: "ระบบเชื่อมต่อฐานข้อมูลล้มเหลว กรุณาติดต่อผู้ดูแลระบบ",
@@ -124,16 +129,19 @@ document
       .then((response) => response.json())
       .then((data) => {
         if (data.success) {
-          // เปลี่ยนรหัสผ่านสำเร็จ สไลด์เตือนแล้วพากลับหน้าเข้าสู่ระบบทันที
-          AppToast.fire({
+          // เปลี่ยนรหัสผ่านสำเร็จ modal กลางจอ แล้วพากลับหน้าเข้าสู่ระบบ
+          AppModal.fire({
             icon: "success",
-            title: data.message || "เปลี่ยนรหัสผ่านใหม่เรียบร้อย",
+            title: "เปลี่ยนรหัสผ่านสำเร็จ",
+            text: data.message || "ใช้รหัสผ่านใหม่เข้าสู่ระบบได้เลย",
+            confirmButtonText: "ไปเข้าสู่ระบบ",
+            iconColor: "#ff9ecb",
           }).then(() => {
             this.reset(); // เคลียร์ฟอร์ม
             switchForm("login-form");
           });
         } else {
-          Swal.fire({
+          AppModal.fire({
             icon: "warning",
             title: "ไม่สามารถดำเนินการได้",
             text: data.message || "ข้อมูลยืนยันไม่ถูกต้อง",
@@ -142,7 +150,7 @@ document
       })
       .catch((error) => {
         console.error("Reset Password Error:", error);
-        Swal.fire({
+        AppModal.fire({
           icon: "error",
           title: "เกิดข้อผิดพลาด",
           text: "ไม่สามารถทำรายการได้ในขณะนี้ โปรดตรวจสอบการเชื่อมต่อของคุณ",
