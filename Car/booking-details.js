@@ -90,12 +90,28 @@ function renderBookingList(bookings) {
     const rowClass = isReturned ? "inbound-item" : "outbound-item";
     const dropdownId = `bk-${bk.BookingID}`;
 
+    // ป้ายสถานะ ให้ตรงธีมเดียวกับหน้าอื่น
+    let statusClass, statusText;
+    if (isCancelled) {
+      statusClass = "status-cancelled";
+      statusText = "ยกเลิก";
+    } else if (isReturned) {
+      statusClass = "status-returned";
+      statusText = "คืนแล้ว";
+    } else {
+      statusClass = "status-inuse";
+      statusText = "กำลังใช้งาน";
+    }
+
     const row = document.createElement("div");
     row.className = `booking-row-container ${rowClass}`;
+    row.dataset.searchText =
+      `${bk.CarPlate || ""} ${bk.DriverName || ""} ${bk.OutDate || ""}`.toLowerCase();
 
-    if (!isReturned) {
-      const actionButtons = isCancelled
-        ? `<span style="color:#94a3b8; font-size:14px; display:inline-block; margin-top:12px;">🚫 รายการนี้ถูกยกเลิกแล้ว</span>`
+    // ปุ่ม action แสดงเฉพาะเมื่อยังไม่คืนรถและยังไม่ถูกยกเลิก
+    const actionButtons =
+      isReturned || isCancelled
+        ? ""
         : `<div style="display:flex; gap:10px; margin-top:12px;">
              <button onclick="checkInBooking(${bk.BookingID})" style="background:#10b981; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">
                ✅ เช็คอิน
@@ -105,40 +121,48 @@ function renderBookingList(bookings) {
              </button>
            </div>`;
 
-      row.innerHTML = `
-        <div class="booking-header-row" onclick="toggleDropdown('${dropdownId}')">
-          <span class="bk-id">#${bk.BookingNumber}</span>
-          <span class="bk-user">${bk.DriverName}</span>
-          <span class="bk-car ${isCancelled ? "" : "text-success"}" style="${isCancelled ? "color:#6b7280; text-decoration:line-through;" : ""}">${bk.CarPlate}</span>
-          <span class="bk-date">${bk.OutDate || "-"}</span>
-          <span class="arrow-icon">▼</span>
-        </div>
-        <div id="${dropdownId}" class="booking-detail-dropdown" style="display:none">
-          <div class="card-dropdown-content">
-            <h5 class="text-danger" style="font-weight:bold; margin-bottom:15px;">รายละเอียดการจอง #${bk.BookingNumber}</h5>
-            <hr style="border-color:#333">
-            <div class="row">
-              <div class="col-md-6">
-                <p><strong>ชื่อผู้ขับ:</strong> ${bk.DriverName}</p>
-                <p><strong>หน่วยงาน/แผนก:</strong> ${bk.Department}</p>
-                <p><strong>สถานที่ไป:</strong> ${bk.Destination || "-"}</p>
-                <p><strong>รายละเอียดงาน:</strong> ${bk.JobDetail || "-"}</p>
-              </div>
-              <div class="col-md-6">
-                <p><strong>ทะเบียนรถ:</strong> ${bk.CarPlate}</p>
-                <p><strong>เลขไมล์เริ่มต้น:</strong> ${bk.StartMileage || "-"} กม.</p>
-                <p><strong>ผู้ร่วมเดินทาง:</strong> ${bk.Passengers || "-"}</p>
-                <p><strong>ปัญหาก่อนออก:</strong> ${bk.OutRemark || "-"}</p>
-              </div>
+    row.innerHTML = `
+      <div class="booking-header-row" onclick="toggleDropdown('${dropdownId}')">
+        <span class="bk-id">#${bk.BookingNumber}</span>
+        <span class="bk-user">${bk.DriverName}</span>
+        <span class="bk-car" style="${isCancelled ? "color:#6b7280; text-decoration:line-through;" : ""}">${bk.CarPlate}</span>
+        <span class="bk-date">${bk.OutDate || "-"}</span>
+        <span class="status-badge ${statusClass}">${statusText}</span>
+        <span class="arrow-icon">▼</span>
+      </div>
+      <div id="${dropdownId}" class="booking-detail-dropdown" style="display:none">
+        <div class="card-dropdown-content">
+          <h5 class="text-danger" style="font-weight:bold; margin-bottom:15px;">รายละเอียดการจอง #${bk.BookingNumber}</h5>
+          <hr style="border-color:#333">
+          <div class="row">
+            <div class="col-md-6">
+              <p><strong>ชื่อผู้ขับ:</strong> ${bk.DriverName}</p>
+              <p><strong>หน่วยงาน/แผนก:</strong> ${bk.Department}</p>
+              <p><strong>สถานที่ไป:</strong> ${bk.Destination || "-"}</p>
+              <p><strong>รายละเอียดงาน:</strong> ${bk.JobDetail || "-"}</p>
             </div>
-            ${actionButtons}
+            <div class="col-md-6">
+              <p><strong>ทะเบียนรถ:</strong> ${bk.CarPlate}</p>
+              <p><strong>เลขไมล์เริ่มต้น:</strong> ${bk.StartMileage || "-"} กม.</p>
+              <p><strong>ผู้ร่วมเดินทาง:</strong> ${bk.Passengers || "-"}</p>
+              <p><strong>ปัญหาก่อนออก:</strong> ${bk.OutRemark || "-"}</p>
+            </div>
           </div>
-        </div>`;
-    }
+          ${actionButtons}
+        </div>
+      </div>`;
+
     wrapper.appendChild(row);
   });
+}
 
-  filterHistory("outbound");
+// ค้นหาแบบเรียลไทม์ในรายการที่กำลังแสดงอยู่ (ทะเบียน / ชื่อผู้ขับ / วันที่)
+function filterBookingSearch(keyword) {
+  const q = (keyword || "").trim().toLowerCase();
+  document.querySelectorAll(".booking-row-container").forEach((row) => {
+    const match = !q || row.dataset.searchText.includes(q);
+    row.style.display = match ? "" : "none";
+  });
 }
 
 function cancelBooking(bookingId) {

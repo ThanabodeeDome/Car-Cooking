@@ -1,18 +1,21 @@
 /* =========================================
-   1. Global Styles & Background
+   1. Global Styles & Background — เข้าธีมเดียวกับหน้าอื่น
    ========================================= */
-@import url("https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600&display=swap");
 
 :root {
   --primary-color: #ff4d4d;
-  --primary-hover: #e60000;
-  --bg-dark: #0a0a0a;
-  --bg-card: #141414;
-  --bg-input: #1f1f1f;
-  --text-main: #ffffff;
-  --text-muted: #a0a0a0;
-  --border-color: #2a2a2a;
-  --font-family: "Kanit", sans-serif;
+  --primary-hover: #ff6b6b;
+  --bg-dark: #0a0e17;
+  --bg-card: #171720;
+  --bg-input: #1e1e24;
+  --text-main: #f5f5f7;
+  --text-muted: #9a9aa5;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --font-family: "Poppins", "Prompt", sans-serif;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
 }
 
 * {
@@ -29,8 +32,8 @@ body {
   /* เพิ่มพื้นหลังแบบ Gradient และลายน้ำจางๆ */
   background-image:
     radial-gradient(at 10% 10%, rgba(255, 77, 77, 0.05) 0px, transparent 50%),
-    radial-gradient(at 90% 90%, rgba(255, 77, 77, 0.05) 0px, transparent 50%),
-    linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%);
+    radial-gradient(at 90% 90%, rgba(59, 130, 246, 0.06) 0px, transparent 50%),
+    linear-gradient(180deg, #0a0e17 0%, #0f0f18 100%);
   background-attachment: fixed;
 }
 
@@ -82,7 +85,7 @@ body {
    ========================================= */
 .profile-card {
   background: var(--bg-card);
-  border-radius: 24px;
+  border-radius: var(--radius-lg);
   /* เงาแบบลึกและนุ่มนวล */
   box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
   border: 1px solid var(--border-color);
@@ -234,7 +237,7 @@ body {
   padding: 14px 16px;
   background: var(--bg-input);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   color: var(--text-main);
   font-family: var(--font-family);
   font-size: 0.95rem;
@@ -264,7 +267,7 @@ body {
   gap: 15px;
   background: rgba(22, 22, 22, 0.5); /* Semi-transparent */
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: var(--radius-md);
   padding: 25px;
   margin-bottom: 35px;
   position: relative;
@@ -310,7 +313,7 @@ body {
 .btn-logout {
   flex: 1;
   padding: 16px;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   border: none;
   font-family: var(--font-family);
   font-weight: 600;

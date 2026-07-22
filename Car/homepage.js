@@ -1,9 +1,6 @@
 /* =========================================
    1. ฟังก์ชันดึงประวัติการจอง (ตารางด้านล่าง)
    ========================================= */
-/* =========================================
-   1. ฟังก์ชันดึงประวัติการจอง (ตารางด้านล่าง)
-   ========================================= */
 function updateHistoryTable() {
   const tableBody = document.getElementById("history-table-body");
   if (!tableBody) return;
@@ -18,6 +15,7 @@ function updateHistoryTable() {
       }
 
       const bookings = Array.isArray(data) ? data : [];
+      bookings.sort((a, b) => (b.booking_id || 0) - (a.booking_id || 0));
       if (bookings.length === 0) {
         tableBody.innerHTML =
           '<tr><td colspan="9" style="text-align:center;">ไม่พบประวัติการจอง</td></tr>';
@@ -33,26 +31,28 @@ function updateHistoryTable() {
           let badgeClass, badgeText;
           if (isCancelled) {
             badgeClass = "status-cancelled";
-            badgeText = "🚫 ยกเลิก";
+            badgeText = "ยกเลิก";
           } else if (isReturned) {
-            badgeClass = "status-in";
-            badgeText = "🟢 คืนแล้ว";
+            badgeClass = "status-returned";
+            badgeText = "คืนแล้ว";
+          } else if (item.checkin_time) {
+            badgeClass = "status-inuse";
+            badgeText = "กำลังใช้งาน";
           } else {
-            badgeClass = "status-out";
-            badgeText = "🔴 กำลังใช้งาน";
+            badgeClass = "status-booked";
+            badgeText = "ติดจอง";
           }
-
           return `
       <tr>
           <td>${item.out_date || "-"}</td>
           <td>${item.checkin_time || "-"}</td>
-          <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
           <td>${item.return_time || "-"}</td>
-          <td>${item.car_brand || "-"}</td>
+          <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
           <td>${item.car_plate || "-"}</td>
           <td>${item.driver_name || "-"}</td>
-          <td>${item.passengers || "-"}</td>
           <td>${item.employeeId || "-"}</td>
+          <td>${item.passengers || "-"}</td>
+          <td>${item.passenger_ids || "-"}</td>
       </tr>`;
         })
         .join("");
@@ -105,7 +105,7 @@ function loadCarData(statusFilter = "all", btn = null) {
                         <p class="car-brand">${car.brand}</p>
                         <div class="car-info">
                             <span class="status-badge ${car.status === "available" ? "status-available" : "status-busy"}">
-                                ${car.status === "available" ? "● ว่าง" : "● ไม่ว่าง"}
+                                ${car.status === "available" ? "ว่าง" : "ไม่ว่าง"}
                             </span>
                             <span style="color: #888;">ไมล์: ${Number(car.current_mileage).toLocaleString()} กม.</span>
                         </div>

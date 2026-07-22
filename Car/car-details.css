@@ -69,20 +69,80 @@ body {
   border-radius: 20px;
   font-size: 12px;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+@keyframes badge-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 6px 0 currentColor;
+  }
+  50% {
+    box-shadow: 0 0 14px 3px currentColor;
+  }
+}
+
+.status-free,
+.status-available {
+  background: rgba(16, 185, 129, 0.6);
   color: #fff;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  border: 1px solid #10b981;
+  animation: badge-glow 1.6s ease-in-out infinite;
 }
-.status-free {
-  background: #10b981;
+.status-free::before,
+.status-available::before {
+  content: "✅";
 }
-.status-busy {
-  background: #ef4444;
+.status-reserved,
+.status-booked {
+  background: rgba(245, 158, 11, 0.6);
+  color: #fff;
+  border: 1px solid #f59e0b;
+  animation: badge-glow 1.6s ease-in-out infinite;
+}
+.status-reserved::before,
+.status-booked::before {
+  content: "⏳";
+}
+.status-busy,
+.status-inuse {
+  background: rgba(59, 130, 246, 0.6);
+  color: #fff;
+  border: 1px solid #3b82f6;
+  animation: badge-glow 1.6s ease-in-out infinite;
+}
+.status-busy::before,
+.status-inuse::before {
+  content: "🚗";
+}
+.status-returned {
+  background: rgba(139, 92, 246, 0.6);
+  color: #fff;
+  border: 1px solid #8b5cf6;
+  animation: badge-glow 1.6s ease-in-out infinite;
+}
+.status-returned::before {
+  content: "🏁";
+}
+.status-cancelled {
+  background: rgba(239, 68, 68, 0.6);
+  color: #fff;
+  border: 1px solid #ef4444;
+  animation: badge-glow 1.6s ease-in-out infinite;
+}
+.status-cancelled::before {
+  content: "🚫";
 }
 .status-maintenance {
-  background: #f59e0b;
+  background: rgba(107, 114, 128, 0.6);
+  color: #fff;
+  border: 1px solid #6b7280;
+  animation: badge-glow 1.6s ease-in-out infinite;
 }
-.status-reserved {
-  background: #3b82f6;
+.status-maintenance::before {
+  content: "🛠️";
 }
 
 /* ---------- เนื้อหา ---------- */

@@ -46,6 +46,16 @@
       </ul>
     </nav>
 
+    <div class="search-bar-wrap">
+      <input
+        type="text"
+        id="booking-search"
+        class="search-input"
+        placeholder="ค้นหาด้วยทะเบียน, ชื่อผู้ขับ หรือวันที่..."
+        oninput="filterBookingSearch(this.value)"
+      />
+    </div>
+
     <div class="booking-list-wrapper" id="booking-list-wrapper">
       <p style="color: #94a3b8; text-align: center; padding: 20px">
         กำลังโหลดข้อมูล...

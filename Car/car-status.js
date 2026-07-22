@@ -32,17 +32,6 @@ let selectedYear,
   selectedCarPlate = null;
 let allCarBookings = [];
 
-document.addEventListener("DOMContentLoaded", () => {
-  const today = new Date();
-  selectedYear = today.getFullYear();
-  selectedMonth = today.getMonth();
-  selectedDate = formatDate(today);
-
-  populateMonthDropdown();
-  renderDayStrip();
-  fetchCarsData();
-});
-
 function formatDate(d) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -129,7 +118,7 @@ function fetchCarsData() {
     .then((res) => res.json())
     .then((data) => {
       grid.innerHTML = "";
-      const order = { ว่าง: 1, จองแล้ว: 2, กำลังใช้งาน: 3, เช็คระยะ: 4 };
+      const order = { ว่าง: 1, ติดจอง: 2, กำลังใช้งาน: 3, งดให้บริการ: 4 };
       const sortedCars = data.sort(
         (a, b) => (order[a.RealStatus] || 99) - (order[b.RealStatus] || 99),
       );
@@ -142,11 +131,11 @@ function fetchCarsData() {
         const statusClass =
           status === "ว่าง"
             ? "available"
-            : status === "กำลังใช้งาน"
-              ? "busy"
-              : status === "จองแล้ว"
-                ? "reserved"
-                : "repair";
+            : status === "ติดจอง"
+              ? "booked"
+              : status === "กำลังใช้งาน"
+                ? "inuse"
+                : "maintenance";
 
         const card = document.createElement("div");
         card.className = `car-card ${isMaintenance ? "is-off" : ""}`;

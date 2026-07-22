@@ -62,10 +62,32 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+const editableFieldIds = ["emp-id", "emp-email", "emp-phone", "emp-dept"];
+let isEditing = false;
+
+function toggleEditMode() {
+  const btn = document.getElementById("edit-toggle-btn");
+
+  if (!isEditing) {
+    // เข้าสู่โหมดแก้ไข: ปลด readonly ทุกช่อง
+    editableFieldIds.forEach((id) => {
+      document.getElementById(id).readOnly = false;
+    });
+    document.getElementById("emp-email").focus();
+    btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล';
+    isEditing = true;
+  } else {
+    // กดซ้ำ = บันทึก แล้วกลับเป็นโหมดดูอย่างเดียว
+    saveProfile();
+  }
+}
+
 function saveProfile() {
   const data = {
+    employee_id: document.getElementById("emp-id").value,
     email: document.getElementById("emp-email").value,
     phone: document.getElementById("emp-phone").value,
+    department: document.getElementById("emp-dept").value,
   };
   fetch("update_profile.php", {
     method: "POST",
@@ -79,6 +101,14 @@ function saveProfile() {
           ? "บันทึกข้อมูลสำเร็จ!"
           : "เกิดข้อผิดพลาด: " + (result.message || ""),
       );
+      if (result.success) {
+        editableFieldIds.forEach((id) => {
+          document.getElementById(id).readOnly = true;
+        });
+        document.getElementById("edit-toggle-btn").innerHTML =
+          '<i class="fa-solid fa-pen"></i> แก้ไขข้อมูล';
+        isEditing = false;
+      }
     })
     .catch(() => alert("ติดต่อ Server ไม่ได้"));
 }

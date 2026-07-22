@@ -31,11 +31,11 @@ document.addEventListener("DOMContentLoaded", function () {
           const status = car.RealStatus;
           const statusClass =
             status === "ว่าง"
-              ? "free"
-              : status === "กำลังใช้งาน"
-                ? "busy"
-                : status === "จองแล้ว"
-                  ? "reserved"
+              ? "available"
+              : status === "ติดจอง"
+                ? "booked"
+                : status === "กำลังใช้งาน"
+                  ? "inuse"
                   : "maintenance";
 
           const rowHTML = `

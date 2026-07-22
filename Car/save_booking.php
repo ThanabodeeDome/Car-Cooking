@@ -55,9 +55,9 @@ try {
     $bookingNumber = 'BK-' . date('ymdHis');
 
     $sql = "INSERT INTO CarBookings 
-            (BookingNumber, DriverName, EmployeeID, Department, Destination, CarPlate, StartMileage, Passengers, OutDate, JobDetail, OutRemark, BookingStatus, BookingDate, TimeSlot)
-            VALUES 
-            (:booking_number, :driver_name, :employee_id, :department, :destination, :car_plate, :start_mileage, :passengers, :out_date, :job_detail, :out_remark, 'ขาไป', :booking_date, :time_slot)";
+        (BookingNumber, DriverName, EmployeeID, Department, Destination, CarPlate, StartMileage, Passengers, PassengerIDs, OutDate, JobDetail, OutRemark, BookingStatus, BookingDate, TimeSlot)
+        VALUES 
+        (:booking_number, :driver_name, :employee_id, :department, :destination, :car_plate, :start_mileage, :passengers, :passenger_ids, :out_date, :job_detail, :out_remark, 'ขาไป', :booking_date, :time_slot)";
     $stmt = $conn->prepare($sql);
     $stmt->execute([
         ':booking_number' => $bookingNumber,
@@ -68,6 +68,7 @@ try {
         ':car_plate'      => $data['car_plate'],
         ':start_mileage'  => $data['start_mile'] ?? 0,
         ':passengers'     => $data['passengers'] ?? null,
+        ':passenger_ids'  => $data['passenger_ids'] ?? null,
         ':out_date'       => $data['use_date'] ?? null,
         ':job_detail'     => $data['work_type'] ?? null,
         ':out_remark'     => $data['out_remark'] ?? null,

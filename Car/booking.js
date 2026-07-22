@@ -151,6 +151,7 @@ function submitBooking() {
         destination: document.getElementById("destination").value,
         work_type: document.getElementById("work-type").value,
         passengers: getPassengerNames(),
+        passenger_ids: getPassengerIds(),
         out_remark: document.getElementById("out-remark").value || "-",
       };
 
@@ -160,7 +161,8 @@ function submitBooking() {
         !data.section ||
         !data.time_slot
       ) {
-        return alert(
+        return showToast(
+          "warning",
           "กรุณากรอกข้อมูล ชื่อผู้ขับ, หน่วยงาน, ทะเบียนรถ และ ช่วงเวลา ให้ครบถ้วน!",
         );
       }
@@ -173,10 +175,10 @@ function submitBooking() {
         .then((res) => res.json())
         .then((result) => {
           if (result.success) {
-            alert("🚀 บันทึกการจองสำเร็จ!");
+            showToast("success", "บันทึกการจองสำเร็จ!");
             showReturn();
           } else {
-            alert("Error: " + result.message);
+            showToast("error", result.message || "เกิดข้อผิดพลาด");
           }
         })
         .catch((err) => alert("ติดต่อ Server ไม่ได้: " + err));
@@ -236,11 +238,12 @@ function submitReturn() {
   const startMile = Number(pendingReturnsMap[bookingId] || 0);
 
   if (!bookingId) {
-    return alert("กรุณาเลือกรถที่ต้องการคืน");
+    return showToast("warning", "กรุณาเลือกรถที่ต้องการคืน");
   }
 
   if (endMile <= startMile) {
-    return alert(
+    return showToast(
+      "warning",
       `เลขไมล์ตอนคืน (${endMile}) ต้องมากกว่าเลขไมล์ตอนออก (${startMile})`,
     );
   }
@@ -261,18 +264,27 @@ function submitReturn() {
     .then((res) => res.json())
     .then((result) => {
       if (result.success) {
-        alert("🚗 บันทึกการคืนรถสำเร็จ!");
-        window.location.href = "car-status.html";
+        showToast("success", "บันทึกการคืนรถสำเร็จ!");
+        setTimeout(() => (window.location.href = "car-status.html"), 1500); // เว้นเวลาให้เห็น toast ก่อนเปลี่ยนหน้า
       } else {
-        alert("Error: " + result.message);
+        showToast("error", result.message || "เกิดข้อผิดพลาด");
       }
     })
-    .catch((err) => alert("ติดต่อ Server ไม่ได้: " + err));
+    .catch((err) => showToast("error", "ติดต่อ Server ไม่ได้: " + err));
 }
 
 // รวมชื่อผู้ร่วมเดินทาง
 function getPassengerNames() {
   const inputs = document.getElementsByName("passengers[]");
+  return Array.from(inputs)
+    .map((i) => i.value)
+    .filter((v) => v.trim() !== "")
+    .join(", ");
+}
+
+// 🌟 รวมรหัสพนักงานผู้ร่วมเดินทาง
+function getPassengerIds() {
+  const inputs = document.getElementsByName("passenger_ids[]");
   return Array.from(inputs)
     .map((i) => i.value)
     .filter((v) => v.trim() !== "")

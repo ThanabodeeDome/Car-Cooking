@@ -4,7 +4,7 @@ require_once 'db_connect.php';
 
 $sql = "SELECT c.CarID, c.Plate, c.Brand, c.Model, c.Color, c.Mileage, c.Carimage, c.CarStatus,
   CASE 
-    WHEN c.CarStatus = N'เช็คระยะ' THEN N'เช็คระยะ'
+    WHEN c.CarStatus = N'เช็คระยะ' THEN N'งดให้บริการ'
     WHEN EXISTS (
       SELECT 1 FROM CarBookings cb 
       WHERE cb.CarPlate = c.Plate 
@@ -17,7 +17,7 @@ $sql = "SELECT c.CarID, c.Plate, c.Brand, c.Model, c.Color, c.Mileage, c.Carimag
       WHERE cb.CarPlate = c.Plate
         AND cb.BookingStatus = N'ขาไป'
         AND cb.BookingDate >= CAST(GETDATE() AS DATE)
-    ) THEN N'จองแล้ว'
+    ) THEN N'ติดจอง'
     ELSE N'ว่าง'
   END AS RealStatus
 FROM Cars c";
