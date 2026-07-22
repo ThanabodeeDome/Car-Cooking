@@ -181,9 +181,12 @@
                     name="CarStatus"
                     class="ctrl-select"
                   >
-                    <option value="ว่าง">🟢 ว่าง</option>
-                    <option value="ไม่ว่าง">🔴 ไม่ว่าง</option>
-                    <option value="เช็คระยะ">🟡 เช็คระยะ</option>
+                    <option value="ว่าง">
+                      🟢 ใช้งานได้ปกติ (ระบบคำนวณ ว่าง/ไม่ว่าง เองจากการจอง)
+                    </option>
+                    <option value="เช็คระยะ">
+                      🛠️ งดให้บริการ (ซ่อม/ปิดใช้ชั่วคราว)
+                    </option>
                   </select>
                 </div>
                 <div class="field-box" style="grid-column: span 3">
@@ -277,7 +280,6 @@
           </table>
         </div>
       </div>
-      
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>

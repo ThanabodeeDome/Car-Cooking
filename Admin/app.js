@@ -180,8 +180,17 @@ function fillWorkspaceForm(car) {
     document.getElementById("form-car-color").value = car.Color || "";
   if (document.getElementById("form-car-mileage"))
     document.getElementById("form-car-mileage").value = car.Mileage || 0;
-  if (document.getElementById("form-car-status"))
-    document.getElementById("form-car-status").value = car.CarStatus;
+  if (document.getElementById("form-car-status")) {
+    // dropdown ใหม่มีแค่ "ว่าง" กับ "งดให้บริการ" (admin คุมเอง)
+    // ส่วน "ไม่ว่าง" มาจาก booking ล้วนๆ ไม่ใช่ค่าที่ admin ตั้ง เลยไม่มีใน dropdown แล้ว
+    let statusToShow = car.CarStatus;
+    if (statusToShow === "ไม่ว่าง") {
+      statusToShow = "ว่าง"; // ค่าที่ admin ตั้งไว้จริงคือว่าง แค่ตอนนี้มีคนจองอยู่
+    } else if (statusToShow === "เช็คระยะ" || statusToShow === "ซ่อมบำรุง") {
+      statusToShow = "งดให้บริการ"; // ค่าเก่ารวมเป็นค่าใหม่ตัวเดียว
+    }
+    document.getElementById("form-car-status").value = statusToShow;
+  }
 
   const formElement = document.getElementById("crud-car-form");
   if (formElement) formElement.scrollIntoView({ behavior: "smooth" });
@@ -292,10 +301,13 @@ function loadAdminBookings() {
       tbody.innerHTML = data.bookings
         .map((bk) => {
           const canCancel = bk.BookingStatus === "ขาไป";
-          let statusClass = "pill-empty";
-          if (bk.BookingStatus === "ขากลับ") statusClass = "pill-busy";
-          if (bk.BookingStatus && bk.BookingStatus.includes("ยกเลิก"))
-            statusClass = "pill-maintenance";
+          // ใช้ badge ชุดเดียวกับ homepage.js/.css (.status-badge + .status-xxx)
+          // map ให้ตรงกับตรรกะเดียวกับหน้า user: ขากลับ = คืนแล้ว(purple), ไม่ใช่ inuse
+          let statusClass = "status-booked"; // default: "ขาไป" ยังไม่เช็คอิน = ติดจอง
+          if (bk.BookingStatus === "ขากลับ") statusClass = "status-returned";
+          else if (bk.BookingStatus && bk.BookingStatus.includes("ยกเลิก"))
+            statusClass = "status-cancelled";
+          else if (bk.CheckInTime) statusClass = "status-inuse"; // เช็คอินแล้ว = กำลังใช้งาน
 
           return `
             <tr>
@@ -304,7 +316,7 @@ function loadAdminBookings() {
               <td>${bk.CarPlate}</td>
               <td>${bk.BookingDate || "-"}</td>
               <td>${bk.TimeSlot || "-"}</td>
-              <td><span class="status-pill ${statusClass}">${bk.BookingStatus || "-"}</span></td>
+              <td><span class="status-badge ${statusClass}">${bk.BookingStatus || "-"}</span></td>
               <td>
                 ${
                   canCancel

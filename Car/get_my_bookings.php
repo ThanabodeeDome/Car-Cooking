@@ -22,7 +22,7 @@ try {
 
     $sql = "SELECT BookingID, BookingNumber, DriverName, Department, Destination, CarPlate, 
                    StartMileage, Passengers, OutDate, OutTime, JobDetail, OutRemark, BookingStatus,
-                   ReturnDate, ReturnTime, EndMileage, ReturnRemark
+                   CheckInTime, ReturnDate, ReturnTime, EndMileage, ReturnRemark
             FROM CarBookings
             WHERE EmployeeID = :emp_id
             ORDER BY BookingID DESC";

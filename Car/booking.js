@@ -167,6 +167,21 @@ function submitBooking() {
         );
       }
 
+      // 🌟 กันจองช่วงเวลาที่ผ่านมาแล้ว (เทียบเวลาสิ้นสุดของ slot กับเวลาปัจจุบัน)
+      const slotEndHour = { เช้า: 12, บ่าย: 17, ทั้งวัน: 17 };
+      const endHour = slotEndHour[data.time_slot];
+      if (data.use_date && endHour !== undefined) {
+        const slotEnd = new Date(
+          `${data.use_date}T${String(endHour).padStart(2, "0")}:00:00`,
+        );
+        if (slotEnd < new Date()) {
+          return showToast(
+            "warning",
+            "ช่วงเวลานี้ผ่านไปแล้ว กรุณาเลือกวันที่หรือช่วงเวลาใหม่",
+          );
+        }
+      }
+
       fetch("save_booking.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -399,3 +414,4 @@ function showStartMileHint(bookingId) {
     endMileInput.min = startMile + 1; // บังคับกรอกมากกว่าเดิมอย่างน้อย 1
   }
 }
+e

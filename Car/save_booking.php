@@ -24,6 +24,19 @@ try {
 
     $requestedSlot = $data['time_slot'];
 
+    // 🌟 กันจองช่วงเวลาที่ผ่านมาแล้ว (validate ฝั่ง server กันเคส bypass frontend)
+    $slotEndHour = ['เช้า' => 12, 'บ่าย' => 17, 'ทั้งวัน' => 17];
+    if (isset($slotEndHour[$requestedSlot]) && !empty($data['use_date'])) {
+        $slotEnd = DateTime::createFromFormat(
+            'Y-m-d H:i',
+            $data['use_date'] . ' ' . str_pad($slotEndHour[$requestedSlot], 2, '0', STR_PAD_LEFT) . ':00'
+        );
+        if ($slotEnd && $slotEnd < new DateTime()) {
+            echo json_encode(["success" => false, "message" => "ช่วงเวลานี้ผ่านไปแล้ว กรุณาเลือกวันที่หรือช่วงเวลาใหม่"]);
+            exit;
+        }
+    }
+
     // 🌟 กำหนดว่า slot ที่ขอจอง จะไปชนกับ slot ไหนบ้างที่มีอยู่แล้ว
     if ($requestedSlot === 'ทั้งวัน') {
         // จองทั้งวัน ชนกับทุก slot ที่มีอยู่ในวันนั้น (เช้า, บ่าย, หรือทั้งวันเดิม)

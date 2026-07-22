@@ -98,9 +98,13 @@ function renderBookingList(bookings) {
     } else if (isReturned) {
       statusClass = "status-returned";
       statusText = "คืนแล้ว";
-    } else {
+    } else if (bk.CheckInTime) {
+      // เช็คอินแล้วจริง ถึงจะเป็น "กำลังใช้งาน" ก่อนหน้านี้ปักไว้ตายตัวผิด
       statusClass = "status-inuse";
       statusText = "กำลังใช้งาน";
+    } else {
+      statusClass = "status-booked";
+      statusText = "ติดจอง";
     }
 
     const row = document.createElement("div");
@@ -113,9 +117,13 @@ function renderBookingList(bookings) {
       isReturned || isCancelled
         ? ""
         : `<div style="display:flex; gap:10px; margin-top:12px;">
-             <button onclick="checkInBooking(${bk.BookingID})" style="background:#10b981; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">
+             ${
+               bk.CheckInTime
+                 ? ""
+                 : `<button onclick="checkInBooking(${bk.BookingID})" style="background:#10b981; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">
                ✅ เช็คอิน
-             </button>
+             </button>`
+             }
              <button onclick="cancelBooking(${bk.BookingID})" style="background:#ef4444; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">
                ❌ ยกเลิกการจองนี้
              </button>

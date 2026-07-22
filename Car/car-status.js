@@ -6,8 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   populateMonthDropdown();
   renderDayStrip();
-  fetchCarsData();
-  setInterval(fetchCarsData, 15000); // 🌟 รีเฟรชการ์ดรถทุก 15 วิ
+  fetchCarsData(selectedDate);
+  setInterval(() => fetchCarsData(selectedDate), 15000); // 🌟 รีเฟรชการ์ดรถทุก 15 วิ (ของวันที่กำลังดูอยู่)
 });
 
 const thaiMonths = [
@@ -62,6 +62,10 @@ function populateMonthDropdown() {
     selectedYear = y;
     selectedMonth = m;
     renderDayStrip();
+
+    // 🌟 เปลี่ยนเดือนแล้ว วันเดิมอาจไม่มีอยู่ในเดือนใหม่ → ตั้งเป็นวันที่ 1 ของเดือนนั้นแทน
+    const firstDay = new Date(selectedYear, selectedMonth, 1);
+    selectDate(formatDate(firstDay), document.querySelector(".day-pill"));
   });
 }
 
@@ -106,15 +110,25 @@ function selectDate(dateStr, btnEl) {
     .querySelectorAll(".day-pill")
     .forEach((el) => el.classList.remove("active"));
   if (btnEl) btnEl.classList.add("active");
+
+  // 🌟 เปลี่ยนวัน → สถานะรถ (ว่าง/ติดจอง/กำลังใช้งาน) เปลี่ยนตามวันนั้นด้วย ต้องโหลดใหม่
+  fetchCarsData(selectedDate);
+
+  // เคลียร์รถที่เคยเลือกไว้ เพราะบริบท "วันนี้" เปลี่ยนไปแล้ว ให้ผู้ใช้กดเลือกใหม่
+  selectedCarPlate = null;
+  document
+    .querySelectorAll(".car-item")
+    .forEach((el) => el.classList.remove("is-selected"));
   renderBookingStatusPanel();
 }
 
 // ---------- การ์ดรถ ----------
-function fetchCarsData() {
+function fetchCarsData(dateStr) {
   const grid = document.getElementById("car-grid");
   if (!grid) return;
+  const dateParam = dateStr || selectedDate;
 
-  fetch("get_cars.php")
+  fetch(`get_cars.php?date=${encodeURIComponent(dateParam)}`)
     .then((res) => res.json())
     .then((data) => {
       grid.innerHTML = "";
@@ -140,7 +154,7 @@ function fetchCarsData() {
         const card = document.createElement("div");
         card.className = `car-card ${isMaintenance ? "is-off" : ""}`;
         card.innerHTML = `
-          <div class="car-item" onclick="selectCarForCalendar('${car.Plate}', this)">
+          <div class="car-item ${car.Plate === selectedCarPlate ? "is-selected" : ""}" onclick="selectCarForCalendar('${car.Plate}', this)">
             <div class="card-image">
               <img src="${imageSrc}" alt="${car.Brand}" onerror="this.onerror=null; this.src='assets/img-car/car-placeholder.png';">
               <span class="status-tag tag-${statusClass}">${status}</span>

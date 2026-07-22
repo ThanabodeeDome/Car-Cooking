@@ -663,6 +663,67 @@ input[type="file"].ctrl-input::file-selector-button:hover {
   border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
+/* ป้ายสถานะการจอง — ชุดเดียวกับ homepage.css ให้หน้า admin/user เหมือนกัน */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+@keyframes badge-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px currentColor,
+      0 0 6px 0 currentColor;
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px currentColor,
+      0 0 14px 3px currentColor;
+  }
+}
+.status-booked {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  animation: badge-glow 1.6s ease-in-out infinite;
+}
+.status-booked::before {
+  content: "⏳";
+}
+.status-inuse {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  animation: badge-glow 1.6s ease-in-out infinite;
+}
+.status-inuse::before {
+  content: "🚗";
+}
+.status-returned {
+  background: rgba(139, 92, 246, 0.12);
+  color: #8b5cf6;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  animation: badge-glow 1.6s ease-in-out infinite;
+}
+.status-returned::before {
+  content: "🏁";
+}
+.status-cancelled {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  animation: badge-glow 1.6s ease-in-out infinite;
+}
+.status-cancelled::before {
+  content: "🚫";
+}
+
 /* ========================================================
     🛑 7. MODAL OVERLAY & POPUP WINDOWS
     ======================================================== */
