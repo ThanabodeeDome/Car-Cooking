@@ -10,15 +10,21 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
+$id = $data['id'] ?? 0;
 
-if (!$data || empty($data['booking_id'])) {
-    echo json_encode(["success" => false, "message" => "ไม่พบรายการ"]);
+if (empty($id)) {
+    echo json_encode(["success" => false, "message" => "ไม่พบ user"]);
+    exit;
+}
+
+if ((int)$id === (int)$_SESSION['user_id']) {
+    echo json_encode(["success" => false, "message" => "ลบบัญชีตัวเองไม่ได้"]);
     exit;
 }
 
 try {
-    $stmt = $conn->prepare("UPDATE CarBookings SET BookingStatus = 'ยกเลิก' WHERE BookingID = :id");
-    $stmt->execute([':id' => $data['booking_id']]);
+    $stmt = $conn->prepare("DELETE FROM Users WHERE id = :id");
+    $stmt->execute([':id' => $id]);
     echo json_encode(["success" => true]);
 } catch (PDOException $e) {
     echo json_encode(["success" => false, "message" => $e->getMessage()]);

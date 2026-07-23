@@ -1,56 +1,106 @@
 <?php
-ini_set('default_charset', 'utf-8');
 header('Content-Type: application/json; charset=utf-8');
+require_once '../Car/db_connect.php'; // ใช้ PDO ตัวเดียวกับ endpoint อื่นทั้งระบบ (path เดิมผมพิมพ์ผิด ไม่มี ../Car/ เลยหาไฟล์ไม่เจอ)
 
-$serverName = "LAPTOP-2JTTL5G0\SQLEXPRESS"; 
-$connectionInfo = array("Database" => "CarBookingDB", "CharacterSet" => "UTF-8");
-$conn = sqlsrv_connect($serverName, $connectionInfo);
+try {
+    // ---------- 1) สถานะรถแบบ real-time (logic เดียวกับ get_cars.php ฝั่ง user) ----------
+    $sqlCars = "SELECT c.CarID, c.Plate, c.Brand, c.Model, c.CarStatus,
+      CASE 
+        WHEN c.CarStatus = N'เช็คระยะ' THEN N'งดให้บริการ'
+        WHEN EXISTS (
+          SELECT 1 FROM MaintenanceHistory m
+          WHERE m.CarID = c.CarID
+            AND m.EndDate IS NULL
+            AND m.StartDate <= CAST(GETDATE() AS DATE)
+        ) THEN N'งดให้บริการ'
+        WHEN EXISTS (
+          SELECT 1 FROM CarBookings cb 
+          WHERE cb.CarPlate = c.Plate 
+            AND cb.BookingStatus = N'ขาไป'
+            AND cb.CheckInTime IS NOT NULL
+            AND cb.BookingDate = CAST(GETDATE() AS DATE)
+        ) THEN N'กำลังใช้งาน'
+        WHEN EXISTS (
+          SELECT 1 FROM CarBookings cb
+          WHERE cb.CarPlate = c.Plate
+            AND cb.BookingStatus = N'ขาไป'
+            AND cb.BookingDate = CAST(GETDATE() AS DATE)
+        ) THEN N'ติดจอง'
+        ELSE N'ว่าง'
+      END AS RealStatus
+    FROM Cars c
+    ORDER BY c.Plate";
+    $cars = $conn->query($sqlCars)->fetchAll(PDO::FETCH_ASSOC);
 
-if (!$conn) {
-    echo json_encode(array("error" => "Connection failed", "details" => sqlsrv_errors()));
-    exit;
-}
-
-// ── PART 1: นับตัวเลข Dashboard
-$sql_avail = "SELECT COUNT(*) as total FROM [CarBookingDB].[dbo].[Cars] WHERE [CarStatus] = N'ว่าง'";
-$sql_busy  = "SELECT COUNT(*) as total FROM [CarBookingDB].[dbo].[Cars] WHERE [CarStatus] = N'ไม่ว่าง'";
-$sql_maint = "SELECT COUNT(*) as total FROM [CarBookingDB].[dbo].[Cars] WHERE [CarStatus] = N'เช็คระยะ'"; // 🌟 แก้ตรงนี้
-$sql_today = "SELECT COUNT(*) as total FROM [CarBookingDB].[dbo].[CarBookings] WHERE CAST([BookingDate] AS DATE) = CAST(GETDATE() AS DATE)";
-
-$avail_count = ($stmt = sqlsrv_query($conn, $sql_avail)) ? sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)['total'] : 0;
-$busy_count  = ($stmt = sqlsrv_query($conn, $sql_busy)) ? sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)['total'] : 0;
-$maint_count = ($stmt = sqlsrv_query($conn, $sql_maint)) ? sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)['total'] : 0;
-$today_count = 0;
-
-// ── PART 2: ดึงข้อมูลรถทั้งหมด
-$sql_cars_list = "SELECT [CarID], [Plate], [Brand], [Model], [Color], [Mileage], [CarImage], [CarStatus] FROM [CarBookingDB].[dbo].[Cars]";
-$stmt_list = sqlsrv_query($conn, $sql_cars_list);
-$cars_array = array();
-
-if ($stmt_list) {
-    while ($row = sqlsrv_fetch_array($stmt_list, SQLSRV_FETCH_ASSOC)) {
-        // 🌟 แก้ key ให้เป็นตัวใหญ่ ตรงกับที่ dashboard.js เรียกใช้ (car.CarStatus, car.Plate, ฯลฯ)
-        $cars_array[] = array(
-            "CarID"     => $row['CarID'],
-            "Plate"     => $row['Plate'],
-            "Brand"     => $row['Brand'],
-            "Model"     => $row['Model'],
-            "Color"     => $row['Color'],
-            "Mileage"   => $row['Mileage'],
-            "CarImage"  => $row['CarImage'],
-            "CarStatus" => $row['CarStatus']
-        );
+    $counts = ['ว่าง' => 0, 'กำลังใช้งาน' => 0, 'ติดจอง' => 0, 'งดให้บริการ' => 0];
+    foreach ($cars as $car) {
+        if (isset($counts[$car['RealStatus']])) $counts[$car['RealStatus']]++;
     }
+
+    // ---------- 2) ตารางรายสัปดาห์ (จันทร์-อาทิตย์ ของสัปดาห์นี้) ----------
+    // ⚠️ 'monday this week' ของ PHP มี bug: ถ้าวันนี้เป็นอาทิตย์จะได้จันทร์ "สัปดาห์หน้า" แทน
+    // คำนวณเองด้วย ISO weekday (1=จันทร์...7=อาทิตย์) กันเคสนี้ไว้
+    $today = new DateTime();
+    $isoDow = (int) $today->format('N');
+    $weekStart = (clone $today)->modify('-' . ($isoDow - 1) . ' days');
+    $weekEnd   = (clone $weekStart)->modify('+6 days');
+    $sqlWeek = "SELECT CarPlate, DriverName, BookingDate, TimeSlot, BookingStatus
+                FROM CarBookings
+                WHERE BookingDate BETWEEN :start AND :end
+                  AND BookingStatus NOT LIKE N'ยกเลิก%'
+                ORDER BY CarPlate, BookingDate";
+    $stmtWeek = $conn->prepare($sqlWeek);
+    $stmtWeek->execute([':start' => $weekStart->format('Y-m-d'), ':end' => $weekEnd->format('Y-m-d')]);
+    $weekBookings = $stmtWeek->fetchAll(PDO::FETCH_ASSOC);
+
+    // ---------- 3) รายการจองล่าสุด ----------
+    $sqlRecent = "SELECT TOP 5 BookingNumber, DriverName, CarPlate, BookingDate, TimeSlot, BookingStatus
+                  FROM CarBookings ORDER BY BookingID DESC";
+    $recent = $conn->query($sqlRecent)->fetchAll(PDO::FETCH_ASSOC);
+
+    // ---------- 4) รายการจองวันนี้ (ไม่นับที่ยกเลิก) ----------
+    $sqlToday = "SELECT COUNT(*) as total FROM CarBookings 
+                 WHERE CAST(BookingDate AS DATE) = CAST(GETDATE() AS DATE)
+                   AND BookingStatus NOT LIKE N'ยกเลิก%'";
+    $todayCount = $conn->query($sqlToday)->fetch(PDO::FETCH_ASSOC)['total'];
+
+    // ---------- 5) แจ้งเตือน: ประกัน/พ.ร.บ. ใกล้หมด (≤30 วัน) หรือหมดแล้ว ----------
+    $sqlAlerts = "SELECT Plate, Brand, Model, InsuranceExpiry, ActExpiry
+                  FROM Cars
+                  WHERE (InsuranceExpiry IS NOT NULL AND InsuranceExpiry <= DATEADD(day, 30, CAST(GETDATE() AS DATE)))
+                     OR (ActExpiry IS NOT NULL AND ActExpiry <= DATEADD(day, 30, CAST(GETDATE() AS DATE)))";
+    $alerts = $conn->query($sqlAlerts)->fetchAll(PDO::FETCH_ASSOC);
+
+    // ---------- 5.1) แจ้งเตือน: ถึงกำหนดเช็คระยะครั้งถัดไป (≤30 วัน) — เอาเฉพาะ record ล่าสุดต่อคัน ----------
+    $sqlMaintDue = "SELECT c.Plate, c.Brand, c.Model, m.NextDueDate
+                     FROM Cars c
+                     JOIN MaintenanceHistory m ON m.CarID = c.CarID
+                     WHERE m.NextDueDate IS NOT NULL
+                       AND m.NextDueDate <= DATEADD(day, 30, CAST(GETDATE() AS DATE))
+                       AND m.MaintenanceID = (
+                           SELECT TOP 1 m2.MaintenanceID
+                           FROM MaintenanceHistory m2
+                           WHERE m2.CarID = c.CarID
+                           ORDER BY m2.StartDate DESC
+                       )";
+    $maintDue = $conn->query($sqlMaintDue)->fetchAll(PDO::FETCH_ASSOC);
+
+    echo json_encode([
+        "success" => true,
+        "counts" => [
+            "available"   => (int)$counts['ว่าง'],
+            "inuse"       => (int)$counts['กำลังใช้งาน'],
+            "booked"      => (int)$counts['ติดจอง'],
+            "maintenance" => (int)$counts['งดให้บริการ'],
+        ],
+        "today"         => (int)$todayCount,
+        "cars"          => $cars,
+        "week_start"    => $weekStart->format('Y-m-d'),
+        "week_bookings" => $weekBookings,
+        "recent"        => $recent,
+        "alerts"        => $alerts,
+        "maint_due"     => $maintDue,
+    ], JSON_UNESCAPED_UNICODE);
+} catch (PDOException $e) {
+    echo json_encode(["success" => false, "message" => $e->getMessage()]);
 }
-
-$response_data = array(
-    "available"   => $avail_count,
-    "busy"        => $busy_count,
-    "maintenance" => $maint_count,
-    "today"       => $today_count,
-    "cars"        => $cars_array
-);
-
-echo json_encode($response_data);
-sqlsrv_close($conn);
-?>

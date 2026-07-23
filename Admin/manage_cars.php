@@ -7,10 +7,18 @@ $action = $_GET['action'] ?? '';
 // 1. ดึงข้อมูลรถยนต์ไปโชว์ที่หน้าเว็บ (Fetch ครบทุกคอลัมน์)
 if ($action === 'fetch') {
     try {
-        $sql = "SELECT CarID, Plate, Brand, Model, Color, Mileage, CarImage, CarStatus, 
-                       InsuranceExpiry, ActExpiry, LastMaintenance, NextMaintenance, 
-                       MaintenanceStartDate, MaintenanceEndDate 
-                FROM Cars ORDER BY CarID DESC";
+        $sql = "SELECT c.CarID, c.Plate, c.Brand, c.Model, c.Color, c.Mileage, c.CarImage, c.CarStatus, 
+                       c.InsuranceExpiry, c.ActExpiry, c.LastMaintenance, c.NextMaintenance, 
+                       c.MaintenanceStartDate, c.MaintenanceEndDate,
+                       (SELECT TOP 1
+                          CASE WHEN m.EndDate IS NULL
+                               THEN CONVERT(varchar, m.StartDate, 23) + N' (กำลังซ่อม)'
+                               ELSE CONVERT(varchar, m.StartDate, 23)
+                          END
+                        FROM MaintenanceHistory m
+                        WHERE m.CarID = c.CarID
+                        ORDER BY m.StartDate DESC) AS LastMaintenanceLog
+                FROM Cars c ORDER BY c.CarID DESC";
         $stmt = $conn->prepare($sql);
         $stmt->execute();
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);

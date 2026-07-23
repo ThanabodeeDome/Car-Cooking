@@ -588,14 +588,14 @@ input[type="file"].ctrl-input::file-selector-button:hover {
 .car-data-table th {
   background-color: #f1f5f9;
   color: var(--text-primary);
-  padding: 14px 10px;
-  font-size: 13.5px;
+  padding: 10px 8px;
+  font-size: 13px;
   font-weight: 600;
   border-bottom: 2px solid #cbd5e1;
 }
 .car-data-table td {
-  padding: 12px 10px;
-  font-size: 13.5px;
+  padding: 7px 8px;
+  font-size: 13px;
   color: var(--text-primary);
   vertical-align: middle;
   white-space: nowrap;
@@ -609,7 +609,8 @@ input[type="file"].ctrl-input::file-selector-button:hover {
 
 .action-buttons-group {
   display: flex;
-  gap: 6px;
+  flex-wrap: nowrap;
+  gap: 4px;
   justify-content: center;
   align-items: center;
   width: 100%;
@@ -617,10 +618,10 @@ input[type="file"].ctrl-input::file-selector-button:hover {
 .op-edit,
 .op-del {
   border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 4px 6px;
+  border-radius: 5px;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 10px;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s;
@@ -783,6 +784,25 @@ input[type="file"].ctrl-input::file-selector-button:hover {
   }
 }
 
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-target,
+  .print-target * {
+    visibility: visible;
+  }
+  .print-target {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .print-target .action-buttons-group {
+    display: none;
+  }
+}
+
 .stat-car-list {
   margin-top: 12px;
   padding-top: 10px;
@@ -855,4 +875,725 @@ input[type="file"].ctrl-input::file-selector-button:hover {
 .stat-car-list::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 4px;
+}
+
+/* =========================================================
+   DASHBOARD v2 — header cards / weekly timeline / lists
+   ========================================================= */
+.stats-grid-v2 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.stat-card-v2 {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  border-left: 5px solid transparent;
+}
+.stat-card-v2 i {
+  font-size: 26px;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+.stat-card-v2 h3 {
+  font-size: 26px;
+  margin: 0 0 2px;
+}
+.stat-card-v2 p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+.stat-card-v2.c-available {
+  border-left-color: #10b981;
+}
+.stat-card-v2.c-available i {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+.stat-card-v2.c-inuse {
+  border-left-color: #3b82f6;
+}
+.stat-card-v2.c-inuse i {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+}
+.stat-card-v2.c-booked {
+  border-left-color: #f59e0b;
+}
+.stat-card-v2.c-booked i {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+.stat-card-v2.c-maintenance {
+  border-left-color: #ef4444;
+}
+.stat-card-v2.c-maintenance i {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.dash-grid-main {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.dash-panel {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  margin-bottom: 20px;
+}
+.panel-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #111827;
+}
+.panel-title i {
+  color: var(--primary-color, #ff4d4d);
+}
+.empty-hint {
+  color: #9ca3af;
+  font-size: 13px;
+  text-align: center;
+  padding: 16px 0;
+}
+
+/* ตารางรายสัปดาห์ */
+.week-timeline-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+.week-timeline-table th,
+.week-timeline-table td {
+  border: 1px solid #e5e7eb;
+  padding: 8px 6px;
+  text-align: center;
+  font-size: 12.5px;
+  vertical-align: top;
+}
+.week-timeline-table thead th {
+  background: #f9fafb;
+  color: #374151;
+  font-weight: 700;
+}
+.week-timeline-table .th-date {
+  color: #9ca3af;
+  font-weight: 400;
+}
+.week-timeline-table th.is-today-col {
+  background: #fee2e2;
+  color: #ef4444;
+}
+.week-car-col,
+.week-car-name {
+  text-align: left;
+  font-weight: 700;
+  white-space: nowrap;
+  background: #f9fafb;
+}
+.week-chip {
+  display: block;
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+  border-radius: 6px;
+  padding: 3px 6px;
+  margin-bottom: 3px;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+/* รายการจองล่าสุด / สถานะรถปัจจุบัน */
+.recent-row,
+.fleet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 4px;
+  border-bottom: 1px solid #f0f1f3;
+}
+.recent-row:last-child,
+.fleet-row:last-child {
+  border-bottom: none;
+}
+.recent-row-main,
+.fleet-row-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.recent-row-main strong,
+.fleet-row-name strong {
+  font-size: 13.5px;
+  color: #111827;
+}
+.recent-row-main span,
+.fleet-row-name span {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.status-available2 {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.status-available2::before {
+  content: "✅";
+}
+
+/* แจ้งเตือน */
+.alert-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 4px;
+  border-bottom: 1px solid #f0f1f3;
+  font-size: 12.5px;
+}
+.alert-row:last-child {
+  border-bottom: none;
+}
+.alert-row i {
+  margin-top: 2px;
+}
+.alert-row div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.alert-row.alert-warning i {
+  color: #f59e0b;
+}
+.alert-row.alert-expired i {
+  color: #ef4444;
+}
+.alert-row.alert-expired strong {
+  color: #ef4444;
+}
+
+@media (max-width: 1100px) {
+  .stats-grid-v2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .dash-grid-main {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 560px) {
+  .stats-grid-v2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   FIXES: admin bookings table (passenger chip, emp id, status align)
+   + calendar legend
+   ========================================================= */
+.car-data-table td {
+  vertical-align: middle;
+}
+.status-cell {
+  vertical-align: middle;
+  white-space: nowrap;
+  text-align: center;
+}
+.status-cell .status-badge {
+  display: inline-flex;
+  margin: 0 auto;
+}
+.emp-id-tag {
+  display: inline-block;
+  font-size: 11px;
+  color: #6b7280;
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 1px 6px;
+  margin-left: 6px;
+}
+.passenger-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #374151;
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin-top: 4px;
+  width: fit-content;
+}
+
+.calendar-legend {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 14px;
+}
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #374151;
+}
+.legend-item i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* =========================================================
+   FullCalendar — ปรับให้เข้าธีมเว็บ ไม่ใช่ default plain
+   ========================================================= */
+.calendar-wrapper {
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+.fc {
+  --fc-border-color: #eef0f3;
+  --fc-today-bg-color: rgba(255, 77, 77, 0.06);
+  --fc-neutral-bg-color: #f9fafb;
+  font-family: "Prompt", "Poppins", sans-serif;
+}
+.fc .fc-toolbar-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: #111827;
+}
+.fc .fc-button-primary {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  box-shadow: none;
+  text-transform: capitalize;
+}
+.fc .fc-button-primary:hover {
+  background: #f3f4f6;
+}
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+  background: var(--primary-color, #ff4d4d);
+  border-color: var(--primary-color, #ff4d4d);
+  color: #fff;
+}
+.fc .fc-col-header-cell-cushion {
+  color: #6b7280;
+  font-weight: 700;
+  font-size: 12.5px;
+  padding: 10px 4px;
+  text-decoration: none;
+}
+.fc .fc-daygrid-day-number {
+  color: #374151;
+  font-size: 13px;
+  padding: 6px;
+  text-decoration: none;
+}
+.fc .fc-day-today .fc-daygrid-day-number {
+  color: var(--primary-color, #ff4d4d);
+  font-weight: 700;
+}
+.fc-event {
+  border: none !important;
+  border-radius: 6px !important;
+  padding: 2px 6px !important;
+  font-size: 11.5px !important;
+  font-weight: 600;
+  cursor: pointer;
+}
+.fc-daygrid-event-dot {
+  display: none; /* ใช้สีพื้นหลัง chip แทนจุดกลม ดูสะอาดกว่า */
+}
+.fc-daygrid-day-frame {
+  padding: 3px;
+}
+.fc-more-link {
+  font-size: 11px;
+  color: var(--primary-color, #ff4d4d);
+  font-weight: 600;
+}
+
+/* จัดการการจอง: ปิด glow animation ที่ทำให้ badge ดูเบลอ/หลุดขอบ ให้นิ่งสะอาด */
+.status-badge.no-glow {
+  animation: none !important;
+  box-shadow: none !important;
+}
+
+/* =========================================================
+   🎨 REDESIGN OVERRIDE — full visual pass (buttons/tables/
+   sidebar/cards) + chart size fix
+   ========================================================= */
+
+/* ---- 9.1 Chart size fix: กราฟล้นจอ ---------------------- */
+.chart-box {
+  position: relative;
+  width: 100%;
+  height: 150px;
+  margin: 4px 0 14px;
+}
+.chart-box.chart-box-sm {
+  height: 130px;
+}
+.chart-box canvas {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+@media (max-width: 768px) {
+  .chart-box {
+    height: 130px;
+  }
+}
+
+/* ---- 9.2 Sidebar polish --------------------------------- */
+.sidebar {
+  background: linear-gradient(165deg, #ffd6d6 0%, #ffc2c2 55%, #ffb3b3 100%);
+  box-shadow: 2px 0 18px rgba(127, 29, 29, 0.08);
+}
+.menu-link {
+  position: relative;
+  border-radius: 10px;
+  margin-bottom: 2px;
+}
+.menu-link:hover,
+.menu-link.active {
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 3px 10px rgba(127, 29, 29, 0.12);
+}
+.menu-link.active {
+  background: #ffffff;
+  color: var(--red);
+  font-weight: 700;
+}
+.menu-link.active::before {
+  content: "";
+  position: absolute;
+  left: -16px;
+  top: 8px;
+  bottom: 8px;
+  width: 4px;
+  border-radius: 4px;
+  background: var(--red);
+}
+.menu-link.active i {
+  color: var(--red);
+}
+
+/* ---- 9.3 Buttons: unify + polish everywhere -------------- */
+.btn-primary {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+}
+.btn-primary:hover {
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.4);
+}
+.action-buttons-group .op-edit {
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+}
+.action-buttons-group .op-edit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+}
+.op-edit,
+.op-del {
+  padding: 6px 12px;
+  border-radius: 7px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+.op-edit:hover,
+.op-del:hover {
+  transform: translateY(-1px);
+}
+
+/* ---- 9.4 Tables: zebra + sticky header + rounded frame --- */
+.table-scroll-container {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+.car-data-table thead th,
+.week-timeline-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.car-data-table tbody tr:nth-child(even) {
+  background: #fafbfc;
+}
+.car-data-table tbody tr:hover {
+  background: #eff6ff;
+}
+.car-data-table th {
+  background: linear-gradient(180deg, #f8fafc, #eef1f5);
+  border-bottom: 2px solid #dbe2ea;
+}
+
+/* ---- 9.5 Cards: subtle lift on hover ---------------------- */
+.stat-card-v2,
+.dash-panel {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.stat-card-v2:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* ---- 9.6 Status pills: consistent shadow ------------------ */
+.status-badge,
+.status-pill {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* ---- 9.7 Scrollbar polish (whole page) -------------------- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* =========================================================
+   📊 FX OVERVIEW GRID — สไตล์ fleetx (การ์ดตัวเลข/กราฟกะทัดรัด)
+   ========================================================= */
+.fx-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.fx-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.fx-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+.fx-span-3 {
+  grid-column: span 3;
+}
+.fx-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.fx-card-head h3 {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.fx-card-head h3 i {
+  color: var(--primary-color, #ff4d4d);
+  font-size: 13px;
+}
+.fx-card-actions {
+  display: flex;
+  gap: 4px;
+}
+.fx-card-actions .op-edit {
+  padding: 4px 10px;
+  font-size: 10.5px;
+}
+
+/* ตัวเลขสถานะ 2x2 ต่อการ์ด */
+.fx-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  flex: 1;
+  align-content: center;
+}
+.fx-num-item strong {
+  display: block;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+.fx-num-item span {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+/* วงแหวนอัตรายกเลิก */
+.fx-donut-box {
+  position: relative;
+  width: 128px;
+  height: 128px;
+  margin: 4px auto 0;
+}
+.fx-donut-box canvas {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+.fx-gauge-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+}
+.fx-gauge-center strong {
+  font-size: 20px;
+  font-weight: 800;
+  color: #111827;
+  line-height: 1.1;
+}
+.fx-gauge-center span {
+  font-size: 9.5px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+/* ตัวเลขใหญ่แบบการ์ดสรุป (ค่าซ่อมรวม) */
+.fx-big-number {
+  font-size: 26px;
+  font-weight: 800;
+  color: #f59e0b;
+  margin-top: 6px;
+}
+.fx-number-sub {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+@media (max-width: 1200px) {
+  .fx-grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .fx-span-3 {
+    grid-column: span 2;
+  }
+}
+@media (max-width: 640px) {
+  .fx-grid-4 {
+    grid-template-columns: 1fr;
+  }
+  .fx-span-3 {
+    grid-column: span 1;
+  }
+}
+
+/* =========================================================
+   ⚡ Reports: quick-range presets / live indicator / empty state
+   ========================================================= */
+.fx-preset-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.fx-preset-btn {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.fx-preset-btn:hover {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.page-title .fx-live-dot,
+.fx-live-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #10b981;
+  vertical-align: middle;
+  margin-left: 12px;
+}
+.fx-live-dot i {
+  font-size: 8px;
+  animation: fx-live-pulse 1.4s ease-in-out infinite;
+}
+@keyframes fx-live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(1.4);
+  }
+}
+
+.fx-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 0;
+  color: #9ca3af;
+  grid-column: 1 / -1;
+}
+.fx-empty i {
+  font-size: 22px;
+  opacity: 0.6;
+}
+.fx-empty span {
+  font-size: 12.5px;
 }

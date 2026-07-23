@@ -414,4 +414,3 @@ function showStartMileHint(bookingId) {
     endMileInput.min = startMile + 1; // บังคับกรอกมากกว่าเดิมอย่างน้อย 1
   }
 }
-e
