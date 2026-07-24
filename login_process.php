@@ -14,7 +14,7 @@ if (empty($username) || empty($password)) {
 
 try {
     // ดึงข้อมูลผู้ใช้จากตาราง Users ตามชื่อที่กรอกมา
-    $sql = "SELECT id, username, password, first_name, role FROM Users WHERE username = :username";
+    $sql = "SELECT id, username, password, first_name, employee_id, role FROM Users WHERE username = :username";
     $stmt = $conn->prepare($sql);
     $stmt->execute([':username' => $username]);
     $user = $stmt->fetch(PDO::class ? PDO::FETCH_ASSOC : 0);
@@ -26,6 +26,7 @@ try {
         $_SESSION['user_id']    = $user['id'];
         $_SESSION['username']   = $user['username'];
         $_SESSION['first_name'] = $user['first_name'];
+        $_SESSION['employee_id'] = $user['employee_id'];
         $_SESSION['role']       = $user['role'];
 
         // 3. ตรวจสอบสิทธิ์ (Role) เพื่อกำหนดปลายทางที่จะส่งไป (Fix ปัญหาหน้า 404)

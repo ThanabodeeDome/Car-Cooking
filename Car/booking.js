@@ -101,6 +101,11 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnReturn) btnReturn.addEventListener("click", showReturn);
 });
 
+// 🩹 หมายเหตุ: เดิมมีการเช็ค hasPendingReturn() ก่อนอนุญาตสลับแท็บ/จอง
+// (บล็อกทันทีถ้ามี booking ค้าง 'ขาไป' อยู่ ไม่ว่าจะคนละช่วงเวลาแค่ไหน)
+// เอาออกแล้ว เพราะตอนนี้อนุญาตให้จองหลาย slot ต่างเวลากันในวันเดียวกันได้ล่วงหน้า
+// การกันชนเวลาจริงๆ ทำฝั่ง server (save_booking.php) ด้วยการเทียบช่วงเวลาแทน
+
 function loadAvailableCars() {
   fetch("get_cars.php")
     .then((res) => res.json())
@@ -138,66 +143,74 @@ function submitBooking() {
         return;
       }
 
-      const data = {
-        driver_name: document.getElementById("driver-name").value,
-        employee_id: sessionUser.employee_id, // 🌟 ใช้จาก session แทนช่องพิมพ์เอง
-        main_dept: document.getElementById("main_dept").value,
-        sub_dept: document.getElementById("sub_dept").value,
-        section: document.getElementById("section").value,
-        car_plate: document.getElementById("car-plate-select").value,
-        start_mile: document.getElementById("start-mile").value,
-        use_date: document.getElementById("use-date").value,
-        time_slot: document.getElementById("time-slot").value,
-        destination: document.getElementById("destination").value,
-        work_type: document.getElementById("work-type").value,
-        passengers: getPassengerNames(),
-        passenger_ids: getPassengerIds(),
-        out_remark: document.getElementById("out-remark").value || "-",
-      };
-
-      if (
-        !data.car_plate ||
-        !data.driver_name ||
-        !data.section ||
-        !data.time_slot
-      ) {
-        return showToast(
-          "warning",
-          "กรุณากรอกข้อมูล ชื่อผู้ขับ, หน่วยงาน, ทะเบียนรถ และ ช่วงเวลา ให้ครบถ้วน!",
-        );
-      }
-
-      // 🌟 กันจองช่วงเวลาที่ผ่านมาแล้ว (เทียบเวลาสิ้นสุดของ slot กับเวลาปัจจุบัน)
-      const slotEndHour = { เช้า: 12, บ่าย: 17, ทั้งวัน: 17 };
-      const endHour = slotEndHour[data.time_slot];
-      if (data.use_date && endHour !== undefined) {
-        const slotEnd = new Date(
-          `${data.use_date}T${String(endHour).padStart(2, "0")}:00:00`,
-        );
-        if (slotEnd < new Date()) {
-          return showToast(
-            "warning",
-            "ช่วงเวลานี้ผ่านไปแล้ว กรุณาเลือกวันที่หรือช่วงเวลาใหม่",
-          );
-        }
-      }
-
-      fetch("save_booking.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      })
-        .then((res) => res.json())
-        .then((result) => {
-          if (result.success) {
-            showToast("success", "บันทึกการจองสำเร็จ!");
-            showReturn();
-          } else {
-            showToast("error", result.message || "เกิดข้อผิดพลาด");
-          }
-        })
-        .catch((err) => alert("ติดต่อ Server ไม่ได้: " + err));
+      proceedBooking(sessionUser);
     });
+}
+
+function proceedBooking(sessionUser) {
+  const data = {
+    driver_name: document.getElementById("driver-name").value,
+    employee_id: sessionUser.employee_id, // 🌟 ใช้จาก session แทนช่องพิมพ์เอง
+    main_dept: document.getElementById("main_dept").value,
+    sub_dept: document.getElementById("sub_dept").value,
+    section: document.getElementById("section").value,
+    car_plate: document.getElementById("car-plate-select").value,
+    start_mile: document.getElementById("start-mile").value,
+    use_date: document.getElementById("use-date").value,
+    time_slot: document.getElementById("time-slot").value,
+    destination: document.getElementById("destination").value,
+    work_type: document.getElementById("work-type").value,
+    passengers: getPassengerNames(),
+    passenger_ids: getPassengerIds(),
+    out_remark: document.getElementById("out-remark").value || "-",
+  };
+
+  if (
+    !data.car_plate ||
+    !data.driver_name ||
+    !data.section ||
+    !data.time_slot
+  ) {
+    return showToast(
+      "warning",
+      "กรุณากรอกข้อมูล ชื่อผู้ขับ, หน่วยงาน, ทะเบียนรถ และ ช่วงเวลา ให้ครบถ้วน!",
+    );
+  }
+
+  // 🌟 กันจองช่วงเวลาที่ผ่านมาแล้ว (เทียบเวลาสิ้นสุดของ slot กับเวลาปัจจุบัน)
+  // 🩹 เพิ่ม 'กลางคืน' ที่จบข้ามเที่ยงคืนไปเช้าวันถัดไป (endHour ตัวเดียวไม่พอ ต้อง +1 วันด้วย)
+  const slotEndHour = { เช้า: 12, บ่าย: 17, ทั้งวัน: 17, กลางคืน: 8 };
+  const endHour = slotEndHour[data.time_slot];
+  if (data.use_date && endHour !== undefined) {
+    const slotEnd = new Date(
+      `${data.use_date}T${String(endHour).padStart(2, "0")}:00:00`,
+    );
+    if (data.time_slot === "กลางคืน") {
+      slotEnd.setDate(slotEnd.getDate() + 1);
+    }
+    if (slotEnd < new Date()) {
+      return showToast(
+        "warning",
+        "ช่วงเวลานี้ผ่านไปแล้ว กรุณาเลือกวันที่หรือช่วงเวลาใหม่",
+      );
+    }
+  }
+
+  fetch("save_booking.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  })
+    .then((res) => res.json())
+    .then((result) => {
+      if (result.success) {
+        showToast("success", "บันทึกการจองสำเร็จ!");
+        showReturn();
+      } else {
+        showToast("error", result.message || "เกิดข้อผิดพลาด");
+      }
+    })
+    .catch((err) => alert("ติดต่อ Server ไม่ได้: " + err));
 }
 
 function showReturn() {

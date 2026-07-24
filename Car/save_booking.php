@@ -1,6 +1,15 @@
 <?php
+session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once 'db_connect.php';
+
+// 🩹 บังคับ login ก่อน + ดึง employee_id จาก session เอง ห้ามเชื่อค่าที่ client ส่งมา
+// (เดิมรับ $data['employee_id'] ตรงๆ ใครก็ปลอมรหัสคนอื่นจองแทนได้)
+if (!isset($_SESSION['user_id']) || empty($_SESSION['employee_id'])) {
+    echo json_encode(["success" => false, "message" => "กรุณาเข้าสู่ระบบก่อนทำการจอง"]);
+    exit;
+}
+$sessionEmployeeId = $_SESSION['employee_id'];
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
@@ -12,6 +21,33 @@ if (!$data || empty($data['car_plate']) || empty($data['driver_name']) || empty(
 
 
 try {
+    // 🌟 ช่วงเวลาแต่ละ slot -> เวลาเริ่ม/จบจริง ('กลางคืน' ข้ามเที่ยงคืนไปจบเช้าวันถัดไป)
+    function getSlotRange($date, $slot) {
+        $starts = ['เช้า' => '08:00', 'บ่าย' => '13:00', 'ทั้งวัน' => '08:00', 'กลางคืน' => '17:00'];
+        $ends   = ['เช้า' => '12:00', 'บ่าย' => '17:00', 'ทั้งวัน' => '17:00', 'กลางคืน' => '08:00'];
+        if (empty($date) || !isset($starts[$slot])) return null;
+        $start = DateTime::createFromFormat('Y-m-d H:i', $date . ' ' . $starts[$slot]);
+        $end   = DateTime::createFromFormat('Y-m-d H:i', $date . ' ' . $ends[$slot]);
+        if (!$start || !$end) return null;
+        if ($slot === 'กลางคืน') {
+            $end->modify('+1 day'); // จบ 08:00 ของวันถัดไป
+        }
+        return [$start, $end];
+    }
+
+    function rangesOverlap($startA, $endA, $startB, $endB) {
+        return $startA < $endB && $startB < $endA;
+    }
+
+    $requestedSlot = $data['time_slot'];
+    $newRange = getSlotRange($data['use_date'] ?? '', $requestedSlot);
+
+    if (!$newRange) {
+        echo json_encode(["success" => false, "message" => "ช่วงเวลาไม่ถูกต้อง"]);
+        exit;
+    }
+    [$newStart, $newEnd] = $newRange;
+
     // 🌟 เช็คสถานะรถก่อน ต้อง "ว่าง" เท่านั้นถึงจะจองได้
     $carCheck = $conn->prepare("SELECT CarStatus FROM Cars WHERE Plate = :plate");
     $carCheck->execute([':plate' => $data['car_plate']]);
@@ -22,46 +58,47 @@ try {
         exit;
     }
 
-    $requestedSlot = $data['time_slot'];
-
     // 🌟 กันจองช่วงเวลาที่ผ่านมาแล้ว (validate ฝั่ง server กันเคส bypass frontend)
-    $slotEndHour = ['เช้า' => 12, 'บ่าย' => 17, 'ทั้งวัน' => 17];
-    if (isset($slotEndHour[$requestedSlot]) && !empty($data['use_date'])) {
-        $slotEnd = DateTime::createFromFormat(
-            'Y-m-d H:i',
-            $data['use_date'] . ' ' . str_pad($slotEndHour[$requestedSlot], 2, '0', STR_PAD_LEFT) . ':00'
-        );
-        if ($slotEnd && $slotEnd < new DateTime()) {
-            echo json_encode(["success" => false, "message" => "ช่วงเวลานี้ผ่านไปแล้ว กรุณาเลือกวันที่หรือช่วงเวลาใหม่"]);
+    if ($newEnd < new DateTime()) {
+        echo json_encode(["success" => false, "message" => "ช่วงเวลานี้ผ่านไปแล้ว กรุณาเลือกวันที่หรือช่วงเวลาใหม่"]);
+        exit;
+    }
+
+    // ดึง booking ที่ยังไม่คืน (BookingStatus='ขาไป') ในช่วง ±1 วันจากวันที่จอง (พอสำหรับ slot ข้ามเที่ยงคืน)
+    $dMinus = (clone $newStart)->modify('-1 day')->format('Y-m-d');
+    $dPlus  = (clone $newStart)->modify('+1 day')->format('Y-m-d');
+
+    // 🩹 เช็คฝั่งรถ: คันนี้มี booking ที่เวลาชนกับที่จะจองใหม่ไหม (เทียบเวลาจริง แทนเทียบชื่อ slot ตรงๆ
+    // เพื่อรองรับ 'กลางคืน' ที่ข้ามเที่ยงคืน และให้จองคนละช่วงเวลาวันเดียวกันได้โดยไม่ชนกัน)
+    $carBookings = $conn->prepare(
+        "SELECT BookingDate, TimeSlot FROM CarBookings
+         WHERE CarPlate = :plate AND BookingStatus = 'ขาไป'
+           AND BookingDate BETWEEN :d1 AND :d2"
+    );
+    $carBookings->execute([':plate' => $data['car_plate'], ':d1' => $dMinus, ':d2' => $dPlus]);
+    foreach ($carBookings->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $range = getSlotRange($row['BookingDate'], $row['TimeSlot']);
+        if ($range && rangesOverlap($newStart, $newEnd, $range[0], $range[1])) {
+            echo json_encode(["success" => false, "message" => "ช่วงเวลานี้ถูกจองไปแล้ว กรุณาเลือกช่วงเวลาอื่น"]);
             exit;
         }
     }
 
-    // 🌟 กำหนดว่า slot ที่ขอจอง จะไปชนกับ slot ไหนบ้างที่มีอยู่แล้ว
-    if ($requestedSlot === 'ทั้งวัน') {
-        // จองทั้งวัน ชนกับทุก slot ที่มีอยู่ในวันนั้น (เช้า, บ่าย, หรือทั้งวันเดิม)
-        $conflictSlots = ['เช้า', 'บ่าย', 'ทั้งวัน'];
-    } else {
-        // จองเช้า/บ่าย ชนกับ slot เดียวกัน หรือถ้ามี "ทั้งวัน" จองไว้แล้วก็ชนด้วย
-        $conflictSlots = [$requestedSlot, 'ทั้งวัน'];
-    }
-
-    $placeholders = implode(',', array_fill(0, count($conflictSlots), '?'));
-    // เดิมกันแค่ 'ยกเลิก' ออก ทำให้ booking ที่คืนแล้ว (BookingStatus='ขากลับ')
-    // ยังถูกนับว่าชนกับการจองใหม่ จองซ้ำไม่ได้ทั้งที่รถว่างแล้วจริง ๆ
-    // แก้ให้เช็คว่า "ยังใช้อยู่จริง" (BookingStatus = 'ขาไป') เท่านั้นถึงจะถือว่าชน
-    $sql_check = "SELECT COUNT(*) as total FROM CarBookings 
-                  WHERE CarPlate = ? AND BookingDate = ? AND TimeSlot IN ($placeholders)
-                  AND BookingStatus = 'ขาไป'";
-
-    $params_check = array_merge([$data['car_plate'], $data['use_date']], $conflictSlots);
-    $check = $conn->prepare($sql_check);
-    $check->execute($params_check);
-    $exists = $check->fetch(PDO::FETCH_ASSOC)['total'];
-
-    if ($exists > 0) {
-        echo json_encode(["success" => false, "message" => "ช่วงเวลานี้ถูกจองไปแล้ว กรุณาเลือกช่วงเวลาอื่น"]);
-        exit;
+    // 🩹 เช็คฝั่งคน: employee คนนี้มี booking ที่เวลาชนกับที่จะจองใหม่ไหม (คันไหนก็ได้)
+    // ต่างจากเดิมที่บล็อกทันทีถ้ามี 'ขาไป' ค้างอยู่ ไม่ว่าจะคนละช่วงเวลาแค่ไหนก็ตาม
+    // ตอนนี้บล็อกเฉพาะที่ "เวลาชนกันจริง" เท่านั้น จองเช้า+บ่ายวันเดียวกันล่วงหน้าได้แล้ว
+    $empBookings = $conn->prepare(
+        "SELECT BookingDate, TimeSlot FROM CarBookings
+         WHERE EmployeeID = :emp AND BookingStatus = 'ขาไป'
+           AND BookingDate BETWEEN :d1 AND :d2"
+    );
+    $empBookings->execute([':emp' => $sessionEmployeeId, ':d1' => $dMinus, ':d2' => $dPlus]);
+    foreach ($empBookings->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $range = getSlotRange($row['BookingDate'], $row['TimeSlot']);
+        if ($range && rangesOverlap($newStart, $newEnd, $range[0], $range[1])) {
+            echo json_encode(["success" => false, "message" => "คุณมีการจองที่เวลาชนกับช่วงนี้อยู่แล้ว"]);
+            exit;
+        }
     }
 
     $department = trim(($data['main_dept'] ?? '') . ' / ' . ($data['sub_dept'] ?? '') . ' / ' . ($data['section'] ?? ''));
@@ -75,7 +112,7 @@ try {
     $stmt->execute([
         ':booking_number' => $bookingNumber,
         ':driver_name'    => $data['driver_name'],
-        ':employee_id'    => $data['employee_id'] ?? null,
+        ':employee_id'    => $sessionEmployeeId,
         ':department'     => $department,
         ':destination'    => $data['destination'] ?? null,
         ':car_plate'      => $data['car_plate'],

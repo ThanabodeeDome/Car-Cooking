@@ -11,11 +11,13 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("display-name").innerText =
         `${u.first_name} ${u.last_name}`;
       document.getElementById("display-role").innerText =
-        `พนักงานขับรถ / ${u.department}`;
+        `พนักงานขับรถ / ${u.Division} / ${u.department} / ${u.Unit}`;
       document.getElementById("emp-id").value = u.employee_id;
       document.getElementById("emp-email").value = u.email;
       document.getElementById("emp-phone").value = u.phone;
+      document.getElementById("emp-division").value = u.Division;
       document.getElementById("emp-dept").value = u.department;
+      document.getElementById("emp-unit").value = u.Unit;
       document.getElementById("stat-total").innerText = u.total_bookings;
       document.getElementById("stat-complete").innerText = u.completed_bookings;
 
@@ -62,7 +64,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-const editableFieldIds = ["emp-id", "emp-email", "emp-phone", "emp-dept"];
+const editableFieldIds = [
+  "emp-id",
+  "emp-email",
+  "emp-phone",
+  "emp-division",
+  "emp-dept",
+  "emp-unit",
+];
 let isEditing = false;
 
 function toggleEditMode() {
@@ -87,7 +96,9 @@ function saveProfile() {
     employee_id: document.getElementById("emp-id").value,
     email: document.getElementById("emp-email").value,
     phone: document.getElementById("emp-phone").value,
+    division: document.getElementById("emp-division").value,
     department: document.getElementById("emp-dept").value,
+    unit: document.getElementById("emp-unit").value,
   };
   fetch("update_profile.php", {
     method: "POST",

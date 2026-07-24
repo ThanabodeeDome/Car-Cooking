@@ -9,7 +9,8 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 try {
-    $stmt = $conn->prepare("SELECT id, username, first_name, last_name, phone, email, employee_id, department, role, AvatarPath FROM Users WHERE id = :id");
+    // 🌟 เพิ่ม Division, Unit
+    $stmt = $conn->prepare("SELECT id, username, first_name, last_name, phone, email, employee_id, Division, department, Unit, role, AvatarPath FROM Users WHERE id = :id");
     $stmt->execute([':id' => $_SESSION['user_id']]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 

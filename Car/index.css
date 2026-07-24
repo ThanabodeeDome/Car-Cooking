@@ -382,6 +382,47 @@ body {
   color: var(--horizon-glow);
 }
 
+/* dropdown ฝ่าย/แผนก/หน่วยงาน ให้เข้าธีมกระจกม่วงเดียวกับ input */
+.input-wrapper select {
+  width: 100%;
+  padding: 14px 16px 14px 48px;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  color: var(--text-main);
+  font-size: 15px;
+  font-family: "Plus Jakarta Sans", "Sarabun", sans-serif;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23f5f2ff' fill-opacity='0.6' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+}
+
+.input-wrapper select:focus {
+  border-color: var(--horizon-glow);
+  box-shadow: 0 0 15px rgba(255, 158, 203, 0.25);
+  background-color: rgba(0, 0, 0, 0.35);
+}
+
+.input-wrapper select:focus + i {
+  color: var(--horizon-glow);
+}
+
+/* option list เบราว์เซอร์คุมเอง แต่ตั้งพื้นหลัง/ตัวอักษรให้พอเข้าธีม ไม่ขาวโพลนตัดกับกล่อง */
+.input-wrapper select option {
+  background: var(--night-upper);
+  color: var(--text-main);
+}
+
+/* placeholder option (disabled) ให้จางเหมือน input placeholder */
+.input-wrapper select option[disabled] {
+  color: rgba(245, 242, 255, 0.35);
+}
+
 /* ปุ่มกดสไตล์พรีเมียม */
 .btn {
   width: 100%;

@@ -17,12 +17,16 @@ if (!$data) {
 }
 
 try {
-    $sql = "UPDATE Users SET email = :email, phone = :phone WHERE id = :id";
-    $stmt = $conn->prepare($sql); // 🌟 แก้ตรงนี้ ใช้ $sql ที่ประกาศไว้ ไม่ใช่ query อื่น
+    // 🌟 เพิ่ม Division, department, Unit เข้า UPDATE (เดิมมีแค่ email, phone)
+    $sql = "UPDATE Users SET email = :email, phone = :phone, Division = :division, department = :department, Unit = :unit WHERE id = :id";
+    $stmt = $conn->prepare($sql);
     $stmt->execute([
-        ':email' => $data['email'] ?? null,
-        ':phone' => $data['phone'] ?? null,
-        ':id'    => $_SESSION['user_id'],
+        ':email'      => $data['email'] ?? null,
+        ':phone'      => $data['phone'] ?? null,
+        ':division'   => $data['division'] ?? null,
+        ':department' => $data['department'] ?? null,
+        ':unit'       => $data['unit'] ?? null,
+        ':id'         => $_SESSION['user_id'],
     ]);
     echo json_encode(["success" => true, "message" => "บันทึกข้อมูลสำเร็จ"]);
 } catch (PDOException $e) {

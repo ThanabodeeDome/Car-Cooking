@@ -140,15 +140,42 @@
               </div>
             </div>
             <div class="input-group">
-              <label>หน่วยงาน / แผนก</label>
+              <label>ฝ่าย</label>
               <div class="input-wrapper">
                 <i class="fa-solid fa-building"></i>
-                <input
-                  type="text"
-                  name="department"
-                  placeholder="ระบุหน่วยงานของคุณ"
+                <select
+                  id="reg-main-dept"
+                  class="reg-dept-select"
+                  onchange="updateRegSubDept()"
                   required
-                />
+                >
+                  <option value="" disabled selected>-- เลือกฝ่าย --</option>
+                </select>
+              </div>
+            </div>
+            <div class="input-group">
+              <label>แผนก</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-sitemap"></i>
+                <select
+                  id="reg-sub-dept"
+                  class="reg-dept-select"
+                  onchange="updateRegSection()"
+                  required
+                >
+                  <option value="" disabled selected>-- เลือกแผนก --</option>
+                </select>
+              </div>
+            </div>
+            <div class="input-group">
+              <label>หน่วยงาน</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-users-rectangle"></i>
+                <select id="reg-section" class="reg-dept-select" required>
+                  <option value="" disabled selected>
+                    -- เลือกหน่วยงาน --
+                  </option>
+                </select>
               </div>
             </div>
             <div class="input-group">

@@ -5,7 +5,9 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // 2. ตรวจสอบสิทธิ์ว่าได้ล็อกอินเป็น Admin หรือยัง
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'Admin') {
+// 🩹 เดิมเทียบ 'Admin' ตัว A ใหญ่ แต่ DB/login_process.php เก็บ role เป็น 'admin' ตัวเล็ก
+// เทียบตรงๆ ไม่ตรงกันเลย บล็อก Admin ทุกคน แก้เป็นเทียบแบบไม่สนตัวพิมพ์
+if (!isset($_SESSION['user_id']) || strtolower($_SESSION['role'] ?? '') !== 'admin') {
     
     // 💡 เช็กว่าถ้ารายการนี้เป็นการดึงผ่าน JavaScript (Fetch/API) 
     // หรือถูกเรียกมาจากพวกไฟล์เบื้องหลัง เช่น manage_cars.php

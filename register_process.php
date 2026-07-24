@@ -10,42 +10,44 @@ $last_name   = isset($_POST['last_name']) ? trim($_POST['last_name']) : '';
 $phone       = isset($_POST['phone']) ? trim($_POST['phone']) : '';
 $email       = isset($_POST['email']) ? trim($_POST['email']) : '';
 $employee_id = isset($_POST['employee_id']) ? trim($_POST['employee_id']) : '';
-$department  = isset($_POST['department']) ? trim($_POST['department']) : '';
+// 🌟 แยกจาก department field เดียว เป็น 3 ระดับ
+$division    = isset($_POST['division']) ? trim($_POST['division']) : '';   // ฝ่าย
+$department  = isset($_POST['department']) ? trim($_POST['department']) : ''; // แผนก
+$unit        = isset($_POST['unit']) ? trim($_POST['unit']) : '';           // หน่วยงาน
 
 // 1. ตรวจสอบว่ากรอกข้อมูลมาครบทุกช่องไหม
-if (empty($username) || empty($password) || empty($first_name) || empty($last_name) || empty($phone) || empty($email) || empty($employee_id) || empty($department)) {
+if (empty($username) || empty($password) || empty($first_name) || empty($last_name) || empty($phone) || empty($email) || empty($employee_id) || empty($division) || empty($department) || empty($unit)) {
     echo json_encode(['success' => false, 'message' => 'กรุณากรอกข้อมูลพนักงานให้ครบทุกช่องครับเพื่อน!']);
     exit;
 }
 
-// 🚀 2. [เพิ่มใหม่] เช็คและบล็อกไม่ให้ใช้ชื่อ 'admin' ในทุกรูปแบบตัวอักษร
-// strtolowerจะแปลงข้อความที่พิมพ์มาให้เป็นตัวพิมพ์เล็กทั้งหมดก่อนมาเทียบคำครับ
+// 2. เช็คและบล็อกไม่ให้ใช้ชื่อ 'admin' ในทุกรูปแบบตัวอักษร
 if (strtolower($username) === 'admin' || strtolower($username) === 'administrator' || strtolower($username) === 'root') {
     echo json_encode([
-        'success' => false, 
+        'success' => false,
         'message' => 'ระบบไม่อนุญาตให้ใช้ชื่อผู้ใช้งานคำนี้ (admin/administrator/root) เพื่อความปลอดภัยของระบบครับเพื่อน!'
     ]);
     exit;
 }
 
 try {
-    // 3. ตรวจสอบว่า Username ซ้ำในระบบหรือไม่ (โค้ดเดิม)
+    // 3. ตรวจสอบว่า Username ซ้ำในระบบหรือไม่
     $check_sql = "SELECT COUNT(*) FROM Users WHERE username = :username";
     $stmt = $conn->prepare($check_sql);
     $stmt->execute([':username' => $username]);
-    
+
     if ($stmt->fetchColumn() > 0) {
         echo json_encode(['success' => false, 'message' => 'Username นี้ถูกใช้งานแล้ว ลองเปลี่ยนใหม่นะครับ']);
         exit;
     }
 
-    // 4. เข้ารหัสความปลอดภัยรหัสผ่าน (โค้ดเดิม)
+    // 4. เข้ารหัสความปลอดภัยรหัสผ่าน
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-    // 5. บันทึกข้อมูลลง SQL Server (โค้ดเดิม)
-    $insert_sql = "INSERT INTO Users (username, password, first_name, last_name, phone, email, employee_id, department, role) 
-                   VALUES (:username, :password, :first_name, :last_name, :phone, :email, :employee_id, :department, 'user')";
-    
+    // 5. บันทึกข้อมูลลง SQL Server (🌟 เพิ่ม Division, Unit)
+    $insert_sql = "INSERT INTO Users (username, password, first_name, last_name, phone, email, employee_id, Division, department, Unit, role)
+                   VALUES (:username, :password, :first_name, :last_name, :phone, :email, :employee_id, :division, :department, :unit, 'user')";
+
     $insert_stmt = $conn->prepare($insert_sql);
     $result = $insert_stmt->execute([
         ':username'    => $username,
@@ -55,7 +57,9 @@ try {
         ':phone'       => $phone,
         ':email'       => $email,
         ':employee_id' => $employee_id,
-        ':department'  => $department
+        ':division'    => $division,
+        ':department'  => $department,
+        ':unit'        => $unit
     ]);
 
     if ($result) {
@@ -67,4 +71,3 @@ try {
 } catch (PDOException $e) {
     echo json_encode(['success' => false, 'message' => 'ระบบฐานข้อมูลขัดข้อง: ' . $e->getMessage()]);
 }
-?>

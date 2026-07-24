@@ -1,4 +1,69 @@
 /**
+ * 🏢 0. ข้อมูลฝ่าย/แผนก/หน่วยงาน (เอามาจาก booking.js ตัวเดียวกับหน้าจองรถ)
+ */
+const companyData = {
+  บริหาร: {
+    ทรัพยากรและการเงิน: ["บุคคลและความปลอดภัย", "บัญชีการเงินและต้นทุน"],
+    การตลาดและจัดซื้อ: ["การตลาด", "จัดซื้อและพัสดุ"],
+  },
+  วิศวกรรมและเทคโนโลยี: {
+    วิศวกรรมผลิตภัณฑ์และแม่พิมพ์: [
+      "วิศวกรรมโครงการ",
+      "ออกแบบผลิตภัณฑ์และแม่พิมพ์",
+      "ผลิตและประกอบแม่พิมพ์",
+      "ทดลองแม่พิมพ์",
+    ],
+    วิศวกรรมระบบอัตโนมัติ: [
+      "ระบบดิจิทอลและไอที",
+      "วิศวกรรมหุ่นยนต์และ IoT",
+      "บำรุงรักษา",
+    ],
+  },
+  ผลิตและบริหารคุณภาพ: {
+    บริหารการผลิตและโลจิสติกส์: ["วางแผนการผลิตและ TPS", "จัดส่งและคลังสินค้า"],
+    บริหารคุณภาพ: ["ประกันคุณภาพและมาตรฐาน", "ควบคุมคุณภาพ"],
+    "ผลิต 1": ["ปั๊ม 1", "ปั๊ม 2", "ประกอบ", "บำรุงรักษาแม่พิมพ์"],
+    "ผลิต 2": ["ชิ้นส่วนท่อ", "ประกอบท่อ", "ชิ้นส่วนสี"],
+  },
+};
+
+function initRegDeptDropdown() {
+  const mainSelect = document.getElementById("reg-main-dept");
+  if (!mainSelect) return;
+  for (let main in companyData) {
+    mainSelect.options.add(new Option(main, main));
+  }
+}
+
+function updateRegSubDept() {
+  const main = document.getElementById("reg-main-dept").value;
+  const subSelect = document.getElementById("reg-sub-dept");
+  subSelect.innerHTML =
+    '<option value="" disabled selected>-- เลือกแผนก --</option>';
+  if (companyData[main]) {
+    for (let sub in companyData[main]) {
+      subSelect.options.add(new Option(sub, sub));
+    }
+  }
+  updateRegSection();
+}
+
+function updateRegSection() {
+  const main = document.getElementById("reg-main-dept").value;
+  const sub = document.getElementById("reg-sub-dept").value;
+  const secSelect = document.getElementById("reg-section");
+  secSelect.innerHTML =
+    '<option value="" disabled selected>-- เลือกหน่วยงาน --</option>';
+  if (companyData[main] && companyData[main][sub]) {
+    companyData[main][sub].forEach((sec) => {
+      secSelect.options.add(new Option(sec, sec));
+    });
+  }
+}
+
+document.addEventListener("DOMContentLoaded", initRegDeptDropdown);
+
+/**
  * 🧭 1. ฟังก์ชันเดิมสำหรับสลับหน้ากากฟอร์ม
  */
 function switchForm(formId) {
@@ -28,6 +93,22 @@ document
     e.preventDefault(); // ป้องกันไม่ให้หน้าเว็บรีโหลด
 
     const formData = new FormData(this);
+
+    // 🌟 แยกส่ง 3 field ตรงๆ ตาม register_process.php ใหม่ ($_POST['division'], ['department'], ['unit'])
+    const mainDept = document.getElementById("reg-main-dept").value;
+    const subDept = document.getElementById("reg-sub-dept").value;
+    const section = document.getElementById("reg-section").value;
+    if (!mainDept || !subDept || !section) {
+      AppModal.fire({
+        icon: "warning",
+        title: "คำแนะนำระบบ",
+        text: "กรุณาเลือกฝ่าย/แผนก/หน่วยงานให้ครบ",
+      });
+      return;
+    }
+    formData.set("division", mainDept);
+    formData.set("department", subDept);
+    formData.set("unit", section);
 
     fetch("../register_process.php", {
       method: "POST",

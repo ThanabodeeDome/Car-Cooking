@@ -54,7 +54,7 @@
           <div class="stepper-wrapper">
             <div class="stepper-item active" id="step-1">
               <div class="step-counter">1</div>
-              <div class="step-name">เลือกแผนก</div>
+              <div class="step-name">เลือกหน่วยงาน</div>
             </div>
             <div class="stepper-item" id="step-2">
               <div class="step-counter">2</div>
@@ -79,13 +79,7 @@
 
             <div class="field-group">
               <label>รหัสพนักงาน:</label>
-              <input
-                type="text"
-                id="employee-id"
-                class="form-control"
-                readonly
-                style="background: #1a1a1a; opacity: 0.7"
-              />
+              <input type="text" id="employee-id" class="form-control" />
             </div>
           </div>
 
@@ -128,38 +122,40 @@
           </div>
 
           <div class="field-group full-width">
-            <label>1. หน่วยงานหลัก</label>
+            <label>ฝ่าย</label>
             <select
               id="main_dept"
               name="main_dept"
               class="form-control"
               onchange="updateSubDept()"
             >
-              <option value="" disabled selected>
-                -- เลือกหน่วยงานหลัก --
+              <option value="" disabled selected>-- เลือกฝ่าย --</option>
+              <option value="บริหาร">ฝ่ายบริหาร</option>
+              <option value="วิศวกรรมและเทคโนโลยี">
+                ฝ่ายวิศวกรรมและเทคโนโลยี
               </option>
-              <option value="บริหาร">บริหาร</option>
-              <option value="วิศวกรรมและเทคโนโลยี">วิศวกรรมและเทคโนโลยี</option>
-              <option value="ผลิตและบริหารคุณภาพ">ผลิตและบริหารคุณภาพ</option>
+              <option value="ผลิตและบริหารคุณภาพ">
+                ฝ่ายผลิตและบริหารคุณภาพ
+              </option>
             </select>
           </div>
 
           <div class="field-group full-width">
-            <label>2. ฝ่าย</label>
+            <label>แผนก</label>
             <select
               id="sub_dept"
               name="sub_dept"
               class="form-control"
               onchange="updateSection()"
             >
-              <option value="" disabled selected>-- เลือกฝ่าย --</option>
+              <option value="" disabled selected>-- เลือกแผนก --</option>
             </select>
           </div>
 
           <div class="field-group full-width">
-            <label>3. แผนก/หน่วยย่อย</label>
+            <label>หน่วยงาน</label>
             <select id="section" name="section" class="form-control">
-              <option value="" disabled selected>-- เลือกแผนก --</option>
+              <option value="" disabled selected>-- เลือกหน่วยงาน --</option>
             </select>
           </div>
 
@@ -191,6 +187,9 @@
                 <option value="เช้า">🌅 เช้า (08:00-12:00)</option>
                 <option value="บ่าย">☀️ บ่าย (13:00-17:00)</option>
                 <option value="ทั้งวัน">🌞 ทั้งวัน (08:00-17:00)</option>
+                <option value="กลางคืน">
+                  🌙 กลางคืน (17:00-08:00 วันถัดไป)
+                </option>
               </select>
             </div>
           </div>
