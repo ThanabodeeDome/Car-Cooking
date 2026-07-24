@@ -3,7 +3,8 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once '../Car/db_connect.php';
 
-if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
+$allowed_admin_ids = require __DIR__ . '/../admin_whitelist.php';
+if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin' || !in_array((int)$_SESSION['user_id'], $allowed_admin_ids, true)) {
     echo json_encode(["success" => false, "message" => "ไม่มีสิทธิ์เข้าถึง"]);
     exit;
 }
@@ -21,6 +22,15 @@ $newPassword = $data['new_password'] ?? '';
 if (empty($id) || empty($username) || !in_array($role, ['admin', 'user'], true)) {
     echo json_encode(["success" => false, "message" => "ข้อมูลไม่ครบหรือ role ไม่ถูกต้อง"]);
     exit;
+}
+
+// 🌟 ห้ามตั้ง role='admin' ให้ id ที่ไม่อยู่ใน whitelist (auth_check.php ไม่ยอมให้เข้า Admin panel อยู่ดี
+// แต่กันไว้ตั้งแต่ต้นทาง ไม่ให้ตั้งค่า role มั่วจน DB ไม่ตรงกับสิทธิ์จริง)
+if ($role === 'admin') {
+    if (!in_array((int)$id, $allowed_admin_ids, true)) {
+        echo json_encode(["success" => false, "message" => "ตั้งเป็น admin ไม่ได้ ต้องเพิ่ม id นี้ใน admin_whitelist.php ก่อน"]);
+        exit;
+    }
 }
 
 try {
@@ -64,5 +74,6 @@ try {
 
     echo json_encode(["success" => true]);
 } catch (PDOException $e) {
-    echo json_encode(["success" => false, "message" => $e->getMessage()]);
+    error_log('update_user DB error: ' . $e->getMessage());
+    echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด ไม่สามารถบันทึกข้อมูลได้"]);
 }

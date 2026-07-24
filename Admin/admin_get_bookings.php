@@ -3,7 +3,8 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once '../Car/db_connect.php';
 
-if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
+$allowed_admin_ids = require __DIR__ . '/../admin_whitelist.php';
+if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin' || !in_array((int)$_SESSION['user_id'], $allowed_admin_ids, true)) {
     echo json_encode(["success" => false, "message" => "ไม่มีสิทธิ์เข้าถึง"]);
     exit;
 }
@@ -20,5 +21,6 @@ try {
 
     echo json_encode(["success" => true, "bookings" => $bookings]);
 } catch (PDOException $e) {
-    echo json_encode(["success" => false, "message" => $e->getMessage()]);
+    error_log('admin_get_bookings DB error: ' . $e->getMessage());
+    echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาดในการโหลดข้อมูลการจอง"]);
 }

@@ -1,3 +1,8 @@
+window.addEventListener("pageshow", function (event) {
+  if (event.persisted) {
+    window.location.reload();
+  }
+});
 document.addEventListener("DOMContentLoaded", () => {
   fetch("get_profile.php")
     .then((res) => res.json())
@@ -126,7 +131,7 @@ function saveProfile() {
 
 function logout() {
   if (confirm("คุณต้องการออกจากระบบใช่หรือไม่?")) {
-    fetch("logout.php").then(() => {
+    fetch("../logout.php").then(() => {
       window.location.href = "index.html";
     });
   }

@@ -1,0 +1,4 @@
+# วางไฟล์นี้ในโฟลเดอร์ Car/ (ข้าง homepage.html, booking.html, ฯลฯ)
+# สั่งให้ .html รันเป็น PHP ได้ ใช้ auth guard บนหัวไฟล์ .html ได้เลยไม่ต้องเปลี่ยนนามสกุลไฟล์จริง
+
+AddType application/x-httpd-php .html

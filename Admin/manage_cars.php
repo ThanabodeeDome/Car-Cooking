@@ -1,6 +1,14 @@
 <?php
+session_start();
 header("Content-Type: application/json");
 include_once "../db_connect.php";
+
+// 🌟 ไฟล์นี้ไม่มี auth check เลยมาก่อน! ใครก็ยิง action=delete/save ได้โดยไม่ต้อง login
+$allowed_admin_ids = require __DIR__ . '/../admin_whitelist.php';
+if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin' || !in_array((int)$_SESSION['user_id'], $allowed_admin_ids, true)) {
+    echo json_encode(["success" => false, "message" => "ไม่มีสิทธิ์เข้าถึง"]);
+    exit;
+}
 
 $action = $_GET['action'] ?? '';
 
@@ -37,7 +45,8 @@ if ($action === 'delete') {
         $stmt->execute([$id]);
         echo json_encode(["success" => true]);
     } catch (PDOException $e) {
-        echo json_encode(["success" => false, "message" => $e->getMessage()]);
+        error_log('manage_cars delete DB error: ' . $e->getMessage());
+        echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด ไม่สามารถลบข้อมูลรถได้"]);
     }
     exit;
 }
@@ -119,7 +128,8 @@ if ($action === 'save') {
         }
         echo json_encode(["success" => true]);
     } catch (PDOException $e) {
-        echo json_encode(["success" => false, "message" => $e->getMessage()]);
+        error_log('manage_cars save DB error: ' . $e->getMessage());
+        echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด ไม่สามารถบันทึกข้อมูลรถได้"]);
     }
     exit;
 }

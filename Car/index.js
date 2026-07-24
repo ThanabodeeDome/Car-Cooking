@@ -1,3 +1,8 @@
+window.addEventListener("pageshow", function (event) {
+  if (event.persisted) {
+    window.location.reload();
+  }
+});
 /**
  * 🏢 0. ข้อมูลฝ่าย/แผนก/หน่วยงาน (เอามาจาก booking.js ตัวเดียวกับหน้าจองรถ)
  */

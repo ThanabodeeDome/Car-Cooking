@@ -20,5 +20,6 @@ try {
 
     echo json_encode(["success" => true, "employee_id" => $user['employee_id'], "first_name" => $user['first_name']]);
 } catch (PDOException $e) {
-    echo json_encode(["success" => false, "message" => $e->getMessage()]);
+    error_log('get_current_user DB error: ' . $e->getMessage());
+    echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"]);
 }

@@ -30,5 +30,6 @@ try {
     ]);
     echo json_encode(["success" => true, "message" => "บันทึกข้อมูลสำเร็จ"]);
 } catch (PDOException $e) {
-    echo json_encode(["success" => false, "message" => $e->getMessage()]);
+    error_log('update_profile DB error: ' . $e->getMessage());
+    echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"]);
 }

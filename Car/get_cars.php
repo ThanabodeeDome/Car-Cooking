@@ -1,6 +1,13 @@
 <?php
+session_start();
 header("Content-Type: application/json; charset=utf-8");
 require_once 'db_connect.php';
+
+// 🌟 ไฟล์นี้ไม่มี login check เลยมาก่อน!
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode(["success" => false, "message" => "กรุณาเข้าสู่ระบบก่อน"]);
+    exit;
+}
 
 // 🌟 รับวันที่จาก query string เพื่อเช็คสถานะ "ของวันนั้น" (ไม่ใช่ยึดวันนี้ตายตัว)
 $targetDate = $_GET['date'] ?? date('Y-m-d');
@@ -29,13 +36,17 @@ $sql = "SELECT c.CarID, c.Plate, c.Brand, c.Model, c.Color, c.Mileage, c.Carimag
   END AS RealStatus
 FROM Cars c";
 
-$stmt = $conn->prepare($sql);
-$stmt->execute([
-    ':isToday1'    => $isToday ? 1 : 0,
-    ':targetDate1' => $targetDate,
-    ':targetDate2' => $targetDate,
-]);
-$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-echo json_encode($results, JSON_UNESCAPED_UNICODE);
+try {
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([
+        ':isToday1'    => $isToday ? 1 : 0,
+        ':targetDate1' => $targetDate,
+        ':targetDate2' => $targetDate,
+    ]);
+    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    echo json_encode($results, JSON_UNESCAPED_UNICODE);
+} catch (PDOException $e) {
+    error_log('get_cars DB error: ' . $e->getMessage());
+    echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาดในการโหลดข้อมูลรถ"]);
+}
 ?>

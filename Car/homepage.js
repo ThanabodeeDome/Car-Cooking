@@ -1,3 +1,8 @@
+window.addEventListener("pageshow", function (event) {
+  if (event.persisted) {
+    window.location.reload();
+  }
+});
 /* =========================================
    1. ฟังก์ชันดึงประวัติการจอง (ตารางด้านล่าง)
    ========================================= */

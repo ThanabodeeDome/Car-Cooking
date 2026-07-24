@@ -1,6 +1,14 @@
 <?php
+session_start();
 header('Content-Type: application/json; charset=utf-8');
-require_once '../Car/db_connect.php'; // ใช้ PDO ตัวเดียวกับ endpoint อื่นทั้งระบบ (path เดิมผมพิมพ์ผิด ไม่มี ../Car/ เลยหาไฟล์ไม่เจอ)
+require_once '../Car/db_connect.php';
+
+// 🌟 ไฟล์นี้ไม่มี auth check เลยมาก่อน! ข้อมูลรถ+การจองทั้งบริษัทเปิดโล่งให้ใครก็ดูได้
+$allowed_admin_ids = require __DIR__ . '/../admin_whitelist.php';
+if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin' || !in_array((int)$_SESSION['user_id'], $allowed_admin_ids, true)) {
+    echo json_encode(["success" => false, "message" => "ไม่มีสิทธิ์เข้าถึง"]);
+    exit;
+}
 
 try {
     // ---------- 1) สถานะรถแบบ real-time (logic เดียวกับ get_cars.php ฝั่ง user) ----------
@@ -102,5 +110,6 @@ try {
         "maint_due"     => $maintDue,
     ], JSON_UNESCAPED_UNICODE);
 } catch (PDOException $e) {
-    echo json_encode(["success" => false, "message" => $e->getMessage()]);
+    error_log('get_dashboard_stats DB error: ' . $e->getMessage());
+    echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาดในการโหลดข้อมูล"]);
 }

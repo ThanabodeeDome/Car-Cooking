@@ -1,3 +1,8 @@
+window.addEventListener("pageshow", function (event) {
+  if (event.persisted) {
+    window.location.reload();
+  }
+});
 // 1. กาง/หุบรายละเอียดใบจอง
 function toggleDropdown(id) {
   const dropdownBox = document.getElementById(id);

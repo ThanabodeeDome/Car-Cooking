@@ -1,6 +1,13 @@
 <?php
+session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once 'db_connect.php';
+
+// 🌟 ไฟล์นี้ไม่มี login check เลยมาก่อน!
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode(["success" => false, "message" => "กรุณาเข้าสู่ระบบก่อน"]);
+    exit;
+}
 
 $plate = $_GET['plate'] ?? '';
 if (empty($plate)) {
@@ -25,5 +32,6 @@ try {
     $bookings = $stmt->fetchAll(PDO::FETCH_ASSOC);
     echo json_encode(["success" => true, "bookings" => $bookings]);
 } catch (PDOException $e) {
-    echo json_encode(["success" => false, "message" => $e->getMessage()]);
+    error_log('get_car_bookings DB error: ' . $e->getMessage());
+    echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาดในการโหลดข้อมูล"]);
 }

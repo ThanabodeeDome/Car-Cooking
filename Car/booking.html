@@ -1,3 +1,4 @@
+<?php require_once 'guard_user.php'; ?>
 <!doctype html>
 <html lang="th">
   <head>
@@ -54,7 +55,7 @@
           <div class="stepper-wrapper">
             <div class="stepper-item active" id="step-1">
               <div class="step-counter">1</div>
-              <div class="step-name">เลือกหน่วยงาน</div>
+              <div class="step-name">ระบุผู้ขับ</div>
             </div>
             <div class="stepper-item" id="step-2">
               <div class="step-counter">2</div>
@@ -66,20 +67,29 @@
             </div>
           </div>
 
+          <!-- 🌟 กรอกรหัสพนักงานผู้ขับ -> ชื่อขึ้นอัตโนมัติ (readonly)
+               ฝ่าย/แผนก/หน่วยงาน ดึงจาก DB ฝั่ง server ตอนบันทึกเอง ไม่ต้องเลือกในฟอร์มแล้ว -->
           <div class="input-row-group">
+            <div class="field-group">
+              <label>รหัสพนักงาน (ผู้ขับ):</label>
+              <input
+                type="text"
+                id="employee-id"
+                class="form-control"
+                placeholder="กรอกรหัสพนักงาน"
+                onblur="lookupDriverName()"
+              />
+            </div>
+
             <div class="field-group">
               <label>ชื่อผู้ขับ:</label>
               <input
                 type="text"
                 id="driver-name"
                 class="form-control"
-                placeholder="ระบุชื่อคนขับ"
+                placeholder="ชื่อจะขึ้นอัตโนมัติ"
+                readonly
               />
-            </div>
-
-            <div class="field-group">
-              <label>รหัสพนักงาน:</label>
-              <input type="text" id="employee-id" class="form-control" />
             </div>
           </div>
 
@@ -97,18 +107,20 @@
               >
                 <input
                   type="text"
-                  name="passengers[]"
+                  name="passenger_ids[]"
                   class="form-control"
-                  placeholder="ชื่อคนที่ 1"
-                  style="flex: 2"
+                  placeholder="รหัสพนักงาน"
+                  maxlength="4"
+                  style="flex: 1"
+                  onblur="lookupPassengerName(this)"
                 />
                 <input
                   type="text"
-                  name="passenger_ids[]"
+                  name="passengers[]"
                   class="form-control"
-                  placeholder="รหัส"
-                  maxlength="4"
-                  style="flex: 1"
+                  placeholder="ชื่อ (auto)"
+                  style="flex: 2"
+                  readonly
                 />
                 <button
                   type="button"
@@ -119,44 +131,6 @@
                 </button>
               </div>
             </div>
-          </div>
-
-          <div class="field-group full-width">
-            <label>ฝ่าย</label>
-            <select
-              id="main_dept"
-              name="main_dept"
-              class="form-control"
-              onchange="updateSubDept()"
-            >
-              <option value="" disabled selected>-- เลือกฝ่าย --</option>
-              <option value="บริหาร">ฝ่ายบริหาร</option>
-              <option value="วิศวกรรมและเทคโนโลยี">
-                ฝ่ายวิศวกรรมและเทคโนโลยี
-              </option>
-              <option value="ผลิตและบริหารคุณภาพ">
-                ฝ่ายผลิตและบริหารคุณภาพ
-              </option>
-            </select>
-          </div>
-
-          <div class="field-group full-width">
-            <label>แผนก</label>
-            <select
-              id="sub_dept"
-              name="sub_dept"
-              class="form-control"
-              onchange="updateSection()"
-            >
-              <option value="" disabled selected>-- เลือกแผนก --</option>
-            </select>
-          </div>
-
-          <div class="field-group full-width">
-            <label>หน่วยงาน</label>
-            <select id="section" name="section" class="form-control">
-              <option value="" disabled selected>-- เลือกหน่วยงาน --</option>
-            </select>
           </div>
 
           <div class="input-row-group">
@@ -171,7 +145,7 @@
             </div>
             <div class="field-group">
               <label>เลขไมล์เริ่มต้น</label>
-              <input type="number" id="start-mile" />
+              <input type="number" id="start-mile" readonly />
             </div>
           </div>
 
@@ -197,22 +171,6 @@
           <div class="field-group full-width">
             <label>สถานที่ไป</label>
             <input type="text" id="destination" />
-          </div>
-
-          <div class="field-group full-width">
-            <label>รายละเอียดงาน</label>
-            <textarea id="work-type" rows="2"></textarea>
-          </div>
-
-          <div class="field-group full-width">
-            <label style="color: #ff4d4d"
-              >พบปัญหา/สภาพรถก่อนออก (แจ้งศูนย์)</label
-            >
-            <textarea
-              id="out-remark"
-              rows="2"
-              placeholder="ระบุปัญหาที่พบก่อนนำรถออก..."
-            ></textarea>
           </div>
 
           <button

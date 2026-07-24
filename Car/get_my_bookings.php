@@ -32,5 +32,6 @@ try {
 
     echo json_encode(["success" => true, "bookings" => $bookings]);
 } catch (PDOException $e) {
-    echo json_encode(["success" => false, "message" => $e->getMessage()]);
+    error_log('get_my_bookings DB error: ' . $e->getMessage());
+    echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"]);
 }

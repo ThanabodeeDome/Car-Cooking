@@ -1,3 +1,8 @@
+window.addEventListener("pageshow", function (event) {
+  if (event.persisted) {
+    window.location.reload();
+  }
+});
 document.addEventListener("DOMContentLoaded", () => {
   const today = new Date();
   selectedYear = today.getFullYear();

@@ -3,7 +3,8 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once '../Car/db_connect.php';
 
-if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
+$allowed_admin_ids = require __DIR__ . '/../admin_whitelist.php';
+if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin' || !in_array((int)$_SESSION['user_id'], $allowed_admin_ids, true)) {
     echo json_encode(["success" => false, "message" => "ไม่มีสิทธิ์เข้าถึง"]);
     exit;
 }
@@ -48,7 +49,8 @@ if ($action === 'add') {
         ]);
         echo json_encode(["success" => true, "id" => $conn->lastInsertId()]);
     } catch (PDOException $e) {
-        echo json_encode(["success" => false, "message" => $e->getMessage()]);
+        error_log('manage_maintenance add DB error: ' . $e->getMessage());
+        echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด ไม่สามารถบันทึกได้"]);
     }
     exit;
 }
@@ -70,7 +72,8 @@ if ($action === 'close') {
         $stmt->execute([':end' => $end, ':id' => $id]);
         echo json_encode(["success" => true]);
     } catch (PDOException $e) {
-        echo json_encode(["success" => false, "message" => $e->getMessage()]);
+        error_log('manage_maintenance close DB error: ' . $e->getMessage());
+        echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด ไม่สามารถปิดงานซ่อมได้"]);
     }
     exit;
 }
@@ -88,7 +91,8 @@ if ($action === 'delete') {
         $stmt->execute([':id' => $id]);
         echo json_encode(["success" => true]);
     } catch (PDOException $e) {
-        echo json_encode(["success" => false, "message" => $e->getMessage()]);
+        error_log('manage_maintenance delete DB error: ' . $e->getMessage());
+        echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด ไม่สามารถลบข้อมูลได้"]);
     }
     exit;
 }

@@ -1,6 +1,13 @@
 <?php
+session_start();
 header("Content-Type: application/json; charset=utf-8");
 require_once 'db_connect.php';
+
+// 🌟 ไฟล์นี้ไม่มี login check เลยมาก่อน! ประวัติจองทั้งบริษัทเปิดโล่งให้คนนอกดูได้
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode(["error" => "กรุณาเข้าสู่ระบบก่อน"]);
+    exit;
+}
 
 try {
     $sql = "SELECT cb.BookingID AS booking_id,
@@ -21,5 +28,6 @@ try {
 
     echo json_encode($history, JSON_UNESCAPED_UNICODE);
 } catch (PDOException $e) {
-    echo json_encode(["error" => $e->getMessage()]);
+    error_log('get_history DB error: ' . $e->getMessage());
+    echo json_encode(["error" => "เกิดข้อผิดพลาดในการโหลดประวัติ"]);
 }

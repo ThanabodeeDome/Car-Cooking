@@ -1,3 +1,8 @@
+window.addEventListener("pageshow", function (event) {
+  if (event.persisted) {
+    window.location.reload();
+  }
+});
 document.addEventListener("DOMContentLoaded", function () {
   const container = document.getElementById("car-list-display");
   if (!container) return;

@@ -3,7 +3,8 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once '../Car/db_connect.php';
 
-if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
+$allowed_admin_ids = require __DIR__ . '/../admin_whitelist.php';
+if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin' || !in_array((int)$_SESSION['user_id'], $allowed_admin_ids, true)) {
     http_response_code(403);
     echo json_encode(["error" => "ไม่มีสิทธิ์เข้าถึง"]);
     exit;
@@ -51,6 +52,7 @@ try {
 
     echo json_encode($events, JSON_UNESCAPED_UNICODE);
 } catch (PDOException $e) {
+    error_log('get_calendar_events DB error: ' . $e->getMessage());
     http_response_code(500);
-    echo json_encode(["error" => $e->getMessage()]);
+    echo json_encode(["error" => "เกิดข้อผิดพลาดในการโหลดข้อมูลปฏิทิน"]);
 }
