@@ -34,7 +34,6 @@ function filterHistory(type) {
   if (event && event.currentTarget) {
     event.currentTarget.classList.add("active");
   } else {
-    // เรียกจากโค้ด (ไม่ใช่คลิกจริง) เลยไม่มี event.currentTarget — ไฮไลต์ปุ่มตาม type แทน
     buttons.forEach((btn) => {
       if (
         (type === "outbound" && btn.textContent.includes("ยืมรถ")) ||
@@ -104,12 +103,12 @@ function renderBookingList(bookings) {
       statusClass = "status-returned";
       statusText = "คืนแล้ว";
     } else if (bk.CheckInTime) {
-      // เช็คอินแล้วจริง ถึงจะเป็น "กำลังใช้งาน" ก่อนหน้านี้ปักไว้ตายตัวผิด
+      // เช็คอินแล้วจริง (ผ่านสแกน QR ที่รถ) ถึงจะถือว่า "กำลังใช้งาน"
       statusClass = "status-inuse";
       statusText = "กำลังใช้งาน";
     } else {
       statusClass = "status-booked";
-      statusText = "ติดจอง";
+      statusText = "รอเช็คอิน (สแกน QR ที่รถ)";
     }
 
     const row = document.createElement("div");
@@ -117,18 +116,13 @@ function renderBookingList(bookings) {
     row.dataset.searchText =
       `${bk.CarPlate || ""} ${bk.DriverName || ""} ${bk.OutDate || ""}`.toLowerCase();
 
-    // ปุ่ม action แสดงเฉพาะเมื่อยังไม่คืนรถและยังไม่ถูกยกเลิก
+    // 🩹 ตัดปุ่มเช็คอินออกจากหน้านี้แล้ว — บังคับเช็คอินผ่านสแกน QR ที่รถเท่านั้น
+    // (ปุ่มเช็คอินเดิม + checkin_booking.php ไม่ validate ว่าอยู่หน้ารถจริง เสี่ยงกดเช็คอินลอยๆ)
+    // เหลือแค่ปุ่มยกเลิก แสดงเฉพาะเมื่อยังไม่คืนรถและยังไม่ถูกยกเลิก
     const actionButtons =
       isReturned || isCancelled
         ? ""
         : `<div style="display:flex; gap:10px; margin-top:12px;">
-             ${
-               bk.CheckInTime
-                 ? ""
-                 : `<button onclick="checkInBooking(${bk.BookingID})" style="background:#10b981; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">
-               ✅ เช็คอิน
-             </button>`
-             }
              <button onclick="cancelBooking(${bk.BookingID})" style="background:#ef4444; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;">
                ❌ ยกเลิกการจองนี้
              </button>
@@ -152,13 +146,11 @@ function renderBookingList(bookings) {
               <p><strong>ชื่อผู้ขับ:</strong> ${bk.DriverName}</p>
               <p><strong>หน่วยงาน/แผนก:</strong> ${bk.Department}</p>
               <p><strong>สถานที่ไป:</strong> ${bk.Destination || "-"}</p>
-              <p><strong>รายละเอียดงาน:</strong> ${bk.JobDetail || "-"}</p>
             </div>
             <div class="col-md-6">
               <p><strong>ทะเบียนรถ:</strong> ${bk.CarPlate}</p>
               <p><strong>เลขไมล์เริ่มต้น:</strong> ${bk.StartMileage || "-"} กม.</p>
               <p><strong>ผู้ร่วมเดินทาง:</strong> ${bk.Passengers || "-"}</p>
-              <p><strong>ปัญหาก่อนออก:</strong> ${bk.OutRemark || "-"}</p>
             </div>
           </div>
           ${actionButtons}
@@ -194,24 +186,6 @@ function cancelBooking(bookingId) {
       } else {
         alert("ยกเลิกไม่สำเร็จ: " + (result.message || ""));
       }
-    })
-    .catch(() => alert("ติดต่อ Server ไม่ได้"));
-}
-
-function checkInBooking(bookingId) {
-  fetch("checkin_booking.php", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ booking_id: bookingId }),
-  })
-    .then((res) => res.json())
-    .then((result) => {
-      alert(
-        result.success
-          ? "เช็คอินสำเร็จ! เริ่มใช้รถได้เลย"
-          : "เช็คอินไม่สำเร็จ: " + (result.message || ""),
-      );
-      if (result.success) fetchMyBookings();
     })
     .catch(() => alert("ติดต่อ Server ไม่ได้"));
 }

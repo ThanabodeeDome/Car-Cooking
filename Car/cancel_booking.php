@@ -18,13 +18,15 @@ if (!$data || empty($data['booking_id'])) {
 }
 
 try {
-    // 🌟 เดิมเช็คแค่ login ไม่เช็คว่าเป็นเจ้าของ booking จริง คนอื่นยกเลิก booking คนอื่นได้
+    // 🩹 เพิ่ม 'จองแล้ว' เข้าเงื่อนไข — booking ใหม่ตอนนี้เริ่มที่สถานะนี้ (ยังไม่เช็คอิน)
+    // เดิมเช็คแค่ 'ขาไป' อย่างเดียว ทำให้จองแล้วเปลี่ยนใจไม่มารับรถ ยกเลิกไม่ได้เลย
     $stmt = $conn->prepare("UPDATE CarBookings SET BookingStatus = 'ยกเลิก' 
-                         WHERE BookingID = :id AND EmployeeID = :emp AND (BookingStatus = 'ขาไป' OR BookingStatus IS NULL)");
+                         WHERE BookingID = :id AND EmployeeID = :emp 
+                           AND (BookingStatus = 'จองแล้ว' OR BookingStatus = 'ขาไป' OR BookingStatus IS NULL)");
     $stmt->execute([':id' => $data['booking_id'], ':emp' => $sessionEmployeeId]);
 
     if ($stmt->rowCount() === 0) {
-        echo json_encode(["success" => false, "message" => "ไม่สามารถยกเลิกได้ (อาจถูกคืนหรือยกเลิกไปแล้ว)"]);
+        echo json_encode(["success" => false, "message" => "ไม่สามารถยกเลิกได้ (อาจถูกเช็คอิน คืนรถ หรือยกเลิกไปแล้ว)"]);
         exit;
     }
     echo json_encode(["success" => true]);
