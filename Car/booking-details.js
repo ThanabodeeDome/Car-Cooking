@@ -89,7 +89,7 @@ function renderBookingList(bookings) {
   }
 
   bookings.forEach((bk) => {
-    const isReturned = bk.BookingStatus === "ขากลับ";
+    const isReturned = bk.BookingStatus === "คืนแล้ว";
     const isCancelled = bk.BookingStatus && bk.BookingStatus.includes("ยกเลิก");
     const rowClass = isReturned ? "inbound-item" : "outbound-item";
     const dropdownId = `bk-${bk.BookingID}`;

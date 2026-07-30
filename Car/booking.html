@@ -152,7 +152,12 @@
           <div class="input-row-group" style="margin-top: 15px">
             <div class="field-group">
               <label>วันที่ใช้งาน:</label>
-              <input type="date" id="use-date" class="form-control" />
+              <input
+                type="date"
+                id="use-date"
+                class="form-control"
+                onchange="updateAvailableTimeSlots()"
+              />
             </div>
             <div class="field-group">
               <label>ช่วงเวลา:</label>

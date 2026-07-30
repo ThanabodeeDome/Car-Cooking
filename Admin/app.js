@@ -369,18 +369,18 @@ function loadAdminBookings() {
   const tbody = document.getElementById("admin-bookings-tbody");
   if (!tbody) return;
 
-  tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px;">กำลังโหลด...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:20px;">กำลังโหลด...</td></tr>`;
 
   fetch("admin_get_bookings.php")
     .then((res) => res.json())
     .then((data) => {
       if (!data.success) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#ef4444;">${data.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:#ef4444;">${data.message}</td></tr>`;
         return;
       }
 
       if (!data.bookings || data.bookings.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">ไม่มีรายการจอง</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;">ไม่มีรายการจอง</td></tr>`;
         return;
       }
 
@@ -425,6 +425,30 @@ function loadAdminBookings() {
               <td>${bk.TimeSlot || "-"}</td>
               <td class="status-cell"><span class="status-badge no-glow ${statusClass}">${bk.BookingStatus || "-"}</span></td>
               <td>
+                <div style="display:flex; flex-direction:column; gap:2px; font-size:12.5px;">
+                  <span>${bk.CheckInTime ? "✅ " + bk.CheckInTime : "⏳ ยังไม่เช็คอิน"}</span>
+                  <span style="color:#94a3b8;">ไมล์: ${bk.StartMileage ?? "-"}</span>
+                </div>
+              </td>
+              <td>
+                ${
+                  bk.ReturnDate
+                    ? `<div style="display:flex; flex-direction:column; gap:2px; font-size:12.5px;">
+                        <span>✅ ${bk.ReturnDate} ${bk.ReturnTime || ""}</span>
+                        <span style="color:#94a3b8;">ไมล์: ${bk.EndMileage ?? "-"}</span>
+                      </div>`
+                    : `<span style="color:#cbd5e1; font-size:12.5px;">⏳ ยังไม่คืน</span>`
+                }
+              </td>
+              <td>
+                <div style="display:flex; gap:6px; font-size:16px;">
+                  ${bk.CheckinPhotoPath ? `<a href="${bk.CheckinPhotoPath}" target="_blank" title="รูปตอนรับรถ">📷</a>` : ""}
+                  ${bk.OdometerPhotoPath ? `<a href="${bk.OdometerPhotoPath}" target="_blank" title="รูปมาตรวัด">🛞</a>` : ""}
+                  ${bk.ReturnPhotoPath ? `<a href="${bk.ReturnPhotoPath}" target="_blank" title="รูปตอนคืนรถ">✅</a>` : ""}
+                  ${!bk.CheckinPhotoPath && !bk.OdometerPhotoPath && !bk.ReturnPhotoPath ? `<span style="color:#cbd5e1; font-size:12.5px;">-</span>` : ""}
+                </div>
+              </td>
+              <td>
                 ${
                   canCancel
                     ? `<button class="op-del" onclick="adminCancelBooking(${bk.BookingID})">ยกเลิก</button>`
@@ -437,7 +461,7 @@ function loadAdminBookings() {
     })
     .catch((err) => {
       console.error("Error loading admin bookings:", err);
-      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#ef4444;">เชื่อมต่อเซิร์ฟเวอร์ไม่ได้</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:#ef4444;">เชื่อมต่อเซิร์ฟเวอร์ไม่ได้</td></tr>`;
     });
 }
 

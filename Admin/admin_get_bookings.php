@@ -13,7 +13,11 @@ try {
     require_once '../Car/auto_cancel_noshows.php';
     autoCancelNoShows($conn);
 
-    $sql = "SELECT BookingID, BookingNumber, DriverName, EmployeeID, CarPlate, BookingDate, TimeSlot, BookingStatus, CheckInTime, Passengers, PassengerIDs
+    $sql = "SELECT BookingID, BookingNumber, DriverName, EmployeeID, CarPlate, BookingDate, TimeSlot, BookingStatus,
+                   OutDate, OutTime, StartMileage, JobDetail, OutRemark, CheckInTime,
+                   ReturnDate, ReturnTime, EndMileage, ReturnRemark,
+                   CheckinPhotoPath, OdometerPhotoPath, ReturnPhotoPath,
+                   Passengers, PassengerIDs
             FROM CarBookings
             ORDER BY BookingID DESC";
     $stmt = $conn->query($sql);
