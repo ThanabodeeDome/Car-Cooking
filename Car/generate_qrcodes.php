@@ -9,7 +9,7 @@ require_once __DIR__ . '/db_connect.php';
 
 // 🌟 แก้ตรงนี้เป็นโดเมนจริงหลังตั้ง Cloudflare Tunnel เสร็จแล้ว
 // ห้ามใช้ localhost เด็ดขาด เพราะมือถือคนสแกนจะเข้า localhost ของตัวเอง ไม่ใช่ server จริง
-define('BASE_URL', 'https://โดเมนจริงของเจ้า.com/car-booking/Car/checkin.php');
+define('BASE_URL', 'http://192.168.5.52/car-booking/Car/scan.php');
 
 $outputDir = __DIR__ . '/assets/QRcode/';
 if (!is_dir($outputDir)) {

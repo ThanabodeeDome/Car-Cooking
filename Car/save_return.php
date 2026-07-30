@@ -1,64 +1,92 @@
 <?php
+// save_return.php
+// ใช้ร่วมกัน 2 ทาง: (1) return_scan.js หลังสแกน QR (มีรูป OCR) (2) booking.js แท็บคืนรถสำรอง (ไม่มีรูป กรอกเอง)
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once 'db_connect.php';
 
-// 🌟 ไฟล์นี้ไม่มี auth check เลยมาก่อน! ใครก็ปิด booking คนอื่น+ยัดเลขไมล์ได้
 if (!isset($_SESSION['user_id']) || empty($_SESSION['employee_id'])) {
     echo json_encode(["success" => false, "message" => "กรุณาเข้าสู่ระบบก่อน"]);
     exit;
 }
 $sessionEmployeeId = $_SESSION['employee_id'];
+$sessionRole = $_SESSION['role'] ?? '';
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
-if (!$data || empty($data['booking_id'])) {
-    echo json_encode(["success" => false, "message" => "ไม่พบรายการที่จะคืน"]);
+$bookingId = isset($data['booking_id']) ? trim($data['booking_id']) : '';
+$endMile = isset($data['end_mile']) ? (int) $data['end_mile'] : 0;
+
+if (!$data || empty($bookingId) || $endMile <= 0) {
+    echo json_encode(["success" => false, "message" => "ข้อมูลไม่ครบ"]);
     exit;
 }
 
 try {
-    // 🌟 ดึง StartMileage + CarPlate มาเช็คก่อน update + เช็คว่า booking นี้เป็นของ employee คนที่ login อยู่จริง
-    $check = $conn->prepare("SELECT StartMileage, CarPlate FROM CarBookings WHERE BookingID = :id AND BookingStatus = 'ขาไป' AND EmployeeID = :emp");
-    $check->execute([':id' => $data['booking_id'], ':emp' => $sessionEmployeeId]);
-    $booking = $check->fetch(PDO::FETCH_ASSOC);
+    $bookingCheck = $conn->prepare(
+        "SELECT BookingID, EmployeeID, CarPlate, StartMileage, BookingStatus
+         FROM CarBookings WHERE BookingID = :id"
+    );
+    $bookingCheck->execute([':id' => $bookingId]);
+    $booking = $bookingCheck->fetch(PDO::FETCH_ASSOC);
 
     if (!$booking) {
-        echo json_encode(["success" => false, "message" => "รายการนี้ถูกคืนไปแล้ว หรือไม่พบข้อมูล"]);
+        echo json_encode(["success" => false, "message" => "ไม่พบรายการจองนี้"]);
         exit;
     }
 
-    $endMile = (int)($data['end_mile'] ?? 0);
-    if ($endMile <= (int)$booking['StartMileage']) {
-        echo json_encode(["success" => false, "message" => "เลขไมล์ตอนคืนต้องมากกว่าเลขไมล์ตอนออก (" . $booking['StartMileage'] . ")"]);
+    if ($booking['BookingStatus'] !== 'ขาไป') {
+        echo json_encode(["success" => false, "message" => "รายการนี้ไม่อยู่ในสถานะที่คืนได้ (อาจคืนไปแล้วหรือยังไม่เช็คอิน)"]);
         exit;
     }
 
-    // 1. อัปเดตประวัติการจอง
-    $sql = "UPDATE CarBookings 
-            SET ReturnDate = :return_date, ReturnTime = :return_time, EndMileage = :end_mileage, 
-                ReturnRemark = :return_remark, BookingStatus = 'ขากลับ'
-            WHERE BookingID = :id AND BookingStatus = 'ขาไป' AND EmployeeID = :emp";
-    $stmt = $conn->prepare($sql);
-    $stmt->execute([
-        ':return_date'   => $data['return_date'] ?? null,
-        ':return_time'   => $data['return_time'] ?? null,
-        ':end_mileage'   => $endMile,
-        ':return_remark' => $data['return_remark'] ?? null,
-        ':id'            => $data['booking_id'],
-        ':emp'           => $sessionEmployeeId,
+    // 🌟 กันคนอื่นคืนรถแทนผู้ขับตัวจริง — ต้องเป็นเจ้าของ booking เท่านั้น (หรือ admin)
+    if (strtolower($sessionRole) !== 'admin' && $sessionEmployeeId !== $booking['EmployeeID']) {
+        echo json_encode(["success" => false, "message" => "คุณไม่ใช่ผู้ขับที่ระบุไว้ในรายการจองนี้"]);
+        exit;
+    }
+
+    $startMileage = (int) $booking['StartMileage'];
+    if ($endMile <= $startMileage) {
+        echo json_encode(["success" => false, "message" => "เลขไมล์ตอนคืนต้องมากกว่าเลขไมล์ตอนออก ($startMileage)"]);
+        exit;
+    }
+
+    $conn->beginTransaction();
+
+    $update = $conn->prepare(
+        "UPDATE CarBookings
+         SET BookingStatus = 'คืนแล้ว',
+             ReturnDate = :return_date,
+             ReturnTime = :return_time,
+             EndMileage = :end_mile,
+             ReturnRemark = :remark,
+             OdometerPhotoPath = :odometer_photo,
+             ReturnPhotoPath = :condition_photo
+         WHERE BookingID = :id"
+    );
+    $update->execute([
+        ':return_date'     => $data['return_date'] ?? date('Y-m-d'),
+        ':return_time'     => $data['return_time'] ?? date('H:i'),
+        ':end_mile'        => $endMile,
+        ':remark'          => $data['return_remark'] ?? '-',
+        ':odometer_photo'  => $data['odometer_photo_path'] ?? null,
+        ':condition_photo' => $data['condition_photo_path'] ?? null,
+        ':id'              => $bookingId,
     ]);
 
-    // 2. 🌟 อัปเดตเลขไมล์ปัจจุบันของรถในตาราง Cars ให้เป็นค่าล่าสุด
+    // 🌟 sync เลขไมล์ล่าสุดกลับเข้าตาราง Cars ด้วย ให้ครั้งจองต่อไป auto-fill "เลขไมล์เริ่มต้น" ถูกต้อง
     $updateCar = $conn->prepare("UPDATE Cars SET Mileage = :mileage WHERE Plate = :plate");
-    $updateCar->execute([
-        ':mileage' => $endMile,
-        ':plate'   => $booking['CarPlate'],
-    ]);
+    $updateCar->execute([':mileage' => $endMile, ':plate' => $booking['CarPlate']]);
 
-    echo json_encode(["success" => true]);
+    $conn->commit();
+
+    echo json_encode(["success" => true, "message" => "บันทึกการคืนรถสำเร็จ"]);
 } catch (PDOException $e) {
+    if ($conn->inTransaction()) {
+        $conn->rollBack();
+    }
     error_log('save_return DB error: ' . $e->getMessage());
-    echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด ไม่สามารถบันทึกการคืนรถได้"]);
+    echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"]);
 }

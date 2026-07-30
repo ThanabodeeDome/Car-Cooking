@@ -17,7 +17,7 @@ if (empty($plate)) {
 
 try {
     $sql = "SELECT TOP 1 BookingID, EmployeeID FROM CarBookings
-            WHERE CarPlate = :plate AND BookingStatus = 'จองแล้ว'
+            WHERE REPLACE(CarPlate, ' ', '') = REPLACE(:plate, ' ', '') AND BookingStatus = 'จองแล้ว'
             ORDER BY BookingID DESC";
     $stmt = $conn->prepare($sql);
     $stmt->execute([':plate' => $plate]);

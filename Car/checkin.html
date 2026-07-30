@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>เช็คอินรับรถ - Corporate Car</title>
+    <title>สแกนรถ - Corporate Car</title>
     <link rel="stylesheet" href="navbar.css" />
     <link rel="stylesheet" href="booking.css" />
     <link
@@ -12,6 +12,8 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="toast.css" />
+    <!-- 🌟 Tesseract.js — OCR อ่านเลขไมล์จากรูปถ่าย ทำงานฝั่งเบราว์เซอร์ ไม่ต้องพึ่ง API เสียเงิน -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
   </head>
 
   <body class="booking-page">
@@ -28,7 +30,7 @@
     </nav>
 
     <div class="booking-card">
-      <h2 class="form-title">เช็คอินรับรถ</h2>
+      <h2 class="form-title" id="scan-page-title">กำลังตรวจสอบสถานะรถ...</h2>
 
       <div
         id="checkin-loading"
@@ -43,7 +45,8 @@
         style="text-align: center; padding: 30px; color: #ff4d4d"
       ></div>
 
-      <div id="checkin-content" class="hidden">
+      <!-- ================= โหมดเช็คอิน (รับรถ) ================= -->
+      <div id="mode-checkin" class="hidden">
         <div class="input-container">
           <div class="field-group full-width">
             <label>ทะเบียนรถ</label>
@@ -88,7 +91,6 @@
             />
           </div>
 
-          <!-- 🌟 ถ่ายรูปสภาพรถก่อนออก (ไม่บังคับ) เก็บไว้เป็นหลักฐานเผื่อมีข้อพิพาทตอนคืนรถ -->
           <div class="field-group full-width">
             <label>ถ่ายรูปสภาพรถก่อนออก (ถ้ามีตำหนิ ไม่บังคับ)</label>
             <input
@@ -105,7 +107,6 @@
           </div>
         </div>
 
-        <!-- 🌟 โชว์เวลาปัจจุบันแบบสด ให้เห็นชัดว่าจะถูกบันทึกเป็นเวลาเช็คอินตอนกดปุ่ม -->
         <p style="text-align: center; color: #94a3b8; margin-top: 10px">
           เวลาที่จะบันทึกเป็นเวลาเช็คอิน:
           <span
@@ -131,6 +132,94 @@
           "
         >
           ยืนยันเช็คอิน / รับรถ
+        </button>
+      </div>
+
+      <!-- ================= โหมดคืนรถ ================= -->
+      <div id="mode-return" class="hidden">
+        <div class="input-container">
+          <div class="field-group full-width">
+            <label>ทะเบียนรถ</label>
+            <input type="text" id="rt-plate" class="form-control" readonly />
+          </div>
+          <div class="field-group">
+            <label>ผู้ขับ</label>
+            <input type="text" id="rt-driver" class="form-control" readonly />
+          </div>
+          <div class="field-group">
+            <label>เลขไมล์ตอนออก</label>
+            <input
+              type="text"
+              id="rt-start-mile"
+              class="form-control"
+              readonly
+            />
+          </div>
+
+          <div class="field-group full-width">
+            <label style="color: #27ae60"
+              >ถ่ายรูปเลขไมล์ปัจจุบัน (บังคับ)</label
+            >
+            <input
+              type="file"
+              id="rt-photo-input"
+              accept="image/*"
+              capture="environment"
+            />
+            <img
+              id="rt-photo-preview"
+              class="hidden"
+              style="max-width: 100%; margin-top: 10px; border-radius: 8px"
+            />
+            <p
+              id="rt-ocr-status"
+              style="color: #94a3b8; font-size: 13px; margin-top: 6px"
+            ></p>
+          </div>
+
+          <div class="field-group full-width">
+            <label
+              >เลขไมล์ตอนคืน (ตรวจสอบตัวเลขที่ OCR
+              อ่านได้อีกครั้งก่อนยืนยัน)</label
+            >
+            <input
+              type="number"
+              id="rt-end-mile"
+              class="form-control"
+              placeholder="รอ OCR อ่านค่า หรือกรอกเองได้"
+            />
+          </div>
+
+          <div class="field-group full-width">
+            <label style="color: #27ae60"
+              >แจ้งปัญหาที่พบหลังการใช้งาน (ถ้ามี)</label
+            >
+            <textarea
+              id="rt-remark"
+              rows="3"
+              class="form-control"
+              placeholder="ระบุปัญหาที่พบหลังใช้งาน..."
+            ></textarea>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="confirm-btn"
+          id="rt-confirm-btn"
+          onclick="confirmReturn()"
+          style="
+            width: 100%;
+            background: #27ae60;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: none;
+            margin-top: 10px;
+            cursor: pointer;
+          "
+        >
+          ยืนยันคืนรถ
         </button>
       </div>
     </div>

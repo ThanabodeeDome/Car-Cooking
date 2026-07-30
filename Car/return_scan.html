@@ -1,0 +1,151 @@
+<?php require_once 'guard_user.php'; ?>
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>คืนรถ - Corporate Car</title>
+    <link rel="stylesheet" href="navbar.css" />
+    <link rel="stylesheet" href="booking.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="toast.css" />
+    <!-- 🌟 Tesseract.js — ทำ OCR ฝั่ง browser ล้วนๆ ไม่ต้องส่งรูปออกไป API ภายนอกที่ไหน -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  </head>
+
+  <body class="booking-page">
+    <nav class="nav-bar">
+      <div class="logo">
+        <img src="assets/image/CH2.png" alt="nav-logo" />
+      </div>
+      <ul class="nav-links" id="nav-list">
+        <li><a href="homepage.html" class="Home-btn">หน้าหลัก</a></li>
+        <li><a href="booking.html" class="book-btn">จองรอบขับ</a></li>
+        <li><a href="car-status.html" class="Check-btn">เช็กคิว</a></li>
+        <li><a href="profile.html" class="contact-btn">ข้อมูลผู้ใช้</a></li>
+      </ul>
+    </nav>
+
+    <div class="booking-card">
+      <h2 class="form-title" style="color: #27ae60">คืนรถ</h2>
+
+      <div
+        id="return-loading"
+        style="text-align: center; padding: 30px; color: #94a3b8"
+      >
+        กำลังตรวจสอบข้อมูลการจอง...
+      </div>
+
+      <div
+        id="return-error"
+        class="hidden"
+        style="text-align: center; padding: 30px; color: #ff4d4d"
+      ></div>
+
+      <div id="return-content" class="hidden">
+        <div class="input-container">
+          <div class="field-group full-width">
+            <label>ทะเบียนรถ</label>
+            <input type="text" id="rt-plate" class="form-control" readonly />
+          </div>
+          <div class="field-group">
+            <label>ผู้ขับ</label>
+            <input type="text" id="rt-driver" class="form-control" readonly />
+          </div>
+          <div class="field-group">
+            <label>เลขไมล์ตอนออก</label>
+            <input
+              type="text"
+              id="rt-start-mile"
+              class="form-control"
+              readonly
+            />
+          </div>
+
+          <!-- 🌟 ขั้นที่ 1: ถ่ายรูปเลขไมล์ -> OCR อ่านอัตโนมัติ -->
+          <div class="field-group full-width">
+            <label>1) ถ่ายรูปหน้าปัดเลขไมล์ (บังคับ)</label>
+            <input
+              type="file"
+              id="rt-odometer-input"
+              accept="image/*"
+              capture="environment"
+            />
+            <img
+              id="rt-odometer-preview"
+              class="hidden"
+              style="max-width: 100%; margin-top: 10px; border-radius: 8px"
+            />
+            <p
+              id="rt-ocr-status"
+              style="color: #94a3b8; font-size: 13px; margin-top: 6px"
+            ></p>
+          </div>
+
+          <div class="field-group full-width">
+            <label>เลขไมล์ตอนคืน (ตรวจสอบ/แก้ไขให้ตรงก่อนยืนยัน)</label>
+            <input
+              type="number"
+              id="rt-end-mile"
+              class="form-control"
+              placeholder="รอถ่ายรูปเลขไมล์ก่อน..."
+            />
+          </div>
+
+          <!-- 🌟 ขั้นที่ 2: ถ่ายรูปสภาพรถยืนยัน -->
+          <div class="field-group full-width">
+            <label>2) ถ่ายรูปสภาพรถตอนคืน (บังคับ)</label>
+            <input
+              type="file"
+              id="rt-condition-input"
+              accept="image/*"
+              capture="environment"
+            />
+            <img
+              id="rt-condition-preview"
+              class="hidden"
+              style="max-width: 100%; margin-top: 10px; border-radius: 8px"
+            />
+          </div>
+
+          <div class="field-group full-width">
+            <label style="color: #27ae60"
+              >แจ้งปัญหาที่พบหลังการใช้งาน (ถ้ามี)</label
+            >
+            <textarea
+              id="rt-remark"
+              rows="3"
+              class="form-control"
+              placeholder="ระบุปัญหาที่พบหลังใช้งาน..."
+            ></textarea>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="confirm-btn"
+          id="rt-confirm-btn"
+          onclick="confirmReturn()"
+          style="
+            width: 100%;
+            background: #27ae60;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: none;
+            margin-top: 20px;
+            cursor: pointer;
+          "
+        >
+          ยืนยันการคืนรถ
+        </button>
+      </div>
+    </div>
+
+    <script src="toast.js"></script>
+    <script src="return_scan.js"></script>
+  </body>
+</html>

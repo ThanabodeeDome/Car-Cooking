@@ -35,10 +35,22 @@ if ($attemptData['count'] >= $maxAttempts) {
 
 $username = isset($_POST['username']) ? trim($_POST['username']) : '';
 $password = isset($_POST['password']) ? trim($_POST['password']) : '';
+// 🌟 ใหม่: รับ path ที่ตั้งใจจะเข้าไว้ตั้งแต่ก่อน login (มาจาก guard_user.php ตอนโดนเด้ง)
+$redirectParam = isset($_POST['redirect']) ? trim($_POST['redirect']) : '';
 
 if (empty($username) || empty($password)) {
     echo json_encode(['success' => false, 'message' => 'กรุณากรอกชื่อผู้ใช้และรหัสผ่านด้วยครับเพื่อน!']);
     exit;
+}
+
+// 🌟 กัน open-redirect: รับเฉพาะ relative path ธรรมดาในโฟลเดอร์ Car/ เท่านั้น
+// ห้ามมี :// (ลิงก์ไปโดเมนอื่น) และห้ามขึ้นต้นด้วย // (protocol-relative URL)
+function isSafeRedirect($path) {
+    if (empty($path)) return false;
+    if (strpos($path, '://') !== false) return false;
+    if (substr($path, 0, 2) === '//') return false;
+    if (strpos($path, '..') !== false) return false; // กัน path traversal
+    return true;
 }
 
 try {
@@ -66,19 +78,21 @@ try {
 
         // 3. ตรวจสอบสิทธิ์ (Role) เพื่อกำหนดปลายทางที่จะส่งไป (Fix ปัญหาหน้า 404)
         if ($user['role'] === 'admin') {
-            // ถ้าเป็นแอดมิน ให้ดีดไปที่โฟลเดอร์ Admin (ถอยจากโฟลเดอร์ Car ออกไป 1 ชั้นก่อน)
-            $redirect_url = "../Admin/index.html"; 
+            // แอดมินไปหน้า Admin เสมอ ไม่รับ redirect param (กันคนพยายามยัด path แปลกๆ ไปโซน Admin)
+            $redirect_url = "../Admin/index.html";
+        } elseif (isSafeRedirect($redirectParam)) {
+            // 🌟 ถ้ามี redirect ที่ปลอดภัยแนบมา (เช่นมาจากสแกน QR checkin.php) ส่งกลับไปที่นั่นแทนหน้าหลัก
+            $redirect_url = $redirectParam;
         } else {
-            // ถ้าเป็นพนักงานทั่วไป (user) ให้ส่งไปหน้าจองรถของพนักงาน
-            $redirect_url = "../Car/homepage.html"; 
+            $redirect_url = "../Car/homepage.html";
         }
 
         echo json_encode([
-            'success' => true, 
+            'success' => true,
             'message' => 'ยินดีต้อนรับคุณ ' . $user['first_name'],
             'redirect' => $redirect_url
         ]);
-        
+
     } else {
         // ❌ login ผิด -> นับเพิ่ม 1 ครั้ง เก็บลง lock file
         $attemptData['count']++;
@@ -94,4 +108,3 @@ try {
     error_log('Login DB error: ' . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'ระบบฐานข้อมูลขัดข้อง กรุณาลองใหม่อีกครั้งครับ']);
 }
-?>

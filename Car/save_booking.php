@@ -125,7 +125,7 @@ try {
     $sql = "INSERT INTO CarBookings 
         (BookingNumber, DriverName, EmployeeID, Department, Destination, CarPlate, StartMileage, Passengers, PassengerIDs, OutDate, BookingStatus, BookingDate, TimeSlot, BookedByUserID)
         VALUES 
-        (:booking_number, :driver_name, :employee_id, :department, :destination, :car_plate, :start_mileage, :passengers, :passenger_ids, :out_date, 'ขาไป', :booking_date, :time_slot, :booked_by)";
+        (:booking_number, :driver_name, :employee_id, :department, :destination, :car_plate, :start_mileage, :passengers, :passenger_ids, :out_date, 'จองแล้ว', :booking_date, :time_slot, :booked_by)";
     $stmt = $conn->prepare($sql);
     $stmt->execute([
         ':booking_number' => $bookingNumber,

@@ -162,6 +162,14 @@ document
 
     const formData = new FormData(this);
 
+    // 🌟 ใหม่: ถ้ามี ?redirect=... ติดมากับ URL ปัจจุบัน (มาจาก guard_user.php ตอนโดนเด้งจากการสแกน QR)
+    // แนบไปเป็นส่วนหนึ่งของ POST ด้วย ให้ login_process.php ส่งกลับไปหน้าที่ตั้งใจเข้าแทนหน้า homepage เดิม
+    const urlParams = new URLSearchParams(window.location.search);
+    const redirectParam = urlParams.get("redirect");
+    if (redirectParam) {
+      formData.set("redirect", redirectParam);
+    }
+
     fetch("../login_process.php", {
       method: "POST",
       body: formData,
