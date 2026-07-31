@@ -4,6 +4,21 @@ window.addEventListener("pageshow", function (event) {
   }
 });
 /* =========================================
+   0. Helper: format datetime string เป็นเวลาไทย HH:MM
+   ========================================= */
+function formatThaiTime(dateTimeStr) {
+  if (!dateTimeStr) return "-";
+  const d = new Date(dateTimeStr.replace(" ", "T"));
+  if (isNaN(d.getTime())) return dateTimeStr; // fallback ถ้า parse ไม่ได้
+  return d.toLocaleTimeString("th-TH", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Bangkok",
+  });
+}
+
+/* =========================================
    1. ฟังก์ชันดึงประวัติการจอง (ตารางด้านล่าง)
    ========================================= */
 function updateHistoryTable() {
@@ -50,7 +65,7 @@ function updateHistoryTable() {
           return `
       <tr>
           <td>${item.out_date || "-"}</td>
-          <td>${item.checkin_time || "-"}</td>
+          <td>${formatThaiTime(item.checkin_time)}</td>
           <td>${item.return_time || "-"}</td>
           <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
           <td>${item.car_plate || "-"}</td>
@@ -137,8 +152,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // ดึงข้อมูลประวัติ (ถ้ามีตาราง)
   updateHistoryTable();
 
-  // ตั้งเวลาอัปเดตประวัติทุก 5 วินาที
-  setInterval(updateHistoryTable, 5000);
+  // ตั้งเวลาอัปเดตประวัติทุก 1 วินาที
+  setInterval(updateHistoryTable, 1000);
 });
 
 /* =========================================

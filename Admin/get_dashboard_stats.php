@@ -4,11 +4,8 @@ header('Content-Type: application/json; charset=utf-8');
 require_once '../Car/db_connect.php';
 
 // 🌟 ไฟล์นี้ไม่มี auth check เลยมาก่อน! ข้อมูลรถ+การจองทั้งบริษัทเปิดโล่งให้ใครก็ดูได้
-$allowed_admin_ids = require __DIR__ . '/../admin_whitelist.php';
-if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin' || !in_array((int)$_SESSION['user_id'], $allowed_admin_ids, true)) {
-    echo json_encode(["success" => false, "message" => "ไม่มีสิทธิ์เข้าถึง"]);
-    exit;
-}
+require_once __DIR__ . '/../require_admin.php';
+requireAdminAccess();
 
 try {
     // ---------- 1) สถานะรถแบบ real-time (logic เดียวกับ get_cars.php ฝั่ง user) ----------

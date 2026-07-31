@@ -369,18 +369,18 @@ function loadAdminBookings() {
   const tbody = document.getElementById("admin-bookings-tbody");
   if (!tbody) return;
 
-  tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; padding:20px;">กำลังโหลด...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px;">กำลังโหลด...</td></tr>`;
 
   fetch("admin_get_bookings.php")
     .then((res) => res.json())
     .then((data) => {
       if (!data.success) {
-        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:#ef4444;">${data.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#ef4444;">${data.message}</td></tr>`;
         return;
       }
 
       if (!data.bookings || data.bookings.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;">ไม่มีรายการจอง</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">ไม่มีรายการจอง</td></tr>`;
         return;
       }
 
@@ -425,28 +425,8 @@ function loadAdminBookings() {
               <td>${bk.TimeSlot || "-"}</td>
               <td class="status-cell"><span class="status-badge no-glow ${statusClass}">${bk.BookingStatus || "-"}</span></td>
               <td>
-                <div style="display:flex; flex-direction:column; gap:2px; font-size:12.5px;">
-                  <span>${bk.CheckInTime ? "✅ " + bk.CheckInTime : "⏳ ยังไม่เช็คอิน"}</span>
-                  <span style="color:#94a3b8;">ไมล์: ${bk.StartMileage ?? "-"}</span>
-                </div>
-              </td>
-              <td>
-                ${
-                  bk.ReturnDate
-                    ? `<div style="display:flex; flex-direction:column; gap:2px; font-size:12.5px;">
-                        <span>✅ ${bk.ReturnDate} ${bk.ReturnTime || ""}</span>
-                        <span style="color:#94a3b8;">ไมล์: ${bk.EndMileage ?? "-"}</span>
-                      </div>`
-                    : `<span style="color:#cbd5e1; font-size:12.5px;">⏳ ยังไม่คืน</span>`
-                }
-              </td>
-              <td>
-                <div style="display:flex; gap:6px; font-size:16px;">
-                  ${bk.CheckinPhotoPath ? `<a href="${bk.CheckinPhotoPath}" target="_blank" title="รูปตอนรับรถ">📷</a>` : ""}
-                  ${bk.OdometerPhotoPath ? `<a href="${bk.OdometerPhotoPath}" target="_blank" title="รูปมาตรวัด">🛞</a>` : ""}
-                  ${bk.ReturnPhotoPath ? `<a href="${bk.ReturnPhotoPath}" target="_blank" title="รูปตอนคืนรถ">✅</a>` : ""}
-                  ${!bk.CheckinPhotoPath && !bk.OdometerPhotoPath && !bk.ReturnPhotoPath ? `<span style="color:#cbd5e1; font-size:12.5px;">-</span>` : ""}
-                </div>
+                <button class="op-edit" onclick='openBookingDetailModal(${JSON.stringify(bk).replace(/'/g, "&apos;")})'>รายละเอียด</button>
+                <button class="op-edit" onclick='openBookingEditModal(${JSON.stringify(bk).replace(/'/g, "&apos;")})'>แก้ไข</button>
               </td>
               <td>
                 ${
@@ -461,7 +441,7 @@ function loadAdminBookings() {
     })
     .catch((err) => {
       console.error("Error loading admin bookings:", err);
-      tbody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:#ef4444;">เชื่อมต่อเซิร์ฟเวอร์ไม่ได้</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#ef4444;">เชื่อมต่อเซิร์ฟเวอร์ไม่ได้</td></tr>`;
     });
 }
 
@@ -623,6 +603,195 @@ function closeMaintenanceModal() {
   const overlay = document.getElementById("maint-modal-overlay");
   if (overlay) overlay.remove();
   currentMaintCarId = null;
+}
+
+/**
+ * 📋 6.5 รายละเอียดการจอง (ขาไป/ขากลับ) — โชว์เลขไมล์ + เวลาเช็คอิน/คืน + รูปถ่ายทั้ง 3 จุด
+ */
+function openBookingDetailModal(bk) {
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.id = "booking-detail-modal-overlay";
+
+  // 🌟 path รูปเก็บใน DB แบบ relative จากโฟลเดอร์ Car/ (เช่น "uploads/checkin/xxx.jpg")
+  // ไฟล์นี้รันอยู่ใน Admin/ ต้องถอยไป ../Car/ ก่อนถึงจะเจอไฟล์จริง
+  const photoUrl = (path) => (path ? `../Car/${path}` : null);
+
+  const photoBlock = (label, path) => {
+    const url = photoUrl(path);
+    return `
+      <div style="text-align:center;">
+        <p style="font-size:13px; font-weight:600; margin-bottom:6px;">${label}</p>
+        ${
+          url
+            ? `<img src="${url}" style="width:100%; max-height:180px; object-fit:cover; border-radius:8px; cursor:pointer;" onclick="window.open('${url}', '_blank')" />`
+            : `<div style="height:120px; display:flex; align-items:center; justify-content:center; background:#f1f5f9; border-radius:8px; color:#94a3b8; font-size:13px;">ไม่มีรูป</div>`
+        }
+      </div>`;
+  };
+
+  overlay.innerHTML = `
+    <div class="modal-content" style="width: 720px; max-width: 95vw; max-height: 92vh; overflow-y: auto;">
+      <h2 style="margin-top:0; margin-bottom:14px;">
+        <i class="fa-solid fa-clipboard-list"></i> รายละเอียดการจอง — ${bk.BookingNumber}
+      </h2>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; margin-bottom: 18px;">
+        <div><strong>ผู้ขับ:</strong> ${bk.DriverName || "-"} ${bk.EmployeeID ? `#${bk.EmployeeID}` : ""}</div>
+        <div><strong>หน่วยงาน:</strong> ${bk.Department || "-"}</div>
+        <div><strong>ทะเบียนรถ:</strong> ${bk.CarPlate || "-"}</div>
+        <div><strong>สถานที่ไป:</strong> ${bk.Destination || "-"}</div>
+        <div><strong>วันที่ / ช่วงเวลา:</strong> ${bk.BookingDate || "-"} (${bk.TimeSlot || "-"})</div>
+        <div><strong>สถานะ:</strong> ${bk.BookingStatus || "-"}</div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; margin-bottom: 18px; padding: 12px; background:#f8fafc; border-radius:8px;">
+        <div><strong>เวลาเช็คอิน:</strong> ${bk.CheckInTime || "ยังไม่เช็คอิน"}</div>
+        <div><strong>เลขไมล์ตอนออก:</strong> ${bk.StartMileage ?? "-"}</div>
+        <div><strong>วันที่/เวลาคืน:</strong> ${bk.ReturnDate ? `${bk.ReturnDate} ${bk.ReturnTime || ""}` : "ยังไม่คืน"}</div>
+        <div><strong>เลขไมล์ตอนคืน:</strong> ${bk.EndMileage ?? "-"}</div>
+        ${bk.ReturnRemark && bk.ReturnRemark !== "-" ? `<div style="grid-column: span 2;"><strong>ปัญหาที่แจ้ง:</strong> ${bk.ReturnRemark}</div>` : ""}
+      </div>
+
+      <h3 style="margin-bottom:10px;">รูปถ่ายประกอบ</h3>
+      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 18px;">
+        ${photoBlock("ก่อนออก (ถ้ามีตำหนิ)", bk.CheckinPhotoPath)}
+        ${photoBlock("เลขไมล์ตอนคืน", bk.OdometerPhotoPath)}
+        ${photoBlock("สภาพรถตอนคืน", bk.ReturnPhotoPath)}
+      </div>
+
+      <div style="display:flex; justify-content:flex-end;">
+        <button type="button" class="btn-clear" onclick="closeBookingDetailModal()">ปิด</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function closeBookingDetailModal() {
+  const overlay = document.getElementById("booking-detail-modal-overlay");
+  if (overlay) overlay.remove();
+}
+
+/**
+ * ✏️ 6.6 แก้ไขข้อมูลการจอง — แอดมินแก้ผู้ขับ/รถ/วันเวลา/เลขไมล์/สถานะได้ตรงๆ
+ */
+function openBookingEditModal(bk) {
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.id = "booking-edit-modal-overlay";
+
+  overlay.innerHTML = `
+    <div class="modal-content" style="width: 560px; max-width: 95vw; max-height: 92vh; overflow-y: auto;">
+      <h2 style="margin-top:0; margin-bottom:14px;">
+        <i class="fa-solid fa-pen"></i> แก้ไขการจอง — ${bk.BookingNumber}
+      </h2>
+
+      <form id="booking-edit-form" style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;">
+        <div>
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">รหัสพนักงานผู้ขับ</label>
+          <input type="text" id="edit-employee-id" value="${bk.EmployeeID || ""}" style="margin-bottom:0;">
+        </div>
+        <div>
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ทะเบียนรถ</label>
+          <input type="text" id="edit-car-plate" value="${bk.CarPlate || ""}" style="margin-bottom:0;">
+        </div>
+
+        <div>
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">วันที่ใช้งาน</label>
+          <input type="date" id="edit-booking-date" value="${bk.BookingDate || ""}" style="margin-bottom:0;">
+        </div>
+        <div>
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ช่วงเวลา</label>
+          <select id="edit-time-slot" style="margin-bottom:0;">
+            ${["เช้า", "บ่าย", "ทั้งวัน", "กลางคืน"]
+              .map(
+                (s) =>
+                  `<option value="${s}" ${bk.TimeSlot === s ? "selected" : ""}>${s}</option>`,
+              )
+              .join("")}
+          </select>
+        </div>
+
+        <div style="grid-column: span 2;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">สถานที่ไป</label>
+          <input type="text" id="edit-destination" value="${bk.Destination || ""}" style="margin-bottom:0;">
+        </div>
+
+        <div>
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">เลขไมล์ตอนออก</label>
+          <input type="number" id="edit-start-mileage" value="${bk.StartMileage ?? ""}" style="margin-bottom:0;">
+        </div>
+        <div>
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">เลขไมล์ตอนคืน</label>
+          <input type="number" id="edit-end-mileage" value="${bk.EndMileage ?? ""}" style="margin-bottom:0;">
+        </div>
+
+        <div style="grid-column: span 2;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">สถานะ</label>
+          <select id="edit-booking-status" style="margin-bottom:0;">
+            ${["ขาไป", "ขากลับ", "ยกเลิก", "ยกเลิก (ไม่มาใช้งาน)"]
+              .map(
+                (s) =>
+                  `<option value="${s}" ${bk.BookingStatus === s ? "selected" : ""}>${s}</option>`,
+              )
+              .join("")}
+          </select>
+        </div>
+
+        <div style="grid-column: span 2; display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+          <button type="button" class="btn-clear" onclick="closeBookingEditModal()">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary">บันทึก</button>
+        </div>
+      </form>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  document
+    .getElementById("booking-edit-form")
+    .addEventListener("submit", (e) => {
+      e.preventDefault();
+      submitBookingEdit(bk.BookingID);
+    });
+}
+
+function submitBookingEdit(bookingId) {
+  const payload = {
+    booking_id: bookingId,
+    employee_id: document.getElementById("edit-employee-id").value.trim(),
+    car_plate: document.getElementById("edit-car-plate").value.trim(),
+    booking_date: document.getElementById("edit-booking-date").value,
+    time_slot: document.getElementById("edit-time-slot").value,
+    destination: document.getElementById("edit-destination").value.trim(),
+    start_mileage: document.getElementById("edit-start-mileage").value,
+    end_mileage: document.getElementById("edit-end-mileage").value,
+    booking_status: document.getElementById("edit-booking-status").value,
+  };
+
+  fetch("admin_update_booking.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+    .then((res) => res.json())
+    .then((result) => {
+      if (result.success) {
+        closeBookingEditModal();
+        loadAdminBookings();
+      } else {
+        alert(result.message || "บันทึกไม่สำเร็จ");
+      }
+    })
+    .catch((err) => {
+      console.error("submitBookingEdit error:", err);
+      alert("ติดต่อเซิร์ฟเวอร์ไม่ได้");
+    });
+}
+
+function closeBookingEditModal() {
+  const overlay = document.getElementById("booking-edit-modal-overlay");
+  if (overlay) overlay.remove();
 }
 
 function loadMaintenanceHistory(carId) {

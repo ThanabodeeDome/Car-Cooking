@@ -2,12 +2,9 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once '../Car/db_connect.php';
+require_once __DIR__ . '/../require_admin.php';
 
-$allowed_admin_ids = require __DIR__ . '/../admin_whitelist.php';
-if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin' || !in_array((int)$_SESSION['user_id'], $allowed_admin_ids, true)) {
-    echo json_encode(["success" => false, "message" => "ไม่มีสิทธิ์เข้าถึง"]);
-    exit;
-}
+requireAdminAccess();
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
@@ -24,18 +21,15 @@ if ((int)$id === (int)$_SESSION['user_id']) {
 }
 
 try {
-    // 🌟 กันลบ admin คนสุดท้าย (ล็อกตัวเองออกจาก Admin panel ทั้งบริษัท)
+    // 🌟 กันลบ admin/superioradmin ผ่านแอปเด็ดขาด (ต้องลบผ่าน Database โดยตรงเท่านั้น
+    // สอดคล้องกับกฎเดียวกับตอนเพิ่ม/แก้ role — ลด single point of failure จากหน้าเว็บ)
     $targetStmt = $conn->prepare("SELECT role FROM Users WHERE id = :id");
     $targetStmt->execute([':id' => $id]);
     $target = $targetStmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($target && strtolower($target['role']) === 'admin') {
-        $countStmt = $conn->query("SELECT COUNT(*) FROM Users WHERE LOWER(role) = 'admin'");
-        $adminCount = (int)$countStmt->fetchColumn();
-        if ($adminCount <= 1) {
-            echo json_encode(["success" => false, "message" => "ลบไม่ได้ ต้องมี admin เหลืออย่างน้อย 1 คนในระบบเสมอ"]);
-            exit;
-        }
+    if ($target && in_array(strtolower($target['role']), ['admin', 'superioradmin'], true)) {
+        echo json_encode(["success" => false, "message" => "ลบบัญชี admin/superioradmin ผ่านแอปไม่ได้ ต้องลบผ่าน Database โดยตรงเท่านั้น"]);
+        exit;
     }
 
     $stmt = $conn->prepare("DELETE FROM Users WHERE id = :id");

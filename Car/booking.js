@@ -65,12 +65,29 @@ function loadAvailableCars() {
 }
 
 // 🌟 เลือกรถแล้ว auto-fill เลขไมล์ล่าสุดของคันนั้น (readonly ในฟอร์ม กันแก้มั่ว)
+// + โชว์รูปรถ preview (ดึงจาก field image ที่ get_cars.php ส่งมา, path จริงอยู่ที่
+//   C:\xampp\htdocs\car-booking\Car\assets\img-car\)
 function updateCarDetails(plate) {
   const startMileInput = document.getElementById("start-mile");
+  const previewImg = document.getElementById("car-preview-img");
   const car = dbCarData.find((c) => c.Plate === plate);
   if (car && startMileInput) {
     startMileInput.value = car.Mileage;
   }
+  if (previewImg) {
+    if (car && car.image) {
+      previewImg.src = car.image;
+      previewImg.alt = `${car.Plate} (${car.Brand || ""})`;
+      previewImg.classList.remove("hidden");
+      previewImg.onerror = () => {
+        previewImg.src = "assets/img-car/default.png";
+      };
+    } else {
+      previewImg.classList.add("hidden");
+    }
+  }
+  // 🌟 พอเลือกรถแล้ว เช็คช่วงเวลาที่ถูกจองไปแล้วของคันนี้ทันที (ถ้าเลือกวันที่ไว้แล้ว)
+  updateAvailableTimeSlots();
 }
 
 // 🌟 กรอกรหัสพนักงานผู้ขับ -> เด้งชื่อจริงมาโชว์ (readonly), ไม่โชว์ email/phone/แผนกในฟอร์มนี้
@@ -312,12 +329,14 @@ function addMorePassenger() {
 }
 
 // ฟังก์ชันสำหรับอัปเดต Progress Bar ตามการกรอกข้อมูล
+// 🩹 stepper (1-2-3) ถูกลบออกจากหน้าเว็บแล้ว ฟังก์ชันนี้เช็ค element ก่อนใช้งาน กัน error
 function updateProgress() {
-  const employeeId = document.getElementById("employee-id").value;
-  const carPlate = document.getElementById("car-plate-select").value;
-
   const step2 = document.getElementById("step-2");
   const step3 = document.getElementById("step-3");
+  if (!step2 || !step3) return; // ไม่มี stepper ในหน้านี้แล้ว ไม่ต้องทำอะไร
+
+  const employeeId = document.getElementById("employee-id").value;
+  const carPlate = document.getElementById("car-plate-select").value;
 
   step2.classList.remove("active");
   step3.classList.remove("active");
@@ -386,10 +405,11 @@ function setupDateLimits() {
   }
 }
 
-// 2. เช็กเวลาปัจจุบันเพื่อปิดตัวเลือกที่เลยเวลาแล้ว
+// 2. เช็กเวลาปัจจุบันเพื่อปิดตัวเลือกที่เลยเวลาแล้ว + เช็คช่วงเวลาที่ถูกจองไปแล้วจาก server
 function updateAvailableTimeSlots() {
   const dateInput = document.getElementById("use-date");
   const timeSelect = document.getElementById("time-slot");
+  const plateSelectEl = document.getElementById("car-plate-select");
 
   if (!dateInput || !timeSelect) return;
 
@@ -436,6 +456,42 @@ function updateAvailableTimeSlots() {
   if (timeSelect.selectedOptions[0] && timeSelect.selectedOptions[0].disabled) {
     timeSelect.value = "";
   }
+
+  // 🌟 เช็คช่วงเวลาที่ถูกจองไปแล้วจริงจาก server (เฉพาะรถคันที่เลือกอยู่)
+  const plate = plateSelectEl ? plateSelectEl.value : "";
+  if (!plate) return; // ยังไม่เลือกรถ ข้ามส่วนนี้ไปก่อน
+
+  fetch(
+    `get_booked_slots.php?plate=${encodeURIComponent(plate)}&date=${encodeURIComponent(selectedDateVal)}`,
+  )
+    .then((res) => res.json())
+    .then((data) => {
+      const bookedSlots =
+        data.success && Array.isArray(data.booked_slots)
+          ? data.booked_slots
+          : [];
+      for (let i = 0; i < options.length; i++) {
+        const opt = options[i];
+        if (!opt.value) continue;
+        if (bookedSlots.includes(opt.value)) {
+          opt.disabled = true;
+          opt.style.color = "#6b7280"; // สีเทา บอกว่าถูกจองไปแล้ว
+          if (!opt.dataset.originalText) opt.dataset.originalText = opt.text;
+          opt.text = `${opt.dataset.originalText} (ถูกจองแล้ว)`;
+        } else if (opt.dataset.originalText) {
+          // เคยถูกจองแล้วรอบก่อน แต่รอบนี้ว่างแล้ว (เช่น คืนรถแล้ว) คืนสถานะปกติ
+          opt.text = opt.dataset.originalText;
+          opt.style.color = "";
+        }
+      }
+      if (
+        timeSelect.selectedOptions[0] &&
+        timeSelect.selectedOptions[0].disabled
+      ) {
+        timeSelect.value = "";
+      }
+    })
+    .catch((err) => console.error("Error loading booked slots:", err));
 }
 
 // เรียกทำงานทันทีเมื่อโหลดหน้าเว็บ

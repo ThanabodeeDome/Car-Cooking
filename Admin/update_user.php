@@ -2,12 +2,9 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once '../Car/db_connect.php';
+require_once __DIR__ . '/../require_admin.php';
 
-$allowed_admin_ids = require __DIR__ . '/../admin_whitelist.php';
-if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin' || !in_array((int)$_SESSION['user_id'], $allowed_admin_ids, true)) {
-    echo json_encode(["success" => false, "message" => "ไม่มีสิทธิ์เข้าถึง"]);
-    exit;
-}
+$actingRole = requireAdminAccess(); // 'admin' หรือ 'superioradmin' เท่านั้นถึงจะมาถึงบรรทัดนี้
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
@@ -19,18 +16,35 @@ $firstName   = trim($data['first_name'] ?? '');
 $role        = $data['role'] ?? '';
 $newPassword = $data['new_password'] ?? '';
 
-if (empty($id) || empty($username) || !in_array($role, ['admin', 'user'], true)) {
-    echo json_encode(["success" => false, "message" => "ข้อมูลไม่ครบหรือ role ไม่ถูกต้อง"]);
+// 🌟 ห้ามแก้ role ของตัวเอง ไม่ว่าจะ admin หรือ superioradmin ก็ตาม (กัน privilege escalation ตัวเอง)
+if ((int)$id === (int)$_SESSION['user_id']) {
+    echo json_encode(["success" => false, "message" => "ไม่สามารถแก้ไข Role ของตัวเองได้"]);
     exit;
 }
 
-// 🌟 ห้ามตั้ง role='admin' ให้ id ที่ไม่อยู่ใน whitelist (auth_check.php ไม่ยอมให้เข้า Admin panel อยู่ดี
-// แต่กันไว้ตั้งแต่ต้นทาง ไม่ให้ตั้งค่า role มั่วจน DB ไม่ตรงกับสิทธิ์จริง)
-if ($role === 'admin') {
-    if (!in_array((int)$id, $allowed_admin_ids, true)) {
-        echo json_encode(["success" => false, "message" => "ตั้งเป็น admin ไม่ได้ ต้องเพิ่ม id นี้ใน admin_whitelist.php ก่อน"]);
+// 🌟 role ที่ตั้งผ่านหน้านี้ได้มีแค่ user/manager เท่านั้น
+// การตั้งเป็น admin หรือ superioradmin ต้องทำผ่าน Database โดยตรงเท่านั้น ห้ามตั้งผ่านแอปเด็ดขาด
+$editableRoles = ['user', 'manager'];
+
+if (empty($id) || empty($username) || !in_array($role, $editableRoles, true)) {
+    echo json_encode(["success" => false, "message" => "ข้อมูลไม่ครบ หรือ Role นี้ตั้งผ่านหน้านี้ไม่ได้ (admin/superioradmin ต้องเพิ่มจาก Database เท่านั้น)"]);
+    exit;
+}
+
+// 🌟 กันแก้ role ของคนที่เป็น admin/superioradmin อยู่แล้วให้กลายเป็น user/manager ผ่านหน้านี้เช่นกัน
+// (ลด/ถอดสิทธิ์ admin ต้องทำผ่าน Database โดยตรง ให้สอดคล้องกับกฎเดียวกัน)
+try {
+    $targetStmt = $conn->prepare("SELECT role FROM Users WHERE id = :id");
+    $targetStmt->execute([':id' => $id]);
+    $targetRow = $targetStmt->fetch(PDO::FETCH_ASSOC);
+    if ($targetRow && in_array(strtolower($targetRow['role']), ['admin', 'superioradmin'], true)) {
+        echo json_encode(["success" => false, "message" => "ผู้ใช้นี้เป็น admin/superioradmin อยู่แล้ว แก้ไข Role ได้ผ่าน Database เท่านั้น"]);
         exit;
     }
+} catch (PDOException $e) {
+    error_log('update_user role-check DB error: ' . $e->getMessage());
+    echo json_encode(["success" => false, "message" => "ระบบขัดข้อง กรุณาลองใหม่อีกครั้ง"]);
+    exit;
 }
 
 try {

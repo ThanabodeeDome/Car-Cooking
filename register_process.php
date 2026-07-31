@@ -21,11 +21,12 @@ if (empty($username) || empty($password) || empty($first_name) || empty($last_na
     exit;
 }
 
-// 2. เช็คและบล็อกไม่ให้ใช้ชื่อ 'admin' ในทุกรูปแบบตัวอักษร
-if (strtolower($username) === 'admin' || strtolower($username) === 'administrator' || strtolower($username) === 'root') {
+// 2. เช็คและบล็อกไม่ให้ใช้ชื่อสงวนที่สื่อถึง role พิเศษในทุกรูปแบบตัวอักษร
+$reservedUsernames = ['admin', 'administrator', 'root', 'superadmin', 'superioradmin', 'superior', 'manager'];
+if (in_array(strtolower($username), $reservedUsernames, true)) {
     echo json_encode([
         'success' => false,
-        'message' => 'ระบบไม่อนุญาตให้ใช้ชื่อผู้ใช้งานคำนี้ (admin/administrator/root) เพื่อความปลอดภัยของระบบครับเพื่อน!'
+        'message' => 'ระบบไม่อนุญาตให้ใช้ชื่อผู้ใช้งานคำนี้ เพื่อความปลอดภัยของระบบครับเพื่อน!'
     ]);
     exit;
 }
@@ -69,5 +70,6 @@ try {
     }
 
 } catch (PDOException $e) {
-    echo json_encode(['success' => false, 'message' => 'ระบบฐานข้อมูลขัดข้อง: ' . $e->getMessage()]);
+    error_log('register_process.php error: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'ระบบฐานข้อมูลขัดข้อง กรุณาลองใหม่อีกครั้งครับ']);
 }

@@ -2,6 +2,28 @@
 header('Content-Type: application/json; charset=utf-8');
 require_once 'db_connect.php';
 
+// 🌟 Rate Limit กันเดา employee_id/username (brute-force account takeover)
+$ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+$lockDir = sys_get_temp_dir() . '/reset_attempts';
+if (!is_dir($lockDir)) mkdir($lockDir, 0700, true);
+$lockFile = $lockDir . '/' . md5($ip) . '.json';
+
+$maxAttempts = 5;
+$lockoutSeconds = 900; // 15 นาที
+
+$attemptData = ['count' => 0, 'first_attempt' => time()];
+if (file_exists($lockFile)) {
+    $attemptData = json_decode(file_get_contents($lockFile), true) ?: $attemptData;
+}
+if (time() - $attemptData['first_attempt'] > $lockoutSeconds) {
+    $attemptData = ['count' => 0, 'first_attempt' => time()];
+}
+if ($attemptData['count'] >= $maxAttempts) {
+    $waitMin = ceil(($lockoutSeconds - (time() - $attemptData['first_attempt'])) / 60);
+    echo json_encode(['success' => false, 'message' => "ลองผิดเกินกำหนด กรุณารออีกประมาณ $waitMin นาทีแล้วลองใหม่ครับ"]);
+    exit;
+}
+
 $username     = isset($_POST['username']) ? trim($_POST['username']) : '';
 $employee_id  = isset($_POST['employee_id']) ? trim($_POST['employee_id']) : '';
 $new_password = isset($_POST['new_password']) ? trim($_POST['new_password']) : '';
@@ -22,6 +44,8 @@ try {
 
     // ถ้าไม่พบข้อมูลที่ตรงกัน (กรอกข้อมูลมั่ว หรือแอบมาแฮกไอดีคนอื่น)
     if ($stmt->fetchColumn() == 0) {
+        $attemptData['count']++;
+        file_put_contents($lockFile, json_encode($attemptData));
         echo json_encode(['success' => false, 'message' => 'ข้อมูลยืนยันตัวตนไม่ถูกต้อง ชื่อผู้ใช้หรือรหัสพนักงานไม่ตรงกับในระบบครับ']);
         exit;
     }
@@ -39,12 +63,14 @@ try {
     ]);
 
     if ($result) {
+        if (file_exists($lockFile)) unlink($lockFile);
         echo json_encode(['success' => true, 'message' => 'เปลี่ยนรหัสผ่านใหม่สำเร็จแล้วครับเพื่อน! ลองเข้าสู่ระบบดูได้เลย']);
     } else {
         echo json_encode(['success' => false, 'message' => 'เกิดข้อผิดพลาดในสเต็ปการอัปเดตข้อมูลฐานข้อมูล']);
     }
 
 } catch (PDOException $e) {
-    echo json_encode(['success' => false, 'message' => 'ระบบฐานข้อมูลขัดข้อง: ' . $e->getMessage()]);
+    error_log('reset_password_process.php error: ' . $e->getMessage());
+    echo json_encode(['success' => false, 'message' => 'ระบบฐานข้อมูลขัดข้อง กรุณาลองใหม่อีกครั้งครับ']);
 }
 ?>

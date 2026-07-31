@@ -3,11 +3,8 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once '../Car/db_connect.php';
 
-$allowed_admin_ids = require __DIR__ . '/../admin_whitelist.php';
-if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin' || !in_array((int)$_SESSION['user_id'], $allowed_admin_ids, true)) {
-    echo json_encode(["success" => false, "message" => "ไม่มีสิทธิ์เข้าถึง"]);
-    exit;
-}
+require_once __DIR__ . '/../require_admin.php';
+requireAdminAccess();
 
 $start = $_GET['start'] ?? date('Y-m-d', strtotime('-30 days'));
 $end   = $_GET['end'] ?? date('Y-m-d');

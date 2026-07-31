@@ -52,20 +52,7 @@
         <div id="checkout-fields">
           <h2 class="form-title">บันทึกการยืมรถ (ขาออก)</h2>
 
-          <div class="stepper-wrapper">
-            <div class="stepper-item active" id="step-1">
-              <div class="step-counter">1</div>
-              <div class="step-name">ระบุผู้ขับ</div>
-            </div>
-            <div class="stepper-item" id="step-2">
-              <div class="step-counter">2</div>
-              <div class="step-name">เลือกรถ</div>
-            </div>
-            <div class="stepper-item" id="step-3">
-              <div class="step-counter">3</div>
-              <div class="step-name">ยืนยัน</div>
-            </div>
-          </div>
+          <!-- 🌟 เพื่อนต้องการเอาแถบ stepper (1 2 3) ออก -->
 
           <!-- 🌟 กรอกรหัสพนักงานผู้ขับ -> ชื่อขึ้นอัตโนมัติ (readonly)
                ฝ่าย/แผนก/หน่วยงาน ดึงจาก DB ฝั่ง server ตอนบันทึกเอง ไม่ต้องเลือกในฟอร์มแล้ว -->
@@ -142,6 +129,19 @@
               >
                 <option value="" disabled selected>เลือกทะเบียนรถ</option>
               </select>
+              <img
+                id="car-preview-img"
+                src=""
+                alt=""
+                class="hidden"
+                style="
+                  width: 100%;
+                  max-width: 220px;
+                  margin-top: 10px;
+                  border-radius: 8px;
+                  display: block;
+                "
+              />
             </div>
             <div class="field-group">
               <label>เลขไมล์เริ่มต้น</label>
