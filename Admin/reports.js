@@ -155,7 +155,10 @@ function renderCarUsageReport(list) {
   const tbody = document.getElementById("report-car-usage-tbody");
   tbody.innerHTML =
     (list || [])
-      .map((r) => `<tr><td>${r.CarPlate || "-"}</td><td>${r.cnt}</td></tr>`)
+      .map(
+        (r) =>
+          `<tr><td>${escapeHtml(r.CarPlate) || "-"}</td><td>${r.cnt}</td></tr>`,
+      )
       .join("") ||
     `<tr><td colspan="2" style="text-align:center;">ไม่มีข้อมูลในช่วงนี้</td></tr>`;
 
@@ -194,7 +197,7 @@ function renderRepairCostReport(list) {
       .map((r) => {
         const cost = Number(r.totalCost || 0);
         sum += cost;
-        return `<tr><td>${r.Plate || "-"}</td><td>${r.jobs}</td><td>${cost.toLocaleString()}</td></tr>`;
+        return `<tr><td>${escapeHtml(r.Plate) || "-"}</td><td>${r.jobs}</td><td>${cost.toLocaleString()}</td></tr>`;
       })
       .join("") ||
     `<tr><td colspan="3" style="text-align:center;">ไม่มีข้อมูลในช่วงนี้</td></tr>`;
@@ -237,7 +240,7 @@ function renderCancellationReport(c) {
     (c.list || [])
       .map(
         (r) =>
-          `<tr><td>${r.BookingDate || "-"}</td><td>${r.CarPlate || "-"}</td><td>${r.DriverName || "-"}</td><td>${r.BookingStatus || "-"}</td></tr>`,
+          `<tr><td>${r.BookingDate || "-"}</td><td>${escapeHtml(r.CarPlate) || "-"}</td><td>${escapeHtml(r.DriverName) || "-"}</td><td>${r.BookingStatus || "-"}</td></tr>`,
       )
       .join("") ||
     `<tr><td colspan="4" style="text-align:center;">ไม่มีการยกเลิกในช่วงนี้</td></tr>`;

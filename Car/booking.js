@@ -405,7 +405,8 @@ function setupDateLimits() {
   }
 }
 
-// 2. เช็กเวลาปัจจุบันเพื่อปิดตัวเลือกที่เลยเวลาแล้ว + เช็คช่วงเวลาที่ถูกจองไปแล้วจาก server
+// 2. เช็คช่วงเวลาที่ถูกจองไปแล้วจาก server (ไม่ปิดตามเวลาปัจจุบันอีกต่อไป — รถใช้ได้ทุกชั่วโมง
+//    ปิดเฉพาะช่วงที่มีคนจองไปแล้วจริงเท่านั้น)
 function updateAvailableTimeSlots() {
   const dateInput = document.getElementById("use-date");
   const timeSelect = document.getElementById("time-slot");
@@ -416,45 +417,13 @@ function updateAvailableTimeSlots() {
   const selectedDateVal = dateInput.value;
   if (!selectedDateVal) return;
 
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  const todayStr = `${year}-${month}-${day}`;
-
-  const currentHour = now.getHours(); // ชั่วโมงปัจจุบัน (0-23)
-
   const options = timeSelect.options;
 
+  // เปิดใช้งานทุกช่วงเวลาไว้ก่อน (จะปิดเฉพาะช่วงที่ถูกจองแล้วจริงจาก server ด้านล่าง)
   for (let i = 0; i < options.length; i++) {
     const opt = options[i];
-    const val = opt.value;
-
-    if (!val) continue; // ข้าม option ตัวแรกที่เป็นข้อความแนะนำ
-
-    if (selectedDateVal === todayStr) {
-      // 📌 ถ้าเลือกใช้งาน "วันนี้"
-      if ((val === "เช้า" || val === "ทั้งวัน") && currentHour >= 8) {
-        // หลัง 08:00 น. ไม่สามารถจองรอบเช้าหรือทั้งวันได้
-        opt.disabled = true;
-      } else if (val === "บ่าย" && currentHour >= 13) {
-        // หลัง 13:00 น. ไม่สามารถจองรอบบ่ายได้
-        opt.disabled = true;
-      } else if (val === "กลางคืน" && currentHour >= 17) {
-        // หลัง 17:00 น. ไม่สามารถจองรอบกลางคืนได้
-        opt.disabled = true;
-      } else {
-        opt.disabled = false;
-      }
-    } else {
-      // 📌 ถ้าเป็นวันอื่นในอนาคต สามารถเลือกได้ทุกรอบ
-      opt.disabled = false;
-    }
-  }
-
-  // ถ้าช่วงเวลาที่เคยเลือกไว้ถูกปิดใช้งาน ให้รีเซ็ตค่ากลับเป็นค่าว่าง
-  if (timeSelect.selectedOptions[0] && timeSelect.selectedOptions[0].disabled) {
-    timeSelect.value = "";
+    if (!opt.value) continue;
+    opt.disabled = false;
   }
 
   // 🌟 เช็คช่วงเวลาที่ถูกจองไปแล้วจริงจาก server (เฉพาะรถคันที่เลือกอยู่)

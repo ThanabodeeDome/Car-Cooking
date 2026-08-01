@@ -29,7 +29,7 @@ $sql = "SELECT c.CarID, c.Plate, c.Brand, c.Model, c.Color, c.Mileage, c.Carimag
     WHEN EXISTS (
       SELECT 1 FROM CarBookings cb
       WHERE cb.CarPlate = c.Plate
-        AND cb.BookingStatus = N'ขาไป'
+        AND cb.BookingStatus IN (N'จองแล้ว', N'ขาไป')
         AND cb.BookingDate = :targetDate2
     ) THEN N'ติดจอง'
     ELSE N'ว่าง'

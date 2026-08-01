@@ -1,0 +1,18 @@
+# วางไฟล์นี้ในโฟลเดอร์ Car/uploads/checkin/ และ Car/uploads/return/ (2 ชุด แยกกัน)
+# กันไม่ให้ไฟล์ในโฟลเดอร์นี้ถูกรันเป็น PHP/สคริปต์ ไม่ว่านามสกุลจะเป็นอะไรก็ตาม
+# (กันเคสอัปโหลดไฟล์ .php ปลอมเป็นรูป .jpg แล้วเปิด URL ตรงๆ มารันโค้ด)
+
+<FilesMatch "\.(php|php\d|phtml|pht|phar|cgi|pl|py|sh|asp|aspx)$">
+    Require all denied
+</FilesMatch>
+
+# เผื่อ Apache เก่ากว่า 2.4 (ไม่รู้จัก Require all denied)
+<IfModule !mod_authz_core.c>
+    <FilesMatch "\.(php|php\d|phtml|pht|phar|cgi|pl|py|sh|asp|aspx)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</IfModule>
+
+# ปิด directory listing ด้วยเลย กันคนไล่ดูชื่อไฟล์รูปคนอื่นในโฟลเดอร์
+Options -Indexes

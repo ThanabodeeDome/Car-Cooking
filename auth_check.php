@@ -6,7 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/require_admin.php';
 
-// 2. ตรวจสอบสิทธิ์ว่าเป็น admin หรือ superioradmin ที่ผ่าน whitelist จริง (ใช้ logic กลางไฟล์เดียว)
+// 2. ตรวจสอบสิทธิ์ว่าเป็น admin ที่ผ่าน whitelist จริง (ใช้ logic กลางไฟล์เดียว)
 $adminRole = currentAdminRole();
 
 if ($adminRole === false) {

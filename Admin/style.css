@@ -1597,3 +1597,19 @@ input[type="file"].ctrl-input::file-selector-button:hover {
 .fx-empty span {
   font-size: 12.5px;
 }
+
+/* ===== Sidebar identity (ชื่อผู้ login ปัจจุบัน เหนือปุ่ม logout) ===== */
+.sidebar-identity {
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.sidebar-identity-name {
+  font-weight: 600;
+}
+.sidebar-identity-meta {
+  opacity: 0.75;
+}

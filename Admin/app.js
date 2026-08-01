@@ -1,6 +1,21 @@
 /**
  * 🧭 1. ระบบสลับหน้าเมนู (Tab Control)
  */
+/**
+ * 🛡️ กัน Stored XSS — ใช้ครอบทุกค่าที่มาจาก "คนกรอกเอง" ก่อนแปะลง innerHTML
+ * (ชื่อผู้ขับ, สถานที่ไป, ข้อความแจ้งปัญหา ฯลฯ) กันมีคนแอบฝัง <script> ผ่านช่องกรอกข้อความ
+ * แล้วโค้ดไปรันตอน Admin เปิดดูรายการ
+ */
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function switchTab(tabId) {
   document
     .querySelectorAll(".tab-content")
@@ -74,9 +89,9 @@ function renderUsersTable(users) {
     .map(
       (u) => `
       <tr>
-        <td>${u.employee_id || "-"}</td>
-        <td>${u.username || "-"}</td>
-        <td>${u.first_name || "-"}</td>
+        <td>${escapeHtml(u.employee_id) || "-"}</td>
+        <td>${escapeHtml(u.username) || "-"}</td>
+        <td>${escapeHtml(u.first_name) || "-"}</td>
         <td>${roleLabel[u.role] || u.role || "-"}</td>
         <td>
           <div class="action-buttons-group">
@@ -405,14 +420,14 @@ function loadAdminBookings() {
           const passengerChips = passengerNames
             .map((name, i) => {
               const pid = passengerIds[i];
-              return `<span class="passenger-chip">👥 ${name}${pid ? ` <span class="emp-id-tag">#${pid}</span>` : ""}</span>`;
+              return `<span class="passenger-chip">👥 ${escapeHtml(name)}${pid ? ` <span class="emp-id-tag">#${escapeHtml(pid)}</span>` : ""}</span>`;
             })
             .join("");
 
           return `
             <tr>
               <td>${bk.BookingNumber}</td>
-              <td>${bk.DriverName} ${bk.EmployeeID ? `<span class="emp-id-tag">#${bk.EmployeeID}</span>` : ""}</td>
+              <td>${escapeHtml(bk.DriverName)} ${bk.EmployeeID ? `<span class="emp-id-tag">#${escapeHtml(bk.EmployeeID)}</span>` : ""}</td>
               <td>
                 ${
                   passengerChips
@@ -420,7 +435,7 @@ function loadAdminBookings() {
                     : `<span style="color:#cbd5e1;">-</span>`
                 }
               </td>
-              <td>${bk.CarPlate}</td>
+              <td>${escapeHtml(bk.CarPlate)}</td>
               <td>${bk.BookingDate || "-"}</td>
               <td>${bk.TimeSlot || "-"}</td>
               <td class="status-cell"><span class="status-badge no-glow ${statusClass}">${bk.BookingStatus || "-"}</span></td>
@@ -637,10 +652,10 @@ function openBookingDetailModal(bk) {
       </h2>
 
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; margin-bottom: 18px;">
-        <div><strong>ผู้ขับ:</strong> ${bk.DriverName || "-"} ${bk.EmployeeID ? `#${bk.EmployeeID}` : ""}</div>
-        <div><strong>หน่วยงาน:</strong> ${bk.Department || "-"}</div>
-        <div><strong>ทะเบียนรถ:</strong> ${bk.CarPlate || "-"}</div>
-        <div><strong>สถานที่ไป:</strong> ${bk.Destination || "-"}</div>
+        <div><strong>ผู้ขับ:</strong> ${escapeHtml(bk.DriverName) || "-"} ${bk.EmployeeID ? `#${escapeHtml(bk.EmployeeID)}` : ""}</div>
+        <div><strong>หน่วยงาน:</strong> ${escapeHtml(bk.Department) || "-"}</div>
+        <div><strong>ทะเบียนรถ:</strong> ${escapeHtml(bk.CarPlate) || "-"}</div>
+        <div><strong>สถานที่ไป:</strong> ${escapeHtml(bk.Destination) || "-"}</div>
         <div><strong>วันที่ / ช่วงเวลา:</strong> ${bk.BookingDate || "-"} (${bk.TimeSlot || "-"})</div>
         <div><strong>สถานะ:</strong> ${bk.BookingStatus || "-"}</div>
       </div>
@@ -650,7 +665,7 @@ function openBookingDetailModal(bk) {
         <div><strong>เลขไมล์ตอนออก:</strong> ${bk.StartMileage ?? "-"}</div>
         <div><strong>วันที่/เวลาคืน:</strong> ${bk.ReturnDate ? `${bk.ReturnDate} ${bk.ReturnTime || ""}` : "ยังไม่คืน"}</div>
         <div><strong>เลขไมล์ตอนคืน:</strong> ${bk.EndMileage ?? "-"}</div>
-        ${bk.ReturnRemark && bk.ReturnRemark !== "-" ? `<div style="grid-column: span 2;"><strong>ปัญหาที่แจ้ง:</strong> ${bk.ReturnRemark}</div>` : ""}
+        ${bk.ReturnRemark && bk.ReturnRemark !== "-" ? `<div style="grid-column: span 2;"><strong>ปัญหาที่แจ้ง:</strong> ${escapeHtml(bk.ReturnRemark)}</div>` : ""}
       </div>
 
       <h3 style="margin-bottom:10px;">รูปถ่ายประกอบ</h3>
@@ -690,11 +705,11 @@ function openBookingEditModal(bk) {
       <form id="booking-edit-form" style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;">
         <div>
           <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">รหัสพนักงานผู้ขับ</label>
-          <input type="text" id="edit-employee-id" value="${bk.EmployeeID || ""}" style="margin-bottom:0;">
+          <input type="text" id="edit-employee-id" value="${escapeHtml(bk.EmployeeID)}" style="margin-bottom:0;">
         </div>
         <div>
           <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ทะเบียนรถ</label>
-          <input type="text" id="edit-car-plate" value="${bk.CarPlate || ""}" style="margin-bottom:0;">
+          <input type="text" id="edit-car-plate" value="${escapeHtml(bk.CarPlate)}" style="margin-bottom:0;">
         </div>
 
         <div>
@@ -715,7 +730,7 @@ function openBookingEditModal(bk) {
 
         <div style="grid-column: span 2;">
           <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">สถานที่ไป</label>
-          <input type="text" id="edit-destination" value="${bk.Destination || ""}" style="margin-bottom:0;">
+          <input type="text" id="edit-destination" value="${escapeHtml(bk.Destination)}" style="margin-bottom:0;">
         </div>
 
         <div>
@@ -922,18 +937,29 @@ function openUserEditModal(user) {
   const overlay = document.createElement("div");
   overlay.className = "modal-overlay";
   overlay.id = "user-edit-modal-overlay";
+
+  // 🌟 รหัสผ่านของ admin ต้องไปเปลี่ยนใน DB โดยตรงเท่านั้น ไม่ให้ตั้งผ่านหน้าเว็บนี้
+  // (กันกรณีบัญชี Admin คนหนึ่งไปตั้งรหัสให้ Admin อีกคนได้ตามใจชอบผ่าน UI)
+  const isAdminRow = user.role === "admin";
+  const passwordFieldHtml = isAdminRow
+    ? `<p style="font-size:13px; color:#94a3b8; margin: 4px 0 15px;">
+         🔒 บัญชี Admin ต้องเปลี่ยนรหัสผ่านผ่านฐานข้อมูลโดยตรงเท่านั้น (ไม่รองรับตั้งผ่านหน้านี้)
+       </p>`
+    : `<label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ตั้งรหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)</label>
+       <input type="password" id="edit-new-password" placeholder="เว้นว่างไว้ถ้าไม่เปลี่ยน">`;
+
   overlay.innerHTML = `
     <div class="modal-content" style="width: 420px;">
       <h2 style="margin-top:0;"><i class="fa-solid fa-user-pen"></i> แก้ไขผู้ใช้</h2>
       <form id="user-edit-form">
         <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">รหัสพนักงาน</label>
-        <input type="text" id="edit-employee-id" value="${(user.employee_id || "").replace(/"/g, "&quot;")}">
+        <input type="text" id="edit-employee-id" value="${escapeHtml(user.employee_id)}">
 
         <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">Username *</label>
-        <input type="text" id="edit-username" value="${(user.username || "").replace(/"/g, "&quot;")}" required>
+        <input type="text" id="edit-username" value="${escapeHtml(user.username)}" required>
 
         <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ชื่อ-นามสกุล</label>
-        <input type="text" id="edit-first-name" value="${(user.first_name || "").replace(/"/g, "&quot;")}">
+        <input type="text" id="edit-first-name" value="${escapeHtml(user.first_name)}">
 
         <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">สิทธิ์ (Role)</label>
         <select id="edit-role" class="ctrl-select" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid #cbd5e1; border-radius:6px;">
@@ -941,8 +967,7 @@ function openUserEditModal(user) {
           <option value="admin" ${user.role === "admin" ? "selected" : ""}>Admin</option>
         </select>
 
-        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ตั้งรหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)</label>
-        <input type="password" id="edit-new-password" placeholder="เว้นว่างไว้ถ้าไม่เปลี่ยน">
+        ${passwordFieldHtml}
 
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
           <button type="button" class="btn-clear" onclick="closeUserEditModal()">ยกเลิก</button>
@@ -965,13 +990,15 @@ function closeUserEditModal() {
 }
 
 function saveUserEdit(userId) {
+  const passwordInput = document.getElementById("edit-new-password");
   const payload = {
     id: userId,
     employee_id: document.getElementById("edit-employee-id").value,
     username: document.getElementById("edit-username").value,
     first_name: document.getElementById("edit-first-name").value,
     role: document.getElementById("edit-role").value,
-    new_password: document.getElementById("edit-new-password").value,
+    // 🌟 ไม่มีช่องนี้เลยสำหรับแถว admin (ซ่อนไว้ตั้งแต่ modal) -> ส่งค่าว่างไป ไม่แตะรหัสผ่าน
+    new_password: passwordInput ? passwordInput.value : "",
   };
 
   fetch("update_user.php", {

@@ -77,8 +77,8 @@ try {
         $_SESSION['role']       = $user['role'];
 
         // 3. ตรวจสอบสิทธิ์ (Role) เพื่อกำหนดปลายทางที่จะส่งไป (Fix ปัญหาหน้า 404)
-        if (in_array($user['role'], ['admin', 'superioradmin'], true)) {
-            // แอดมิน/superioradmin ไปหน้า Admin เสมอ ไม่รับ redirect param (กันคนพยายามยัด path แปลกๆ ไปโซน Admin)
+        if ($user['role'] === 'admin') {
+            // แอดมินไปหน้า Admin เสมอ ไม่รับ redirect param (กันคนพยายามยัด path แปลกๆ ไปโซน Admin)
             $redirect_url = "../Admin/index.html";
         } elseif (isSafeRedirect($redirectParam)) {
             // 🌟 ถ้ามี redirect ที่ปลอดภัยแนบมา (เช่นมาจากสแกน QR checkin.php) ส่งกลับไปที่นั่นแทนหน้าหลัก

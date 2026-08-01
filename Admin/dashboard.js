@@ -79,8 +79,8 @@ function renderFleetStatusList(cars) {
       (c) => `
       <div class="fleet-row">
         <div class="fleet-row-name">
-          <strong>${c.Plate}</strong>
-          <span>${c.Brand || ""} ${c.Model || ""}</span>
+          <strong>${escapeHtml(c.Plate)}</strong>
+          <span>${escapeHtml(c.Brand) || ""} ${escapeHtml(c.Model) || ""}</span>
         </div>
         <span class="status-badge ${badgeClass[c.RealStatus] || ""}">${c.RealStatus}</span>
       </div>`,
@@ -145,12 +145,12 @@ function renderWeekTimeline(cars, weekStartStr, bookings) {
             return `<td>${items
               .map(
                 (bk) =>
-                  `<span class="week-chip" title="${bk.TimeSlot || ""}">${bk.DriverName || "-"}</span>`,
+                  `<span class="week-chip" title="${escapeHtml(bk.TimeSlot) || ""}">${escapeHtml(bk.DriverName) || "-"}</span>`,
               )
               .join("")}</td>`;
           })
           .join("");
-        return `<tr><td class="week-car-name">${car.Plate}</td>${cells}</tr>`;
+        return `<tr><td class="week-car-name">${escapeHtml(car.Plate)}</td>${cells}</tr>`;
       })
       .join("") +
     "</tbody>";
@@ -181,8 +181,8 @@ function renderRecentBookings(list) {
       return `
         <div class="recent-row">
           <div class="recent-row-main">
-            <strong>${bk.DriverName || "-"}</strong>
-            <span>${bk.CarPlate || "-"} • ${bk.BookingDate || "-"} (${bk.TimeSlot || "-"})</span>
+            <strong>${escapeHtml(bk.DriverName) || "-"}</strong>
+            <span>${escapeHtml(bk.CarPlate) || "-"} • ${bk.BookingDate || "-"} (${bk.TimeSlot || "-"})</span>
           </div>
           <span class="status-badge ${cls}">${bk.BookingStatus || "-"}</span>
         </div>`;
@@ -218,7 +218,7 @@ function renderAlerts(alerts, maintDue) {
       if (diffDays > 30) return;
       rows.push({
         ...item,
-        plateInfo: `${a.Plate} — ${a.Brand} ${a.Model}`,
+        plateInfo: `${escapeHtml(a.Plate)} — ${escapeHtml(a.Brand)} ${escapeHtml(a.Model)}`,
         diffDays,
       });
     });
@@ -232,7 +232,7 @@ function renderAlerts(alerts, maintDue) {
     rows.push({
       label: "กำหนดเช็คระยะ",
       date: m.NextDueDate,
-      plateInfo: `${m.Plate} — ${m.Brand} ${m.Model}`,
+      plateInfo: `${escapeHtml(m.Plate)} — ${escapeHtml(m.Brand)} ${escapeHtml(m.Model)}`,
       diffDays,
     });
   });

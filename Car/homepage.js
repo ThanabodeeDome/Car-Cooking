@@ -152,8 +152,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // ดึงข้อมูลประวัติ (ถ้ามีตาราง)
   updateHistoryTable();
 
-  // ตั้งเวลาอัปเดตประวัติทุก 1 วินาที
-  setInterval(updateHistoryTable, 1000);
+  // ตั้งเวลาอัปเดตประวัติทุก 5 วินาที
+  setInterval(updateHistoryTable, 5000);
 });
 
 /* =========================================

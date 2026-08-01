@@ -9,8 +9,8 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 /**
- * เช็คว่า session ปัจจุบันเป็น admin หรือ superioradmin ที่ผ่าน whitelist จริง
- * คืนค่า role ('admin' | 'superioradmin') ถ้าผ่าน หรือ false ถ้าไม่ผ่าน
+ * เช็คว่า session ปัจจุบันเป็น admin ที่ผ่าน whitelist จริง
+ * คืนค่า 'admin' ถ้าผ่าน หรือ false ถ้าไม่ผ่าน
  */
 function currentAdminRole(): string|false
 {
@@ -21,15 +21,9 @@ function currentAdminRole(): string|false
     $role = strtolower($_SESSION['role']);
 
     $adminIds = require __DIR__ . '/admin_whitelist.php';
-    $superiorIds = require __DIR__ . '/superior_whitelist.php';
 
     if ($role === 'admin' && in_array($userId, $adminIds, true)) {
         return 'admin';
-    }
-    if ($role === 'superioradmin' && in_array($userId, $superiorIds, true)) {
-        // 🌟 SuperiorAdmin ทำได้ทุกอย่างเหมือน admin — endpoint ที่เช็คแค่ requireAdminAccess()
-        // จะผ่านให้ทั้งสอง role นี้เสมอ
-        return 'superioradmin';
     }
     return false;
 }
@@ -47,18 +41,4 @@ function requireAdminAccess(): string
         exit;
     }
     return $role;
-}
-
-/**
- * ใช้เฉพาะจุดที่ต้องการ superioradmin เท่านั้น (admin ธรรมดาเข้าไม่ได้)
- * เช่น จุดที่ยืนยันสิทธิ์แก้ role ของ admin คนอื่น
- */
-function requireSuperiorOnly(): void
-{
-    $role = currentAdminRole();
-    if ($role !== 'superioradmin') {
-        header("Content-Type: application/json; charset=utf-8");
-        echo json_encode(["success" => false, "message" => "ต้องเป็น Superior Admin เท่านั้นถึงจะทำรายการนี้ได้"]);
-        exit;
-    }
 }

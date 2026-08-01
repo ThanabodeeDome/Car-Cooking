@@ -21,14 +21,14 @@ if ((int)$id === (int)$_SESSION['user_id']) {
 }
 
 try {
-    // 🌟 กันลบ admin/superioradmin ผ่านแอปเด็ดขาด (ต้องลบผ่าน Database โดยตรงเท่านั้น
+    // 🌟 กันลบ admin ผ่านแอปเด็ดขาด (ต้องลบผ่าน Database โดยตรงเท่านั้น
     // สอดคล้องกับกฎเดียวกับตอนเพิ่ม/แก้ role — ลด single point of failure จากหน้าเว็บ)
     $targetStmt = $conn->prepare("SELECT role FROM Users WHERE id = :id");
     $targetStmt->execute([':id' => $id]);
     $target = $targetStmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($target && in_array(strtolower($target['role']), ['admin', 'superioradmin'], true)) {
-        echo json_encode(["success" => false, "message" => "ลบบัญชี admin/superioradmin ผ่านแอปไม่ได้ ต้องลบผ่าน Database โดยตรงเท่านั้น"]);
+    if ($target && strtolower($target['role']) === 'admin') {
+        echo json_encode(["success" => false, "message" => "ลบบัญชี admin ผ่านแอปไม่ได้ ต้องลบผ่าน Database โดยตรงเท่านั้น"]);
         exit;
     }
 

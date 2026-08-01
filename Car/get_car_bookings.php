@@ -19,13 +19,14 @@ try {
     // เดิม filter ออกแค่ 'ยกเลิก' อย่างเดียว ทำให้ booking ที่คืนแล้ว (BookingStatus = 'ขากลับ')
     // ยังถูกนับว่า "ไม่ว่าง" ต่อไปเรื่อยๆ ทั้งที่คืนรถไปแล้ว
     //
-    // แก้ใหม่: มีแค่สถานะ 'ขาไป' เท่านั้นที่แปลว่ายังใช้รถอยู่ = ไม่ว่างจริง
-    // ค่าอื่น (ขากลับ = คืนแล้ว, ยกเลิก = ไม่เกิดขึ้นจริง) ไม่นับว่าจอง slot ไว้
+    // แก้ใหม่: สถานะ 'จองแล้ว' (จองไว้ ยังไม่เช็คอิน) และ 'ขาไป' (เช็คอินแล้ว กำลังใช้งาน)
+    // ทั้งสองสถานะแปลว่า slot นั้นไม่ว่างแล้ว ต้องนับทั้งคู่
+    // ค่าอื่น (คืนแล้ว, ยกเลิก) ไม่นับว่าจอง slot ไว้
     $sql = "SELECT BookingID, BookingNumber, DriverName, 
                    CONVERT(varchar, BookingDate, 23) AS BookingDate, 
                    TimeSlot, BookingStatus
             FROM CarBookings
-            WHERE CarPlate = :plate AND BookingStatus = 'ขาไป'
+            WHERE CarPlate = :plate AND BookingStatus IN ('จองแล้ว', 'ขาไป')
             ORDER BY BookingDate ASC";
     $stmt = $conn->prepare($sql);
     $stmt->execute([':plate' => $plate]);

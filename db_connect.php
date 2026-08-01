@@ -1,4 +1,8 @@
 <?php
+// 🌟 ตั้ง timezone ทั้งระบบเป็นไทยตรงนี้ที่เดียว — กันปัญหา date()/time() เพี้ยน
+// (php.ini เดิมไม่ได้ตั้งไว้ ใช้ UTC default เวลาที่บันทึกลง DB เลยเพี้ยนไปหลายชั่วโมง)
+date_default_timezone_set('Asia/Bangkok');
+
 $host = "LAPTOP-2JTTL5G0\SQLEXPRESS";
 $db   = "CarBookingDB";
 $user = "car_app_user";

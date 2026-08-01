@@ -208,7 +208,7 @@ function loadCarBookings(plate) {
     });
 }
 
-// ---------- แผงสถานะเช้า/บ่าย ----------
+// ---------- แผงสถานะ 4 ช่วงเวลา: เช้า / บ่าย / ทั้งวัน / กลางคืน ----------
 function renderBookingStatusPanel() {
   const panel = document.getElementById("booking-status-panel");
   if (!panel) return;
@@ -221,34 +221,46 @@ function renderBookingStatusPanel() {
   const bookingsToday = allCarBookings.filter(
     (bk) => bk.BookingDate === selectedDate,
   );
-  const findSlot = (slot) =>
-    bookingsToday.find(
-      (bk) => bk.TimeSlot === slot || bk.TimeSlot === "ทั้งวัน",
-    );
 
-  const morning = findSlot("เช้า");
-  const afternoon = findSlot("บ่าย");
+  // 🌟 กติกาช่วงเวลาทับซ้อนกัน (ตรงกับ logic ฝั่ง server ตอนกันจองซ้ำ):
+  //   เช้า (08-12) ทับกับ: เช้า, ทั้งวัน
+  //   บ่าย (13-17) ทับกับ: บ่าย, ทั้งวัน
+  //   ทั้งวัน (08-17) ทับกับ: เช้า, บ่าย, ทั้งวัน
+  //   กลางคืน (17-08 วันถัดไป) ทับกับ: กลางคืน เท่านั้น (ไม่ชนช่วงกลางวัน)
+  const overlapGroups = {
+    เช้า: ["เช้า", "ทั้งวัน"],
+    บ่าย: ["บ่าย", "ทั้งวัน"],
+    ทั้งวัน: ["เช้า", "บ่าย", "ทั้งวัน"],
+    กลางคืน: ["กลางคืน"],
+  };
+
+  const findConflict = (slot) =>
+    bookingsToday.find((bk) => overlapGroups[slot].includes(bk.TimeSlot));
+
+  const morning = findConflict("เช้า");
+  const afternoon = findConflict("บ่าย");
+  const fullDay = findConflict("ทั้งวัน");
+  const night = findConflict("กลางคืน");
 
   const dateObj = new Date(selectedDate);
   const dateLabel = `${dateObj.getDate()} ${thaiMonths[dateObj.getMonth()]} ${dateObj.getFullYear() + 543}`;
 
+  const slotCard = (icon, title, booking) => `
+      <div class="slot-card ${booking ? "slot-busy" : "slot-free"}">
+        <div class="slot-icon">${icon}</div>
+        <div class="slot-info">
+          <h4>${title}</h4>
+          ${booking ? `<p>ไม่ว่าง — จองโดย ${booking.DriverName}</p>` : `<p>ว่าง</p>`}
+        </div>
+      </div>`;
+
   panel.innerHTML = `
     <h3 style="color:#fff; margin-bottom:15px;">📅 ${selectedCarPlate} — วันที่ ${dateLabel}</h3>
     <div class="slot-grid">
-      <div class="slot-card ${morning ? "slot-busy" : "slot-free"}">
-        <div class="slot-icon">🌅</div>
-        <div class="slot-info">
-          <h4>เช้า (08:00-12:00)</h4>
-          ${morning ? `<p>ไม่ว่าง — จองโดย ${morning.DriverName}</p>` : `<p>ว่าง</p>`}
-        </div>
-      </div>
-      <div class="slot-card ${afternoon ? "slot-busy" : "slot-free"}">
-        <div class="slot-icon">☀️</div>
-        <div class="slot-info">
-          <h4>บ่าย (13:00-17:00)</h4>
-          ${afternoon ? `<p>ไม่ว่าง — จองโดย ${afternoon.DriverName}</p>` : `<p>ว่าง</p>`}
-        </div>
-      </div>
+      ${slotCard("🌅", "เช้า (08:00-12:00)", morning)}
+      ${slotCard("☀️", "บ่าย (13:00-17:00)", afternoon)}
+      ${slotCard("🌞", "ทั้งวัน (08:00-17:00)", fullDay)}
+      ${slotCard("🌙", "กลางคืน (17:00-08:00 วันถัดไป)", night)}
     </div>
   `;
 }

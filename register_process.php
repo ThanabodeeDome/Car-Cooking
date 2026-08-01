@@ -22,7 +22,7 @@ if (empty($username) || empty($password) || empty($first_name) || empty($last_na
 }
 
 // 2. เช็คและบล็อกไม่ให้ใช้ชื่อสงวนที่สื่อถึง role พิเศษในทุกรูปแบบตัวอักษร
-$reservedUsernames = ['admin', 'administrator', 'root', 'superadmin', 'superioradmin', 'superior', 'manager'];
+$reservedUsernames = ['admin', 'administrator', 'root', 'superadmin', 'manager'];
 if (in_array(strtolower($username), $reservedUsernames, true)) {
     echo json_encode([
         'success' => false,
