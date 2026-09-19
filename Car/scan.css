@@ -1,0 +1,275 @@
+/* scan.css — หน้าเช็คอินรับรถ (checkin.html) และคืนรถ (return_scan.html)
+   ใช้ธีมเดียวกับฟอร์มจองรถ: การ์ดเข้ม ช่องข้อมูลอ่านอย่างเดียวเป็นข้อความ ไม่ใช่กล่องกรอก */
+.sc-wrap {
+  max-width: 560px !important;
+  margin: 24px auto 0 !important;
+  padding: 0 16px !important;
+  font-family: "Prompt", "Sarabun", sans-serif;
+}
+.sc-title {
+  text-align: center;
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #fff;
+}
+.sc-sub {
+  text-align: center;
+  margin: 0 0 18px;
+  font-size: 13px;
+  color: #9ea3b3;
+}
+.sc-state {
+  text-align: center;
+  padding: 36px 16px;
+  color: #9ea3b3;
+  font-size: 14px;
+}
+.sc-state.err {
+  color: #ff8a8a;
+  background: rgba(255, 77, 77, 0.08);
+  border: 1px solid rgba(255, 77, 77, 0.3);
+  border-radius: 14px;
+}
+.sc-state.hidden,
+.sc-wrap .hidden {
+  display: none !important;
+}
+
+.sc-card {
+  background: #15151b;
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 18px;
+  padding: 16px 18px;
+  margin-bottom: 14px;
+}
+.sc-card-t {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e6e8ef;
+}
+.sc-card-t span.n {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 77, 77, 0.16);
+  border: 1px solid rgba(255, 77, 77, 0.5);
+  color: #ff8a8a;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sc-card-t small {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: #9ea3b3;
+}
+.sc-card-t small.req {
+  color: #fca5a5;
+}
+
+/* ข้อมูลอ่านอย่างเดียว = ป้ายเล็ก + ค่าตัวหนา (ไม่ใช่กล่องกรอก) */
+.sc-plate {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.08);
+}
+.sc-plate .ic {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 77, 77, 0.14);
+  color: #ff8a8a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+.sc-plate .ic svg {
+  width: 24px;
+  height: 24px;
+}
+.sc-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+.sc-grid .full {
+  grid-column: span 2;
+}
+.sc-f label {
+  display: block;
+  margin: 0 0 3px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #8f94a5;
+}
+.sc-wrap input[readonly].sc-val,
+.sc-wrap .sc-val[readonly] {
+  width: 100%;
+  height: auto !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #f1f2f6 !important;
+  font-size: 15.5px;
+  font-weight: 500;
+  font-family: inherit;
+  text-overflow: ellipsis;
+}
+.sc-wrap .sc-val.big[readonly] {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* ปุ่มถ่ายรูป: แตะทั้งกล่อง (input file ซ่อนไว้ ยังใช้งานด้วยคีย์บอร์ดได้) */
+.sc-photo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 110px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.22);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #b4b8c6;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-align: center;
+  padding: 12px;
+}
+.sc-photo:hover,
+.sc-photo:focus-within {
+  border-color: #ff6b6b;
+  background: rgba(255, 77, 77, 0.06);
+}
+.sc-photo svg {
+  width: 30px;
+  height: 30px;
+  color: #ff8a8a;
+}
+.sc-photo input[type="file"] {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+  opacity: 0;
+  cursor: pointer;
+  padding: 0 !important;
+  border: none !important;
+}
+.sc-photo.has-img {
+  min-height: 0;
+  padding: 8px;
+}
+.sc-preview {
+  display: block;
+  width: 100%;
+  max-height: 240px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-top: 10px;
+}
+.sc-preview.hidden {
+  display: none !important;
+}
+.sc-status {
+  margin: 8px 2px 0;
+  min-height: 16px;
+  font-size: 12.5px;
+  color: #9ea3b3;
+}
+
+.sc-wrap .sc-input,
+.sc-wrap textarea.sc-input {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 12px !important;
+  background: #1b1c25 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #f1f2f6 !important;
+  font-family: inherit;
+  padding: 12px 14px !important;
+  font-size: 15px;
+}
+.sc-wrap .sc-input:focus {
+  border-color: #ff6b6b !important;
+  box-shadow: 0 0 0 3px rgba(255, 77, 77, 0.16) !important;
+  outline: none;
+}
+.sc-wrap input.sc-mile {
+  height: 64px;
+  text-align: center;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+.sc-wrap textarea.sc-input {
+  min-height: 92px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.sc-clock {
+  text-align: center;
+  margin: 4px 0 12px;
+  font-size: 13px;
+  color: #9ea3b3;
+}
+.sc-clock span {
+  color: #4ade80;
+  font-weight: 600;
+}
+.sc-wrap .sc-submit {
+  width: 100%;
+  height: 52px;
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s, filter 0.12s;
+}
+.sc-wrap .sc-submit.red {
+  background: #ff4d4d;
+  box-shadow: 0 10px 24px -10px rgba(255, 77, 77, 0.8);
+}
+.sc-wrap .sc-submit.green {
+  background: #10b981;
+  color: #04241a;
+  box-shadow: 0 10px 24px -10px rgba(16, 185, 129, 0.8);
+}
+.sc-wrap .sc-submit:hover {
+  filter: brightness(1.07);
+}
+.sc-wrap .sc-submit:active {
+  transform: scale(0.985);
+}
+.sc-wrap .sc-submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+@media (max-width: 420px) {
+  .sc-grid {
+    gap: 12px;
+  }
+  .sc-wrap .sc-val.big[readonly] {
+    font-size: 20px;
+  }
+}

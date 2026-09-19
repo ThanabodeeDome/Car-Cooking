@@ -21,7 +21,8 @@ if (empty($plate)) {
 try {
     $sql = "SELECT TOP 1 BookingID, BookingNumber, DriverName, EmployeeID, Department,
                    Destination, CarPlate, StartMileage, Passengers, PassengerIDs,
-                   BookingDate, TimeSlot
+                   CONVERT(varchar(10), BookingDate, 23) AS BookingDate, TimeSlot,
+                   LEFT(OutTime, 5) AS OutTime, CONVERT(varchar(5), PlannedReturnTime, 108) AS PlannedReturnTime
             FROM CarBookings
             WHERE REPLACE(CarPlate, ' ', '') = REPLACE(:plate, ' ', '') AND BookingStatus = :status
             ORDER BY BookingID DESC";

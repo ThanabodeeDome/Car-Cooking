@@ -540,7 +540,7 @@ input[type="file"].ctrl-input::file-selector-button:hover {
 .table-scroll-container {
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
   border-radius: 8px;
 }
 
@@ -551,38 +551,44 @@ input[type="file"].ctrl-input::file-selector-button:hover {
   table-layout: fixed;
 }
 
-/* สัดส่วนคอลัมน์คงเดิม */
+/* สัดส่วนคอลัมน์ — ปรับใหม่ให้เหลือที่ให้คอลัมน์ที่ 9 "จัดการ" (เดิมมีแค่ 8 คอลัมน์ รวมกัน 100% พอดี
+   พอเพิ่มปุ่มลบเป็นคอลัมน์ที่ 9 เข้าไป แถวเลยกว้างเกิน 100% ล้นออกนอก .table-scroll-container
+   ซึ่ง overflow-x: hidden อยู่ เลยโดนตัดทิ้งไปเงียบๆ มองไม่เห็นคอลัมน์สุดท้ายเลย) */
 .car-data-table th:nth-child(1),
 .car-data-table td:nth-child(1) {
-  width: 10%;
+  width: 9%;
 }
 .car-data-table th:nth-child(2),
 .car-data-table td:nth-child(2) {
-  width: 15%;
+  width: 13%;
 }
 .car-data-table th:nth-child(3),
 .car-data-table td:nth-child(3) {
-  width: 13%;
+  width: 12%;
 }
 .car-data-table th:nth-child(4),
 .car-data-table td:nth-child(4) {
-  width: 13%;
+  width: 12%;
 }
 .car-data-table th:nth-child(5),
 .car-data-table td:nth-child(5) {
-  width: 11%;
+  width: 10%;
 }
 .car-data-table th:nth-child(6),
 .car-data-table td:nth-child(6) {
-  width: 12%;
+  width: 11%;
 }
 .car-data-table th:nth-child(7),
 .car-data-table td:nth-child(7) {
-  width: 11%;
+  width: 10%;
 }
 .car-data-table th:nth-child(8),
 .car-data-table td:nth-child(8) {
-  width: 15%;
+  width: 13%;
+}
+.car-data-table th:nth-child(9),
+.car-data-table td:nth-child(9) {
+  width: 10%;
 }
 
 .car-data-table th {
@@ -948,7 +954,28 @@ input[type="file"].ctrl-input::file-selector-button:hover {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 20px;
-  align-items: start;
+  align-items: stretch; /* 🩹 เดิม align-items:start ทำให้ 2 คอลัมน์สูงไม่เท่ากัน ดูไม่สมส่วน */
+}
+.dash-col-wide,
+.dash-col-side {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+/* 🌟 panel สุดท้ายของแต่ละคอลัมน์ยืดเต็มพื้นที่ที่เหลือ ให้ขอบล่างสองคอลัมน์ตรงกันเป๊ะ
+   แทนที่จะปล่อยให้แต่ละคอลัมน์สูงตามเนื้อหาตัวเองแล้วเหลือพื้นที่ว่างไม่เท่ากัน */
+.dash-col-wide .dash-panel:last-child,
+.dash-col-side .dash-panel:last-child {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0;
+}
+.dash-col-wide .dash-panel:last-child > div:last-child,
+.dash-col-side .dash-panel:last-child > div:last-child {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 360px;
 }
 .dash-panel {
   background: #fff;
@@ -1097,6 +1124,19 @@ input[type="file"].ctrl-input::file-selector-button:hover {
   }
   .dash-grid-main {
     grid-template-columns: 1fr;
+  }
+  .dash-col-wide,
+  .dash-col-side {
+    height: auto;
+  }
+  .dash-col-wide .dash-panel:last-child,
+  .dash-col-side .dash-panel:last-child {
+    flex: none;
+  }
+  .dash-col-wide .dash-panel:last-child > div:last-child,
+  .dash-col-side .dash-panel:last-child > div:last-child {
+    max-height: none;
+    overflow-y: visible;
   }
 }
 @media (max-width: 560px) {
@@ -1335,7 +1375,8 @@ input[type="file"].ctrl-input::file-selector-button:hover {
 .table-scroll-container {
   border: 1px solid #e5e7eb;
   border-radius: 10px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 .car-data-table thead th,
 .week-timeline-table thead th {

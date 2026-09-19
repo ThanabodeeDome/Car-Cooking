@@ -93,6 +93,15 @@ try {
                        )";
     $maintDue = $conn->query($sqlMaintDue)->fetchAll(PDO::FETCH_ASSOC);
 
+    // ---------- 6) feedback "ระบบดีไหม" (thumbs up/down) — สรุปรวม ไม่ระบุตัวผู้ตอบ ----------
+    $sqlFeedback = "SELECT SystemFeedback, COUNT(*) as cnt FROM CarBookings
+                     WHERE SystemFeedback IS NOT NULL GROUP BY SystemFeedback";
+    $feedbackRows = $conn->query($sqlFeedback)->fetchAll(PDO::FETCH_ASSOC);
+    $feedback = ['good' => 0, 'bad' => 0];
+    foreach ($feedbackRows as $row) {
+        if (isset($feedback[$row['SystemFeedback']])) $feedback[$row['SystemFeedback']] = (int)$row['cnt'];
+    }
+
     echo json_encode([
         "success" => true,
         "counts" => [
@@ -108,6 +117,7 @@ try {
         "recent"        => $recent,
         "alerts"        => $alerts,
         "maint_due"     => $maintDue,
+        "feedback"      => $feedback,
     ], JSON_UNESCAPED_UNICODE);
 } catch (PDOException $e) {
     error_log('get_dashboard_stats DB error: ' . $e->getMessage());

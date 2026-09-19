@@ -22,6 +22,11 @@
   padding: 0;
 }
 
+html {
+  overflow-x: hidden; /* 🌟 บาง browser (โดยเฉพาะมือถือ) เช็คการเลื่อนซ้าย-ขวาที่ html ไม่ใช่ body ใส่ทั้งคู่กันหลุด */
+  touch-action: pan-y; /* 🌟 มือถือ (iOS Safari) เลื่อนซ้าย-ขวาได้จาก touch gesture แม้ overflow-x:hidden แล้ว ต้องห้าม touch แนวนอนตรงๆ */
+}
+
 body {
   background: linear-gradient(
     to bottom,
@@ -35,8 +40,10 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  overflow: hidden;
+  min-height: 100vh; /* 🌟 เดิม height:100vh ตายตัว บังคับสูงเท่าจอเป๊ะ ไม่ยืดตามเนื้อหา */
+  overflow-x: hidden; /* 🌟 กันเลื่อนซ้าย-ขวา (จากพื้นหลังตกแต่ง) แต่ปล่อยเลื่อนขึ้น-ลงได้ */
+  overflow-y: auto; /* 🌟 เดิม overflow:hidden ล็อก scroll ทั้งแกน — บนมือถือฟอร์มสมัครยาวกว่าจอ กดปุ่มสมัครไม่ถึงเลย */
+  touch-action: pan-y; /* 🌟 กัน touch gesture เลื่อนแนวนอนบนมือถือโดยตรง */
   position: relative;
 }
 
@@ -583,3 +590,260 @@ body {
 .swal2-icon.swal2-success .swal2-success-ring {
   border-color: rgba(34, 197, 94, 0.35) !important;
 }
+/* ===== ฟอร์มใหม่: เข้าสู่ระบบ / สร้างบัญชี / ลืมรหัสผ่าน ===== */
+.pw-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: 10px;
+}
+.pw-toggle i {
+  position: static;
+  font-size: 16px;
+}
+.pw-toggle:hover {
+  color: var(--horizon-glow);
+}
+.input-wrapper input[type="password"],
+.input-wrapper input.has-toggle {
+  padding-right: 48px;
+}
+
+/* จดจำฉัน */
+.login-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin: -4px 0 20px;
+  font-size: 13px;
+}
+.login-options a {
+  color: var(--text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.login-options a:hover {
+  color: var(--horizon-glow);
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  color: var(--text-main);
+  user-select: none;
+}
+.check input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.check .box {
+  width: 19px;
+  height: 19px;
+  flex: none;
+  border-radius: 6px;
+  border: 1.5px solid var(--card-border);
+  background: var(--input-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.check .box i {
+  font-size: 11px;
+  color: #2d1760;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.2s;
+}
+.check input:checked + .box {
+  background: var(--horizon-glow);
+  border-color: var(--horizon-glow);
+}
+.check input:checked + .box i {
+  opacity: 1;
+  transform: none;
+}
+.check input:focus-visible + .box {
+  box-shadow: 0 0 0 3px rgba(255, 158, 203, 0.35);
+}
+.check em {
+  font-style: normal;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.switch-line {
+  text-align: center;
+  margin-top: 22px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.switch-line a,
+.resend-line a {
+  color: var(--horizon-glow);
+  text-decoration: none;
+  font-weight: 600;
+}
+.switch-line a:hover,
+.resend-line a:hover {
+  text-decoration: underline;
+}
+.hint-line {
+  text-align: center;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* สร้างบัญชี: หัวข้อส่วน */
+.form-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--card-border);
+}
+.form-section:first-of-type {
+  margin-top: 4px;
+}
+.sec-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--night-mid), var(--horizon-glow));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sec-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-main);
+}
+.form-grid .input-group {
+  margin-bottom: 6px;
+  min-width: 0;
+}
+.form-grid .span-2 {
+  grid-column: span 2;
+}
+@media (max-width: 580px) {
+  .form-grid .span-2 {
+    grid-column: span 1;
+  }
+}
+
+/* ความแข็งแรงรหัสผ่าน */
+.pw-meter {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-top: 8px;
+}
+.pw-meter i {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  transition: background 0.25s;
+}
+.pw-meter[data-level="1"] i:nth-child(-n + 1) { background: #ef4444; }
+.pw-meter[data-level="2"] i:nth-child(-n + 2) { background: #f59e0b; }
+.pw-meter[data-level="3"] i:nth-child(-n + 3) { background: #84cc16; }
+.pw-meter[data-level="4"] i:nth-child(-n + 4) { background: #10b981; }
+.pw-hint {
+  display: block;
+  margin-top: 6px;
+  min-height: 15px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.pw-hint.ok { color: #34d399; }
+.pw-hint.bad { color: #fca5a5; }
+
+/* ลืมรหัสผ่าน: ตัวบอกขั้นตอน */
+.stepper {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 0 0 26px;
+  padding: 0;
+}
+.stepper li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.stepper li + li::before {
+  content: "";
+  width: 22px;
+  height: 1.5px;
+  background: var(--card-border);
+  margin-right: 5px;
+}
+.stepper li span {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid var(--card-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+}
+.stepper li.active {
+  color: var(--text-main);
+  font-weight: 600;
+}
+.stepper li.active span {
+  background: linear-gradient(135deg, var(--night-mid), var(--horizon-glow));
+  border-color: transparent;
+  color: #fff;
+}
+.stepper li.done span {
+  background: #10b981;
+  border-color: transparent;
+  color: #fff;
+}
+.pane-note {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 18px;
+  line-height: 1.5;
+}
+.otp-input {
+  letter-spacing: 8px;
+  font-size: 22px !important;
+  text-align: center;
+  font-weight: 600;
+}
+.resend-line {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 13px;
+}
+@media (max-width: 400px) {
+  .stepper li { font-size: 0; gap: 0; }
+  .stepper li.active { font-size: 12px; gap: 7px; }
+}
+
+.auth-container { margin: 24px 0; }

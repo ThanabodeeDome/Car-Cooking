@@ -1,0 +1,158 @@
+/* ===== Custom Select Dropdown — ใช้ token เดียวกับ booking.css ===== */
+.csel-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.csel-native {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.csel-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-width: 0;
+  padding: 10px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-family: "Prompt", sans-serif;
+  font-size: 0.95rem;
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box;
+  transition: 0.25s ease;
+  gap: 8px;
+}
+
+.csel-trigger:hover {
+  border-color: var(--accent);
+}
+
+.csel-wrap.open .csel-trigger {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.csel-trigger-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.csel-placeholder {
+  color: #5c5c66;
+}
+
+.csel-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.csel-thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+  background: var(--bg-dark);
+}
+
+.csel-emoji {
+  font-size: 18px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.csel-caret {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+
+.csel-wrap.open .csel-caret {
+  transform: rotate(180deg);
+  color: var(--accent);
+}
+
+.csel-panel {
+  z-index: 9999;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 6px;
+  font-family: "Prompt", sans-serif;
+}
+
+.csel-panel.hidden {
+  display: none;
+}
+
+.csel-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--text-main);
+  font-size: 0.92rem;
+}
+
+.csel-option:hover {
+  background: var(--bg-input);
+}
+
+.csel-option.csel-selected {
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.csel-option-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.csel-empty {
+  padding: 14px 10px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+/* scrollbar โทนมืด กันแถบขาวโผล่ตอนรายการรถเยอะ */
+.csel-panel::-webkit-scrollbar {
+  width: 8px;
+}
+.csel-panel::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 8px;
+}
+
+@media (max-width: 480px) {
+  .csel-panel {
+    max-height: 260px;
+  }
+}

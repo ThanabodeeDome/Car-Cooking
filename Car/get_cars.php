@@ -17,6 +17,7 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $targetDate)) {
 $isToday = $targetDate === date('Y-m-d');
 
 $sql = "SELECT c.CarID, c.Plate, c.Brand, c.Model, c.Color, c.Mileage, c.Carimage, c.CarStatus,
+  c.InsuranceExpiry, c.ActExpiry, c.LastMaintenance, c.NextMaintenance,
   CASE 
     WHEN c.CarStatus = N'เช็คระยะ' THEN N'งดให้บริการ'
     WHEN :isToday1 = 1 AND EXISTS (

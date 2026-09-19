@@ -3,28 +3,70 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once 'db_connect.php';
 
-// 🩹 ยังต้อง login ก่อนถึงจะจองได้ (กันคนนอกยิง endpoint ตรงๆ)
-// แต่ "ผู้ขับ" ไม่จำเป็นต้องเป็นคนที่ login แล้ว (เช่น จนท. จองแทนคนขับ)
-// -> employee_id ผู้ขับ ต้องมาจากฟอร์ม แล้ว validate กับ DB จริง ห้ามเชื่อ driver_name ที่ client ส่งมาตรงๆ
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(["success" => false, "message" => "กรุณาเข้าสู่ระบบก่อนทำการจอง"]);
     exit;
 }
-$bookedByUserId = $_SESSION['user_id']; // 🌟 เก็บไว้ log ว่าใครเป็นคนกดจอง (ต่างจากผู้ขับได้)
+$bookedByUserId = $_SESSION['user_id'];
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
 $driverEmployeeId = isset($data['employee_id']) ? trim($data['employee_id']) : '';
+$outTime = isset($data['out_time']) ? trim($data['out_time']) : '';
+$plannedReturnTime = isset($data['planned_return_time']) ? trim($data['planned_return_time']) : '';
+$useDate = isset($data['use_date']) ? trim($data['use_date']) : '';
 
-if (!$data || empty($data['car_plate']) || empty($driverEmployeeId) || empty($data['time_slot'])) {
+if (!$data || empty($data['car_plate']) || empty($driverEmployeeId) || empty($outTime) || empty($plannedReturnTime) || empty($useDate)) {
     echo json_encode(["success" => false, "message" => "ข้อมูลไม่ครบ"]);
     exit;
 }
 
+// 🌟 REDESIGN: เวลาไป-กลับตอนนี้เป็นเวลาอิสระ 24 ชม. (ไม่ใช่ 4 slot คงที่แบบเดิม)
+// คำนวณช่วง start/end จริงตรงๆ จาก out_time / planned_return_time ที่ผู้ใช้เลือก
+// ถ้าเวลากลับ <= เวลาไป ถือว่าข้ามคืน จบเช้าวันถัดไป (logic เดียวกับที่ 'กลางคืน' เคยทำ)
+$newStart = DateTime::createFromFormat('Y-m-d H:i', $useDate . ' ' . $outTime);
+$newEnd   = DateTime::createFromFormat('Y-m-d H:i', $useDate . ' ' . $plannedReturnTime);
+
+if (!$newStart || !$newEnd) {
+    echo json_encode(["success" => false, "message" => "รูปแบบเวลาไม่ถูกต้อง"]);
+    exit;
+}
+if ($plannedReturnTime <= $outTime) {
+    $newEnd->modify('+1 day'); // ข้ามคืน
+}
+
+function rangesOverlap($startA, $endA, $startB, $endB) {
+    return $startA < $endB && $startB < $endA;
+}
+
+// 🌟 กันจองช่วงเวลาที่ผ่านมาแล้ว (validate ฝั่ง server กันเคส bypass frontend)
+if ($newEnd < new DateTime()) {
+    echo json_encode(["success" => false, "message" => "ช่วงเวลานี้ผ่านไปแล้ว กรุณาเลือกวันที่หรือเวลาใหม่"]);
+    exit;
+}
+
+$conn->beginTransaction();
 try {
-    // 🌟 ตรวจรหัสพนักงานผู้ขับกับ DB จริงก่อนเสมอ (ห้ามเชื่อ driver_name จาก client)
-    // ดึง Division/department/Unit ของผู้ขับมาเก็บด้วยเลย ไม่ต้องให้ฟอร์มเลือกเอง
+    // 🌟 ล็อกคิวตามทะเบียนรถก่อน กัน race condition ตอน 2 คนกดจองพร้อมกัน (จากรอบก่อนหน้า)
+    $lockResource = 'car_booking_' . $data['car_plate'];
+    $lockStmt = $conn->prepare(
+        "DECLARE @res INT;
+         EXEC @res = sp_getapplock
+            @Resource = :res,
+            @LockMode = 'Exclusive',
+            @LockOwner = 'Transaction',
+            @LockTimeout = 10000;
+         SELECT @res AS lockResult;"
+    );
+    $lockStmt->execute([':res' => $lockResource]);
+    $lockRow = $lockStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$lockRow || (int)$lockRow['lockResult'] < 0) {
+        $conn->rollBack();
+        echo json_encode(["success" => false, "message" => "ระบบกำลังประมวลผลรายการจองรถคันนี้อยู่ กรุณาลองใหม่อีกครั้ง"]);
+        exit;
+    }
+
     $empCheck = $conn->prepare(
         "SELECT first_name, last_name, Division, department, Unit FROM Users WHERE employee_id = :emp"
     );
@@ -32,118 +74,117 @@ try {
     $driverRow = $empCheck->fetch(PDO::FETCH_ASSOC);
 
     if (!$driverRow) {
+        $conn->rollBack();
         echo json_encode(["success" => false, "message" => "ไม่พบรหัสพนักงานผู้ขับนี้ในระบบ กรุณาตรวจสอบอีกครั้ง"]);
         exit;
     }
     $driverName = trim($driverRow['first_name'] . ' ' . $driverRow['last_name']);
     $department = trim(($driverRow['Division'] ?? '') . ' / ' . ($driverRow['department'] ?? '') . ' / ' . ($driverRow['Unit'] ?? ''));
 
-    // 🌟 ช่วงเวลาแต่ละ slot -> เวลาเริ่ม/จบจริง ('กลางคืน' ข้ามเที่ยงคืนไปจบเช้าวันถัดไป)
-    function getSlotRange($date, $slot) {
-        $starts = ['เช้า' => '08:00', 'บ่าย' => '13:00', 'ทั้งวัน' => '08:00', 'กลางคืน' => '17:00'];
-        $ends   = ['เช้า' => '12:00', 'บ่าย' => '17:00', 'ทั้งวัน' => '17:00', 'กลางคืน' => '08:00'];
-        if (empty($date) || !isset($starts[$slot])) return null;
-        $start = DateTime::createFromFormat('Y-m-d H:i', $date . ' ' . $starts[$slot]);
-        $end   = DateTime::createFromFormat('Y-m-d H:i', $date . ' ' . $ends[$slot]);
-        if (!$start || !$end) return null;
-        if ($slot === 'กลางคืน') {
-            $end->modify('+1 day'); // จบ 08:00 ของวันถัดไป
-        }
-        return [$start, $end];
-    }
-
-    function rangesOverlap($startA, $endA, $startB, $endB) {
-        return $startA < $endB && $startB < $endA;
-    }
-
-    $requestedSlot = $data['time_slot'];
-    $newRange = getSlotRange($data['use_date'] ?? '', $requestedSlot);
-
-    if (!$newRange) {
-        echo json_encode(["success" => false, "message" => "ช่วงเวลาไม่ถูกต้อง"]);
-        exit;
-    }
-    [$newStart, $newEnd] = $newRange;
-
-    // 🌟 เช็คสถานะรถก่อน ต้อง "ว่าง" เท่านั้นถึงจะจองได้
     $carCheck = $conn->prepare("SELECT CarStatus FROM Cars WHERE Plate = :plate");
     $carCheck->execute([':plate' => $data['car_plate']]);
     $carRow = $carCheck->fetch(PDO::FETCH_ASSOC);
 
     if (!$carRow || $carRow['CarStatus'] !== 'ว่าง') {
+        $conn->rollBack();
         echo json_encode(["success" => false, "message" => "รถคันนี้ไม่พร้อมให้จอง (สถานะ: " . ($carRow['CarStatus'] ?? 'ไม่พบข้อมูล') . ")"]);
         exit;
     }
 
-    // 🌟 กันจองช่วงเวลาที่ผ่านมาแล้ว (validate ฝั่ง server กันเคส bypass frontend)
-    if ($newEnd < new DateTime()) {
-        echo json_encode(["success" => false, "message" => "ช่วงเวลานี้ผ่านไปแล้ว กรุณาเลือกวันที่หรือช่วงเวลาใหม่"]);
-        exit;
-    }
-
-    // ดึง booking ที่ยังไม่คืน (BookingStatus='ขาไป') ในช่วง ±1 วันจากวันที่จอง (พอสำหรับ slot ข้ามเที่ยงคืน)
     $dMinus = (clone $newStart)->modify('-1 day')->format('Y-m-d');
     $dPlus  = (clone $newStart)->modify('+1 day')->format('Y-m-d');
 
-    // 🩹 เช็คฝั่งรถ: คันนี้มี booking ที่เวลาชนกับที่จะจองใหม่ไหม
+    // 🌟 ดึงช่วงเวลาที่จองไว้แล้วของรถคันนี้ (OutTime/PlannedReturnTime จริง ไม่ใช่ slot name)
+    // แล้วคำนวณ end จริงของแต่ละแถวด้วย logic ข้ามคืนแบบเดียวกัน ก่อนเทียบ overlap
     $carBookings = $conn->prepare(
-        "SELECT BookingDate, TimeSlot FROM CarBookings
-         WHERE CarPlate = :plate AND BookingStatus = 'ขาไป'
+        "SELECT BookingDate, OutTime, PlannedReturnTime FROM CarBookings WITH (UPDLOCK, HOLDLOCK)
+         WHERE CarPlate = :plate AND BookingStatus IN ('จองแล้ว', 'ขาไป')
            AND BookingDate BETWEEN :d1 AND :d2"
     );
     $carBookings->execute([':plate' => $data['car_plate'], ':d1' => $dMinus, ':d2' => $dPlus]);
     foreach ($carBookings->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $range = getSlotRange($row['BookingDate'], $row['TimeSlot']);
-        if ($range && rangesOverlap($newStart, $newEnd, $range[0], $range[1])) {
-            echo json_encode(["success" => false, "message" => "ช่วงเวลานี้ถูกจองไปแล้ว กรุณาเลือกช่วงเวลาอื่น"]);
+        $rOut = substr($row['OutTime'], 0, 5);
+        $rRet = substr($row['PlannedReturnTime'], 0, 5);
+        if (!$rOut || !$rRet) continue; // แถวเก่าก่อนอัปเดตระบบ ยังไม่มีเวลาแบบใหม่ ข้ามไป
+        $rStart = DateTime::createFromFormat('Y-m-d H:i', $row['BookingDate'] . ' ' . $rOut);
+        $rEnd   = DateTime::createFromFormat('Y-m-d H:i', $row['BookingDate'] . ' ' . $rRet);
+        if (!$rStart || !$rEnd) continue;
+        if ($rRet <= $rOut) $rEnd->modify('+1 day');
+
+        if (rangesOverlap($newStart, $newEnd, $rStart, $rEnd)) {
+            $conn->rollBack();
+            echo json_encode(["success" => false, "message" => "ช่วงเวลานี้ถูกจองไปแล้ว กรุณาเลือกเวลาอื่น"]);
             exit;
         }
     }
 
-    // 🩹 เช็คฝั่งคน: ผู้ขับคนนี้ (ตาม employee_id ที่ validate แล้ว) มี booking เวลาชนไหม (คันไหนก็ได้)
     $empBookings = $conn->prepare(
-        "SELECT BookingDate, TimeSlot FROM CarBookings
-         WHERE EmployeeID = :emp AND BookingStatus = 'ขาไป'
+        "SELECT BookingDate, OutTime, PlannedReturnTime FROM CarBookings WITH (UPDLOCK, HOLDLOCK)
+         WHERE EmployeeID = :emp AND BookingStatus IN ('จองแล้ว', 'ขาไป')
            AND BookingDate BETWEEN :d1 AND :d2"
     );
     $empBookings->execute([':emp' => $driverEmployeeId, ':d1' => $dMinus, ':d2' => $dPlus]);
     foreach ($empBookings->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $range = getSlotRange($row['BookingDate'], $row['TimeSlot']);
-        if ($range && rangesOverlap($newStart, $newEnd, $range[0], $range[1])) {
+        $rOut = substr($row['OutTime'], 0, 5);
+        $rRet = substr($row['PlannedReturnTime'], 0, 5);
+        if (!$rOut || !$rRet) continue;
+        $rStart = DateTime::createFromFormat('Y-m-d H:i', $row['BookingDate'] . ' ' . $rOut);
+        $rEnd   = DateTime::createFromFormat('Y-m-d H:i', $row['BookingDate'] . ' ' . $rRet);
+        if (!$rStart || !$rEnd) continue;
+        if ($rRet <= $rOut) $rEnd->modify('+1 day');
+
+        if (rangesOverlap($newStart, $newEnd, $rStart, $rEnd)) {
+            $conn->rollBack();
             echo json_encode(["success" => false, "message" => "ผู้ขับคนนี้มีการจองที่เวลาชนกับช่วงนี้อยู่แล้ว"]);
             exit;
         }
     }
 
-    // 🌟 ผู้ร่วมทาง (ไม่บังคับ) - ถ้ามีรหัสส่งมา ตรวจว่ามีจริงใน DB เหมือนกัน กันข้อมูลขยะปนเข้าไป
-    // (ไม่ block การจองถ้ารหัสผิด แค่เก็บ "ไม่พบ" ต่อท้ายไว้เตือน Admin เห็นภายหลัง)
     $passengerIdsRaw = isset($data['passenger_ids']) ? trim($data['passenger_ids']) : '';
     $passengerNamesRaw = isset($data['passengers']) ? trim($data['passengers']) : '';
 
-    $bookingNumber = 'BK-' . date('ymdHis');
+    $bookingNumber = 'BK-' . date('ymdHis') . '-' . random_int(10, 99); // suffix กันเลขซ้ำเมื่อจองซ้ำหลายสัปดาห์ในวินาทีเดียวกัน
 
+    // 🌟 บันทึก OutTime + PlannedReturnTime แทน TimeSlot (คอลัมน์ TimeSlot เดิมเว้นว่างไว้เฉยๆ
+    // เผื่อยังมีโค้ด/รายงานอื่นอ้างอิงอยู่ ไม่ลบคอลัมน์ทิ้งเพื่อความปลอดภัย)
     $sql = "INSERT INTO CarBookings 
-        (BookingNumber, DriverName, EmployeeID, Department, Destination, CarPlate, StartMileage, Passengers, PassengerIDs, OutDate, BookingStatus, BookingDate, TimeSlot, BookedByUserID)
+        (BookingNumber, DriverName, EmployeeID, Department, Destination, CarPlate, StartMileage, Passengers, PassengerIDs, OutDate, OutTime, PlannedReturnTime, BookingStatus, BookingDate, BookedByUserID)
         VALUES 
-        (:booking_number, :driver_name, :employee_id, :department, :destination, :car_plate, :start_mileage, :passengers, :passenger_ids, :out_date, 'จองแล้ว', :booking_date, :time_slot, :booked_by)";
+        (:booking_number, :driver_name, :employee_id, :department, :destination, :car_plate, :start_mileage, :passengers, :passenger_ids, :out_date, :out_time, :planned_return_time, 'จองแล้ว', :booking_date, :booked_by)";
     $stmt = $conn->prepare($sql);
     $stmt->execute([
         ':booking_number' => $bookingNumber,
-        ':driver_name'    => $driverName,        // 🌟 มาจาก DB ตาม employee_id ที่ validate แล้ว ไม่ใช่จาก client
+        ':driver_name'    => $driverName,
         ':employee_id'    => $driverEmployeeId,
-        ':department'     => $department,        // 🌟 มาจาก DB ของผู้ขับเอง ไม่ต้องเลือกในฟอร์มแล้ว
+        ':department'     => $department,
         ':destination'    => $data['destination'] ?? null,
         ':car_plate'      => $data['car_plate'],
         ':start_mileage'  => $data['start_mile'] ?? 0,
         ':passengers'     => $passengerNamesRaw ?: null,
         ':passenger_ids'  => $passengerIdsRaw ?: null,
-        ':out_date'       => $data['use_date'] ?? null,
-        ':booking_date'   => $data['use_date'] ?? null,
-        ':time_slot'      => $data['time_slot'] ?? null,
-        ':booked_by'      => $bookedByUserId,    // 🌟 ใหม่: เก็บไว้ว่าใคร (login) เป็นคนกดจอง แยกจากผู้ขับ
+        ':out_date'       => $useDate,
+        ':out_time'       => $outTime,
+        ':planned_return_time' => $plannedReturnTime,
+        ':booking_date'   => $useDate,
+        ':booked_by'      => $bookedByUserId,
     ]);
+
+    $conn->commit();
+
     echo json_encode(["success" => true, "booking_number" => $bookingNumber]);
+
+    // อีเมลยืนยัน (ฟรี ผ่าน SMTP) — ส่งหลังตอบ client แล้ว พลาดก็ไม่กระทบการจอง
+    if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+    require_once __DIR__ . '/mailer.php';
+    mail_booking_confirmation($conn, [
+        'booking_number' => $bookingNumber, 'car_plate' => $data['car_plate'], 'use_date' => $useDate,
+        'out_time' => $outTime, 'planned_return_time' => $plannedReturnTime, 'driver_name' => $driverName,
+        'destination' => $data['destination'] ?? '', 'employee_id' => $driverEmployeeId, 'passenger_ids' => $passengerIdsRaw,
+    ]);
 } catch (PDOException $e) {
+    if ($conn->inTransaction()) {
+        $conn->rollBack();
+    }
     error_log('save_booking DB error: ' . $e->getMessage());
     echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"]);
 }

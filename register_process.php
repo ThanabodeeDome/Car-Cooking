@@ -1,5 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/same_origin.php';
+require_same_origin();
 require_once 'db_connect.php';
 
 // รับค่าจากหน้าฟอร์มสมัครสมาชิกใหม่
@@ -21,6 +23,18 @@ if (empty($username) || empty($password) || empty($first_name) || empty($last_na
     exit;
 }
 
+if (strlen($password) < 6) {
+    echo json_encode(['success' => false, 'message' => 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร']);
+    exit;
+}
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    echo json_encode(['success' => false, 'message' => 'รูปแบบอีเมลไม่ถูกต้อง']);
+    exit;
+}
+if (!preg_match('/^[0-9A-Za-z_-]{1,20}$/', $employee_id)) {
+    echo json_encode(['success' => false, 'message' => 'รหัสพนักงานไม่ถูกต้อง']);
+    exit;
+}
 // 2. เช็คและบล็อกไม่ให้ใช้ชื่อสงวนที่สื่อถึง role พิเศษในทุกรูปแบบตัวอักษร
 $reservedUsernames = ['admin', 'administrator', 'root', 'superadmin', 'manager'];
 if (in_array(strtolower($username), $reservedUsernames, true)) {
@@ -39,6 +53,14 @@ try {
 
     if ($stmt->fetchColumn() > 0) {
         echo json_encode(['success' => false, 'message' => 'Username นี้ถูกใช้งานแล้ว ลองเปลี่ยนใหม่นะครับ']);
+        exit;
+    }
+
+    // 3.5 รหัสพนักงานต้องไม่ซ้ำ (กันสมัครซ้อน/สวมรหัสพนักงานคนอื่นที่ยังไม่ได้สมัคร)
+    $dup = $conn->prepare("SELECT COUNT(*) FROM Users WHERE employee_id = :emp");
+    $dup->execute([':emp' => $employee_id]);
+    if ($dup->fetchColumn() > 0) {
+        echo json_encode(['success' => false, 'message' => 'รหัสพนักงานนี้มีบัญชีในระบบแล้ว หากลืมรหัสผ่านให้ใช้ "ลืมรหัสผ่าน"']);
         exit;
     }
 

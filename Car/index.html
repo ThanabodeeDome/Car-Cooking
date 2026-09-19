@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="th">
   <head>
+    <base href="/Car/">
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>เข้าสู่ระบบ | Shift & Go</title>
@@ -14,7 +15,7 @@
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600&family=Poppins:ital,wght@0,600;0,700;0,800;1,600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="index.css" />
+    <link rel="stylesheet" href="index.css?v=8" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   </head>
   <body>
@@ -22,6 +23,7 @@
     <div class="bg-glow-2"></div>
 
     <div class="auth-container">
+      <!-- ===== เข้าสู่ระบบ ===== -->
       <div id="login-form" class="auth-box">
         <div class="brand-logo">
           <i class="fa-solid fa-car-side"></i>
@@ -32,245 +34,305 @@
           ลงชื่อเข้าใช้เพื่อจัดการงานขับขี่และการจองรถทั้งหมด
         </p>
 
-        <form action="../login_process.php" method="POST">
+        <form action="../login_process.php" method="POST" autocomplete="on">
           <div class="input-group">
-            <label>ชื่อผู้ใช้งาน</label>
+            <label for="login-username">ชื่อผู้ใช้งาน</label>
             <div class="input-wrapper">
               <i class="fa-regular fa-user"></i>
               <input
                 type="text"
+                id="login-username"
                 name="username"
                 placeholder="กรอก Username ของคุณ"
+                autocomplete="username"
+                autocapitalize="none"
+                spellcheck="false"
                 required
               />
             </div>
           </div>
           <div class="input-group">
-            <label>รหัสผ่าน</label>
+            <label for="login-password">รหัสผ่าน</label>
             <div class="input-wrapper">
               <i class="fa-solid fa-lock"></i>
               <input
                 type="password"
+                id="login-password"
                 name="password"
                 placeholder="กรอกรหัสผ่าน"
+                autocomplete="current-password"
                 required
               />
+              <button type="button" class="pw-toggle" data-target="login-password" aria-label="แสดง/ซ่อนรหัสผ่าน">
+                <i class="fa-regular fa-eye"></i>
+              </button>
             </div>
           </div>
+
+          <div class="login-options">
+            <label class="check">
+              <input type="checkbox" name="remember" value="1" checked />
+              <span class="box"><i class="fa-solid fa-check"></i></span>
+              <span class="txt">จดจำฉันไว้ในเครื่องนี้</span>
+            </label>
+            <a href="#" onclick="switchForm('reset-form'); return false;">ลืมรหัสผ่าน?</a>
+          </div>
+
           <button type="submit" class="btn btn-primary">
-            เข้าสู่ระบบล็อกอิน <i class="fa-solid fa-arrow-right"></i>
+            เข้าสู่ระบบ <i class="fa-solid fa-arrow-right"></i>
           </button>
         </form>
-        <div class="auth-links">
-          <a href="#" onclick="switchForm('register-form')">สร้างบัญชีใหม่</a>
-          <a href="#" onclick="switchForm('reset-form')">ลืมรหัสผ่านใช่ไหม?</a>
-        </div>
+        <p class="switch-line">
+          ยังไม่มีบัญชี?
+          <a href="#" onclick="switchForm('register-form'); return false;">สร้างบัญชีใหม่</a>
+        </p>
+        <p class="hint-line">
+          <i class="fa-solid fa-circle-info"></i> ติ๊ก "จดจำฉัน" เฉพาะเครื่องส่วนตัว — ผู้ดูแลระบบจะไม่ถูกจดจำ
+        </p>
       </div>
 
-      <div
-        id="register-form"
-        class="auth-box"
-        style="display: none; max-width: 600px"
-      >
-        <h2>เข้าร่วมทีม Shift & Go</h2>
-        <p class="subtitle">
-          กรอกข้อมูลพนักงานให้ครบ เพื่อสร้างบัญชีสำหรับเข้าใช้งานระบบ
-        </p>
+      <!-- ===== สร้างบัญชี ===== -->
+      <div id="register-form" class="auth-box wide" style="display: none">
+        <h2>สร้างบัญชีพนักงาน</h2>
+        <p class="subtitle">กรอกให้ครบทุกช่อง ใช้เวลาไม่ถึง 1 นาที</p>
 
-        <form action="../register_process.php" method="POST">
+        <form action="../register_process.php" method="POST" autocomplete="on">
+          <div class="form-section">
+            <span class="sec-num">1</span><span class="sec-title">บัญชีผู้ใช้</span>
+          </div>
           <div class="form-grid">
-            <div class="input-group">
-              <label>ชื่อผู้ใช้งาน (Username)</label>
+            <div class="input-group span-2">
+              <label for="reg-username">ชื่อผู้ใช้งาน (Username)</label>
               <div class="input-wrapper">
                 <i class="fa-regular fa-user"></i>
                 <input
                   type="text"
+                  id="reg-username"
                   name="username"
-                  placeholder="ภาษาอังกฤษเท่านั้น"
+                  placeholder="ภาษาอังกฤษ/ตัวเลข ไม่มีเว้นวรรค"
+                  autocomplete="username"
+                  autocapitalize="none"
+                  spellcheck="false"
+                  pattern="[A-Za-z0-9._\-]{3,30}"
+                  title="3-30 ตัว: A-Z a-z 0-9 . _ -"
                   required
                 />
               </div>
             </div>
             <div class="input-group">
-              <label>รหัสผ่าน (Password)</label>
+              <label for="reg-password">รหัสผ่าน</label>
               <div class="input-wrapper">
                 <i class="fa-solid fa-lock"></i>
                 <input
                   type="password"
+                  id="reg-password"
                   name="password"
-                  placeholder="ตั้งรหัสผ่าน"
+                  placeholder="อย่างน้อย 6 ตัว"
+                  minlength="6"
+                  autocomplete="new-password"
+                  required
+                />
+                <button type="button" class="pw-toggle" data-target="reg-password" aria-label="แสดง/ซ่อนรหัสผ่าน">
+                  <i class="fa-regular fa-eye"></i>
+                </button>
+              </div>
+              <div class="pw-meter" id="reg-pw-meter" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+              <small class="pw-hint" id="reg-pw-hint">ยิ่งยาวและผสมตัวอักษร/ตัวเลข ยิ่งปลอดภัย</small>
+            </div>
+            <div class="input-group">
+              <label for="reg-password2">ยืนยันรหัสผ่าน</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-lock"></i>
+                <input
+                  type="password"
+                  id="reg-password2"
+                  placeholder="พิมพ์รหัสผ่านอีกครั้ง"
+                  autocomplete="new-password"
                   required
                 />
               </div>
+              <small class="pw-hint" id="reg-pw2-hint"></small>
             </div>
+          </div>
+
+          <div class="form-section">
+            <span class="sec-num">2</span><span class="sec-title">ข้อมูลพนักงาน</span>
+          </div>
+          <div class="form-grid">
             <div class="input-group">
-              <label>ชื่อจริง</label>
+              <label for="reg-first-name">ชื่อจริง</label>
               <div class="input-wrapper">
                 <i class="fa-solid fa-id-card"></i>
-                <input
-                  type="text"
-                  name="first_name"
-                  placeholder="ชื่อภาษาไทย"
-                  required
-                />
+                <input type="text" id="reg-first-name" name="first_name" placeholder="ชื่อภาษาไทย" autocomplete="given-name" required />
               </div>
             </div>
             <div class="input-group">
-              <label>นามสกุล</label>
+              <label for="reg-last-name">นามสกุล</label>
               <div class="input-wrapper">
                 <i class="fa-solid fa-id-card"></i>
-                <input
-                  type="text"
-                  name="last_name"
-                  placeholder="นามสกุลภาษาไทย"
-                  required
-                />
+                <input type="text" id="reg-last-name" name="last_name" placeholder="นามสกุลภาษาไทย" autocomplete="family-name" required />
               </div>
             </div>
-            <div class="input-group">
-              <label>รหัสพนักงาน</label>
+            <div class="input-group span-2">
+              <label for="reg-employee-id">รหัสพนักงาน</label>
               <div class="input-wrapper">
                 <i class="fa-solid fa-address-card"></i>
                 <input
                   type="text"
+                  id="reg-employee-id"
                   name="employee_id"
-                  placeholder="เช่น EMP-6900"
+                  placeholder="เช่น 91 → ระบบเติมเป็น 00091 ให้"
+                  onblur="padEmployeeId(this)"
+                  inputmode="numeric"
+                  autocomplete="off"
                   required
                 />
               </div>
             </div>
             <div class="input-group">
-              <label>ฝ่าย</label>
+              <label for="reg-main-dept">ฝ่าย</label>
               <div class="input-wrapper">
                 <i class="fa-solid fa-building"></i>
-                <select
-                  id="reg-main-dept"
-                  class="reg-dept-select"
-                  onchange="updateRegSubDept()"
-                  required
-                >
+                <select id="reg-main-dept" class="reg-dept-select" onchange="updateRegSubDept()" required>
                   <option value="" disabled selected>-- เลือกฝ่าย --</option>
                 </select>
               </div>
             </div>
             <div class="input-group">
-              <label>แผนก</label>
+              <label for="reg-sub-dept">แผนก</label>
               <div class="input-wrapper">
                 <i class="fa-solid fa-sitemap"></i>
-                <select
-                  id="reg-sub-dept"
-                  class="reg-dept-select"
-                  onchange="updateRegSection()"
-                  required
-                >
+                <select id="reg-sub-dept" class="reg-dept-select" onchange="updateRegSection()" required>
                   <option value="" disabled selected>-- เลือกแผนก --</option>
                 </select>
               </div>
             </div>
-            <div class="input-group">
-              <label>หน่วยงาน</label>
+            <div class="input-group span-2">
+              <label for="reg-section">หน่วยงาน</label>
               <div class="input-wrapper">
                 <i class="fa-solid fa-users-rectangle"></i>
                 <select id="reg-section" class="reg-dept-select" required>
-                  <option value="" disabled selected>
-                    -- เลือกหน่วยงาน --
-                  </option>
+                  <option value="" disabled selected>-- เลือกหน่วยงาน --</option>
                 </select>
               </div>
             </div>
+          </div>
+
+          <div class="form-section">
+            <span class="sec-num">3</span><span class="sec-title">ช่องทางติดต่อ</span>
+          </div>
+          <div class="form-grid">
             <div class="input-group">
-              <label>เบอร์โทรศัพท์</label>
+              <label for="reg-phone">เบอร์โทรศัพท์</label>
               <div class="input-wrapper">
                 <i class="fa-solid fa-phone"></i>
-                <input
-                  type="tel"
-                  name="phone"
-                  placeholder="0XXXXXXXXX"
-                  required
-                />
+                <input type="tel" id="reg-phone" name="phone" placeholder="0XXXXXXXXX" inputmode="tel" autocomplete="tel" required />
               </div>
             </div>
             <div class="input-group">
-              <label>อีเมล (Email)</label>
+              <label for="reg-email">อีเมล</label>
               <div class="input-wrapper">
                 <i class="fa-solid fa-envelope"></i>
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="name@company.com"
-                  required
-                />
+                <input type="email" id="reg-email" name="email" placeholder="name@company.com" autocomplete="email" required />
               </div>
+              <small class="pw-hint">ใช้รับรหัสยืนยันเมื่อลืมรหัสผ่าน และอีเมลยืนยันการจอง</small>
             </div>
           </div>
 
-          <button
-            type="submit"
-            class="btn btn-success"
-            style="margin-top: 15px"
-          >
-            <i class="fa-solid fa-user-plus"></i> ส่งข้อมูลลงทะเบียนพนักงาน
+          <button type="submit" class="btn btn-success" style="margin-top: 18px">
+            <i class="fa-solid fa-user-plus"></i> สร้างบัญชี
           </button>
         </form>
-        <div class="auth-links center">
-          <a href="#" onclick="switchForm('login-form')"
-            ><i class="fa-solid fa-chevron-left"></i> กลับไปหน้าเข้าสู่ระบบ</a
-          >
-        </div>
+        <p class="switch-line">
+          มีบัญชีอยู่แล้ว?
+          <a href="#" onclick="switchForm('login-form'); return false;">เข้าสู่ระบบ</a>
+        </p>
       </div>
 
+      <!-- ===== ลืมรหัสผ่าน (3 ขั้น) ===== -->
       <div id="reset-form" class="auth-box" style="display: none">
         <h2>ลืมรหัสผ่าน?</h2>
-        <p class="subtitle">ยืนยันตัวตนแล้วตั้งรหัสผ่านใหม่ได้เลย</p>
+        <p class="subtitle" id="reset-subtitle">ยืนยันตัวตนก่อน แล้วตั้งรหัสผ่านใหม่ได้เลย</p>
 
-        <form id="reset-password-form">
-          <div class="input-group">
-            <label>ชื่อผู้ใช้งานยืนยันตัวตน</label>
-            <div class="input-wrapper">
-              <i class="fa-regular fa-user"></i>
-              <input type="text" name="username" placeholder="Dome" required />
+        <ol class="stepper" id="reset-stepper">
+          <li class="active" data-step="1"><span>1</span>ยืนยันตัวตน</li>
+          <li data-step="2" id="reset-step2-dot"><span>2</span>รหัสยืนยัน</li>
+          <li data-step="3"><span>3</span>รหัสใหม่</li>
+        </ol>
+
+        <form id="reset-password-form" autocomplete="on">
+          <!-- ขั้น 1 -->
+          <div class="reset-pane" data-pane="1">
+            <div class="input-group">
+              <label for="reset-username">ชื่อผู้ใช้งาน</label>
+              <div class="input-wrapper">
+                <i class="fa-regular fa-user"></i>
+                <input type="text" id="reset-username" name="username" placeholder="Username ของคุณ" autocomplete="username" autocapitalize="none" spellcheck="false" required />
+              </div>
             </div>
+            <div class="input-group">
+              <label for="reset-employee-id">รหัสพนักงาน</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-address-card"></i>
+                <input type="text" id="reset-employee-id" name="employee_id" placeholder="กรอกรหัสพนักงานของคุณ" onblur="padEmployeeId(this)" inputmode="numeric" autocomplete="off" required />
+              </div>
+            </div>
+            <button type="button" class="btn btn-warning" id="reset-start-btn">
+              ถัดไป <i class="fa-solid fa-arrow-right"></i>
+            </button>
           </div>
 
-          <div class="input-group">
-            <label>รหัสพนักงาน</label>
-            <div class="input-wrapper">
-              <i class="fa-solid fa-address-card"></i>
-              <input
-                type="text"
-                name="employee_id"
-                placeholder="กรอกรหัสพนักงานของคุณ"
-                required
-              />
+          <!-- ขั้น 2 (เฉพาะเมื่อระบบส่งอีเมลได้) -->
+          <div class="reset-pane" data-pane="2" style="display: none">
+            <p class="pane-note" id="reset-otp-note"></p>
+            <div class="input-group">
+              <label for="reset-otp">รหัสยืนยัน 6 หลัก</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-shield-halved"></i>
+                <input type="text" id="reset-otp" name="otp" class="otp-input" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="one-time-code" />
+              </div>
             </div>
+            <button type="button" class="btn btn-warning" id="reset-otp-next">
+              ถัดไป <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            <p class="resend-line"><a href="#" id="reset-resend">ส่งรหัสอีกครั้ง</a></p>
           </div>
 
-          <div class="input-group">
-            <label>รหัสผ่านใหม่</label>
-            <div class="input-wrapper">
-              <i class="fa-solid fa-key"></i>
-              <input
-                type="password"
-                name="new_password"
-                placeholder="ตั้งรหัสผ่านใหม่"
-                required
-              />
+          <!-- ขั้น 3 -->
+          <div class="reset-pane" data-pane="3" style="display: none">
+            <div class="input-group">
+              <label for="reset-new-password">รหัสผ่านใหม่</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-key"></i>
+                <input type="password" id="reset-new-password" name="new_password" placeholder="อย่างน้อย 6 ตัว" minlength="6" autocomplete="new-password" />
+                <button type="button" class="pw-toggle" data-target="reset-new-password" aria-label="แสดง/ซ่อนรหัสผ่าน">
+                  <i class="fa-regular fa-eye"></i>
+                </button>
+              </div>
+              <div class="pw-meter" id="reset-pw-meter" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
             </div>
+            <div class="input-group">
+              <label for="reset-new-password2">ยืนยันรหัสผ่านใหม่</label>
+              <div class="input-wrapper">
+                <i class="fa-solid fa-key"></i>
+                <input type="password" id="reset-new-password2" placeholder="พิมพ์อีกครั้ง" autocomplete="new-password" />
+              </div>
+              <small class="pw-hint" id="reset-pw2-hint"></small>
+            </div>
+            <button type="submit" class="btn btn-warning">บันทึกรหัสผ่านใหม่</button>
           </div>
-
-          <button type="submit" class="btn btn-warning">
-            บันทึกรหัสผ่านใหม่
-          </button>
         </form>
 
         <div class="auth-links center">
-          <a href="#" onclick="switchForm('login-form')">
+          <a href="#" onclick="switchForm('login-form'); resetForgotFlow(); return false;">
             <i class="fa-solid fa-chevron-left"></i> กลับไปหน้าเข้าสู่ระบบ
           </a>
         </div>
       </div>
     </div>
 
-    <script src="index.js"></script>
+    <script src="dept-data.js"></script>
+    <script src="index.js?v=3"></script>
+    <script src="pwa.js?v=2"></script>
   </body>
 </html>

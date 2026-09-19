@@ -3,6 +3,7 @@
 // เรียกตอนกดปุ่ม "เช็คอิน" บนหน้า checkin.php (หลังสแกน QR ที่รถ)
 require_once 'guard_user.php';
 require_once 'db_connect.php';
+require_once __DIR__ . '/geo_lib.php';
 header('Content-Type: application/json; charset=utf-8');
 
 $json = file_get_contents('php://input');
@@ -48,7 +49,11 @@ try {
         ':id'           => $booking['BookingID'],
     ]);
 
-    echo json_encode(['success' => true, 'message' => 'เช็คอินสำเร็จ รับรถได้เลยครับ']);
+    // GPS: บันทึกพิกัด + เทียบกับจุดบริษัท (ไม่บล็อก ถ้านอกจุด/ไม่มีพิกัด ติดธงให้แอดมิน)
+    $ev = geo_evaluate($data['geo'] ?? null);
+    geo_store($conn, (int)$booking['BookingID'], 'CheckIn', $ev);
+
+    echo json_encode(['success' => true, 'message' => 'เช็คอินสำเร็จ รับรถได้เลยครับ' . geo_user_note($ev, 'รับรถ'), 'geo' => $ev['geo']]);
 } catch (PDOException $e) {
     error_log('confirm_checkin error: ' . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'ระบบขัดข้อง']);

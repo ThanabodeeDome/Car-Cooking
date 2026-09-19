@@ -6,12 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>จองรถยนต์ - Corporate Car</title>
     <link rel="stylesheet" href="navbar.css" />
-    <link rel="stylesheet" href="booking.css" />
+    <link rel="stylesheet" href="booking.css?v=8" />
     <link
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;600&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="toast.css" />
+    <link rel="stylesheet" href="custom-datepicker.css" />
+    <link rel="stylesheet" href="custom-select.css" />
   </head>
 
   <body class="booking-page">
@@ -26,9 +28,7 @@
       </div>
       <ul class="nav-links" id="nav-list">
         <li><a href="homepage.html" class="Home-btn">หน้าหลัก</a></li>
-        <li><a href="booking.html" class="book-btn">จองรอบขับ</a></li>
-        <li><a href="car-status.html" class="Check-btn">เช็กคิว</a></li>
-        <li>
+        <li><a href="booking.html" class="book-btn">จองรอบขับ</a></li><li><a href="car-status.html" class="Check-btn">เช็กคิว</a></li>        <li>
           <a href="car-details.html" class="info-btn">รายละเอียดรถยนต์</a>
         </li>
         <li>
@@ -50,151 +50,185 @@
 
       <form id="car-form">
         <div id="checkout-fields">
-          <h2 class="form-title">บันทึกการยืมรถ (ขาออก)</h2>
+          <!-- 🌟 ปฏิทินเลือกรถ (แบบเดียวกับจองห้องประชุม) — mini calendar รายเดือน + เลือกรถ 1 คันทางซ้าย
+               ทางขวาโชว์ตารางว่างรายสัปดาห์ของคันที่เลือก แตะช่วงว่าง -> เปิด modal จองได้เลย -->
+          <div class="gantt-layout">
+            <div class="gantt-sidebar">
+              <div class="mini-cal">
+                <div class="mini-cal-header">
+                  <span id="mini-cal-month-label">-</span>
+                  <div class="mini-cal-nav">
+                    <button type="button" onclick="shiftMiniCalMonth(-1)">‹</button>
+                    <button type="button" onclick="shiftMiniCalMonth(1)">›</button>
+                  </div>
+                </div>
+                <div class="mini-cal-weekdays">
+                  <span>จ</span><span>อ</span><span>พ</span><span>พฤ</span><span>ศ</span><span>ส</span><span>อา</span>
+                </div>
+                <div class="mini-cal-grid" id="mini-cal-grid"></div>
+              </div>
 
-          <!-- 🌟 เพื่อนต้องการเอาแถบ stepper (1 2 3) ออก -->
-
-          <!-- 🌟 กรอกรหัสพนักงานผู้ขับ -> ชื่อขึ้นอัตโนมัติ (readonly)
-               ฝ่าย/แผนก/หน่วยงาน ดึงจาก DB ฝั่ง server ตอนบันทึกเอง ไม่ต้องเลือกในฟอร์มแล้ว -->
-          <div class="input-row-group">
-            <div class="field-group">
-              <label>รหัสพนักงาน (ผู้ขับ):</label>
-              <input
-                type="text"
-                id="employee-id"
-                class="form-control"
-                placeholder="กรอกรหัสพนักงาน"
-                onblur="lookupDriverName()"
-              />
-            </div>
-
-            <div class="field-group">
-              <label>ชื่อผู้ขับ:</label>
-              <input
-                type="text"
-                id="driver-name"
-                class="form-control"
-                placeholder="ชื่อจะขึ้นอัตโนมัติ"
-                readonly
-              />
-            </div>
-          </div>
-
-          <div class="field-group full-width" style="margin-top: 15px">
-            <label class="form-label">ผู้ร่วมเดินทาง (คนนั่ง):</label>
-            <div id="passenger-list">
-              <div
-                class="passenger-row input-row-group"
-                style="
-                  display: flex;
-                  gap: 10px;
-                  margin-bottom: 10px;
-                  align-items: center;
-                "
-              >
-                <input
-                  type="text"
-                  name="passenger_ids[]"
-                  class="form-control"
-                  placeholder="รหัสพนักงาน"
-                  maxlength="4"
-                  style="flex: 1"
-                  onblur="lookupPassengerName(this)"
-                />
-                <input
-                  type="text"
-                  name="passengers[]"
-                  class="form-control"
-                  placeholder="ชื่อ (auto)"
-                  style="flex: 2"
-                  readonly
-                />
-                <button
-                  type="button"
-                  class="btn-plus-style"
-                  onclick="addMorePassenger()"
-                >
-                  +
-                </button>
+              <div class="car-select-list">
+                <label class="form-label">เลือกรถ</label>
+                <div id="car-select-items"></div>
               </div>
             </div>
-          </div>
 
-          <div class="input-row-group">
-            <div class="field-group">
-              <label>ทะเบียนรถ</label>
-              <select
-                id="car-plate-select"
-                onchange="updateCarDetails(this.value)"
-              >
-                <option value="" disabled selected>เลือกทะเบียนรถ</option>
-              </select>
-              <img
-                id="car-preview-img"
-                src=""
-                alt=""
-                class="hidden"
-                style="
-                  width: 100%;
-                  max-width: 220px;
-                  margin-top: 10px;
-                  border-radius: 8px;
-                  display: block;
-                "
-              />
-            </div>
-            <div class="field-group">
-              <label>เลขไมล์เริ่มต้น</label>
-              <input type="number" id="start-mile" readonly />
-            </div>
-          </div>
+            <div class="gantt-main">
+              <div class="gantt-toolbar">
+                <button type="button" class="gantt-nav-btn" onclick="shiftGanttWeek(-1)">‹</button>
+                <div class="gantt-date-label" id="gantt-week-label">-</div>
+                <button type="button" class="gantt-nav-btn" onclick="shiftGanttWeek(1)">›</button>
+                <button type="button" class="gantt-today-btn" onclick="goToGanttToday()">วันนี้</button>
+              </div>
+              <div class="gantt-car-header" id="gantt-car-header">เลือกรถเพื่อดูตาราง</div>
+              <div class="gantt-legend">
+                <span><i class="lg-free"></i>ว่าง</span>
+                <span><i class="lg-busy"></i>ไม่ว่าง (จองแล้ว / กำลังใช้งาน)</span>
+                <span><i class="lg-past"></i>ผ่านไปแล้ว</span>
+              </div>
 
-          <div class="input-row-group" style="margin-top: 15px">
-            <div class="field-group">
-              <label>วันที่ใช้งาน:</label>
-              <input
-                type="date"
-                id="use-date"
-                class="form-control"
-                onchange="updateAvailableTimeSlots()"
-              />
-            </div>
-            <div class="field-group">
-              <label>ช่วงเวลา:</label>
-              <select id="time-slot" class="form-control">
-                <option value="" disabled selected>-- เลือกช่วงเวลา --</option>
-                <option value="เช้า">🌅 เช้า (08:00-12:00)</option>
-                <option value="บ่าย">☀️ บ่าย (13:00-17:00)</option>
-                <option value="ทั้งวัน">🌞 ทั้งวัน (08:00-17:00)</option>
-                <option value="กลางคืน">
-                  🌙 กลางคืน (17:00-08:00 วันถัดไป)
-                </option>
-              </select>
+              <!-- มือถือ: แถบวัน จ-อา เลือกทีละวัน + ลิสต์ 24 ชม. ของวันนั้น (แบบแอปจองห้องประชุม) -->
+              <div class="day-strip-m" id="day-strip-m"></div>
+              <div class="day-list-m" id="day-list-m"></div>
+
+              <!-- คอม: ตารางสัปดาห์ 7 วัน x 24 ชม. -->
+              <div class="gantt-scroll-wrap" id="gantt-scroll-wrap">
+                <div class="week-day-headers" id="week-day-headers"></div>
+                <div id="gantt-rows">
+                  <p class="gantt-loading">เลือกรถก่อน...</p>
+                </div>
+              </div>
+              <p class="gantt-hint">แตะช่วงสีเขียวเพื่อจอง หรือกดปุ่ม + มุมขวาล่าง</p>
             </div>
           </div>
 
-          <div class="field-group full-width">
-            <label>สถานที่ไป</label>
-            <input type="text" id="destination" />
-          </div>
+          <button type="button" class="fab-add" id="fab-add" onclick="openQuickBooking()" aria-label="จองรถ">+</button>
+        </div>
 
-          <button
-            type="button"
-            class="confirm-btn"
-            onclick="submitBooking()"
-            style="
-              width: 100%;
-              background: #ff4d4d;
-              color: white;
-              padding: 15px;
-              border-radius: 8px;
-              border: none;
-              margin-top: 20px;
-              cursor: pointer;
-            "
-          >
-            ยืนยันการยืมรถ
-          </button>
+        <!-- 🌟 Modal จองรถ — เปิดจากการแตะช่วงว่างในตาราง / ปุ่มจองกลางแถบล่าง (id ทุกช่องคงเดิมตาม booking.js) -->
+        <div id="booking-modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="bm-title">
+          <div class="modal-box bm">
+            <div class="bm-head">
+              <div class="bm-head-tx">
+                <h3 id="bm-title">จองรถ</h3>
+                <p>กรอกข้อมูลให้ครบ แล้วกดยืนยัน</p>
+              </div>
+              <button type="button" class="modal-close-btn" aria-label="ปิด" onclick="closeBookingModal()">&times;</button>
+            </div>
+
+            <div class="bm-body">
+              <!-- 1 ผู้ขับ: กรอกรหัสพนักงาน -> ชื่อขึ้นอัตโนมัติ (Enter = ค้นหาทันทีและเลื่อนช่องถัดไป) -->
+              <section class="bm-sec">
+                <h4 class="bm-sec-t"><span>1</span>ผู้ขับ</h4>
+                <div class="bm-row">
+                  <div class="bm-f">
+                    <label for="employee-id">รหัสพนักงาน</label>
+                    <input
+                      type="text"
+                      id="employee-id"
+                      class="form-control"
+                      placeholder="เช่น 02126"
+                      maxlength="5"
+                      inputmode="numeric"
+                      autocomplete="off"
+                      onblur="lookupDriverName()"
+                      onkeydown="if(event.key==='Enter'){ event.preventDefault(); lookupDriverName(); focusNextField(this); }"
+                    />
+                  </div>
+                  <div class="bm-f">
+                    <label for="driver-name">ชื่อผู้ขับ</label>
+                    <input type="text" id="driver-name" class="form-control" placeholder="ขึ้นอัตโนมัติ" readonly />
+                  </div>
+                </div>
+              </section>
+
+              <!-- 2 รถ -->
+              <section class="bm-sec">
+                <h4 class="bm-sec-t"><span>2</span>รถที่ใช้</h4>
+                <div class="bm-row">
+                  <div class="bm-f">
+                    <label for="car-plate-select">ทะเบียนรถ</label>
+                    <select id="car-plate-select" onchange="updateCarDetails(this.value)">
+                      <option value="" disabled selected>เลือกทะเบียนรถ</option>
+                    </select>
+                  </div>
+                  <div class="bm-f">
+                    <label for="start-mile">เลขไมล์เริ่มต้น</label>
+                    <input type="number" id="start-mile" readonly />
+                  </div>
+                </div>
+                <img id="car-preview-img" src="" alt="" class="hidden bm-car-img" />
+              </section>
+
+              <!-- 3 วัน-เวลา: เวลาไป/กลับ 24 ชม. ถ้าเวลากลับ <= เวลาไป ระบบนับว่าข้ามคืน -->
+              <section class="bm-sec">
+                <h4 class="bm-sec-t"><span>3</span>วันและเวลา</h4>
+                <div class="bm-f">
+                  <label for="use-date">วันที่ใช้งาน</label>
+                  <input type="date" id="use-date" class="form-control" onchange="updateAvailableTimeSlots()" />
+                </div>
+                <div class="bm-row" style="margin-top: 12px">
+                  <div class="bm-f">
+                    <label for="out-time-select">เวลาไป</label>
+                    <select id="out-time-select" class="form-control">
+                      <option value="" disabled selected>เลือกเวลา</option>
+                    </select>
+                  </div>
+                  <div class="bm-f">
+                    <label for="return-time-select">เวลากลับ (โดยประมาณ)</label>
+                    <select id="return-time-select" class="form-control">
+                      <option value="" disabled selected>เลือกเวลา</option>
+                    </select>
+                  </div>
+                </div>
+                <p id="overnight-hint" class="hidden bm-note">
+                  🌙 เวลากลับก่อนหรือเท่ากับเวลาไป ระบบจะนับว่าข้ามคืนไปจบเช้าวันถัดไป
+                </p>
+              </section>
+
+              <!-- 4 รายละเอียด -->
+              <section class="bm-sec">
+                <h4 class="bm-sec-t"><span>4</span>รายละเอียดการเดินทาง</h4>
+                <div class="bm-f">
+                  <label for="destination">สถานที่ไป</label>
+                  <input type="text" id="destination" placeholder="เช่น โรงงาน 2, ลูกค้า A" />
+                </div>
+
+                <div class="bm-f" style="margin-top: 12px">
+                  <label for="passenger-search">ผู้ร่วมเดินทาง (ไม่บังคับ)<span id="passenger-count-label"></span></label>
+                  <input
+                    type="text"
+                    id="passenger-search"
+                    class="form-control"
+                    placeholder="ค้นหาด้วยรหัสพนักงาน ชื่อ หรืออีเมล"
+                    autocomplete="off"
+                    oninput="onPassengerSearchInput(this.value)"
+                    onfocus="onPassengerSearchInput(this.value)"
+                    onblur="onPassengerSearchBlur()"
+                  />
+                  <div id="passenger-search-results" class="passenger-search-results hidden"></div>
+                  <div id="passenger-chips" class="passenger-chips"></div>
+                </div>
+
+                <div class="bm-f" style="margin-top: 12px">
+                  <label for="repeat-weeks">จองซ้ำทุกสัปดาห์ (วัน-เวลาเดิม)</label>
+                  <select id="repeat-weeks">
+                    <option value="0" selected>ไม่จองซ้ำ</option>
+                    <option value="1">อีก 1 สัปดาห์</option>
+                    <option value="2">อีก 2 สัปดาห์</option>
+                    <option value="3">อีก 3 สัปดาห์</option>
+                    <option value="4">อีก 4 สัปดาห์</option>
+                    <option value="8">อีก 8 สัปดาห์</option>
+                  </select>
+                </div>
+              </section>
+            </div>
+
+            <div class="bm-foot">
+              <button type="button" class="confirm-btn bm-submit" onclick="submitBooking()">ยืนยันการจอง</button>
+            </div>
+          </div>
         </div>
 
         <div id="return-fields" class="hidden">
@@ -215,10 +249,33 @@
               </select>
             </div>
             <div class="field-group">
-              <label>วันที่คืน</label><input type="date" id="return-date" />
+              <label>วันที่คืน</label>
+              <input
+                type="date"
+                id="return-date"
+                class="form-control"
+                style="
+                  min-width: 0;
+                  width: 100%;
+                  -webkit-appearance: none;
+                  appearance: none;
+                "
+              />
             </div>
             <div class="field-group">
-              <label>เวลาที่คืน</label><input type="time" id="return-time" />
+              <label>เวลาที่คืน</label>
+              <select
+                id="return-time"
+                class="form-control"
+                style="
+                  min-width: 0;
+                  width: 100%;
+                  -webkit-appearance: none;
+                  appearance: none;
+                "
+              >
+                <option value="" disabled selected>-- เลือกเวลาที่คืน --</option>
+              </select>
             </div>
             <div class="field-group full-width">
               <label>เลขไมล์ตอนคืน</label>
@@ -259,8 +316,14 @@
         </div>
       </form>
     </div>
-    <script src="toast.js"></script>
-    <script src="booking.js"></script>
+    <script src="toast.js?v=3"></script>
+    <script src="custom-datepicker.js"></script>
+    <script src="custom-select.js"></script>
+    <script src="booking.js?v=10"></script>
     <script src="main.js"></script>
+    <script src="app-nav.js?v=4"></script>
+    <script src="notify-bell.js?v=5"></script>
+      <script src="ui-dialog.js?v=1"></script>
+      <script src="pwa.js?v=2"></script>
   </body>
 </html>

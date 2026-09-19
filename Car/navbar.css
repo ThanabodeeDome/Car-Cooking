@@ -1,4 +1,9 @@
 @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;600&display=swap");
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
 /* =========================================
    1. โครงสร้างหลัก (Navbar Glassmorphism)
    ========================================= */
@@ -182,20 +187,23 @@
   .nav-links {
     position: fixed;
     top: 0;
-    right: -100%; /* ซ่อนไว้ */
+    right: 0;
     width: 70%;
     height: 100vh;
     background-color: #1a1a1a;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    transition: 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
     box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
     z-index: 1050;
+    transform: translateX(
+      100%
+    ); /* 🌟 ซ่อนไว้ด้วย transform แทน right ไม่ทำให้หน้าเว็บกว้างเกิน viewport */
   }
 
   .nav-links.active {
-    right: 0 !important;
+    transform: translateX(0) !important;
   }
 
   .nav-links li {

@@ -86,6 +86,7 @@ function fetchReports() {
       renderCarUsageReport(data.car_usage);
       renderRepairCostReport(data.repair_cost);
       renderCancellationReport(data.cancellations);
+      renderInsightsReport(data.insights);
     })
     .catch((err) => {
       console.error("Error loading reports:", err);
@@ -284,6 +285,43 @@ function renderCancellationReport(c) {
   });
 }
 
+// ---------- Export ALL (ปุ่มเดียว export ทุกหมวดรวมกัน เป็น Excel ไฟล์เดียวหลาย sheet) ----------
+function exportAllReports() {
+  if (typeof XLSX === "undefined") {
+    alert("โหลดตัว export ไม่สำเร็จ ลองรีเฟรชหน้าใหม่");
+    return;
+  }
+  const sheets = [
+    { id: "report-booking-table", name: "การจอง" },
+    { id: "report-car-usage-table", name: "การใช้รถ" },
+    { id: "report-repair-cost-table", name: "ค่าซ่อม" },
+    { id: "report-cancel-table", name: "การยกเลิก" },
+    { id: "report-util-table", name: "% ใช้งานต่อคัน" },
+    { id: "report-division-table", name: "ฝ่ายที่ใช้มากสุด" },
+  ];
+
+  const wb = XLSX.utils.book_new();
+  let addedAny = false;
+  sheets.forEach((s) => {
+    const table = document.getElementById(s.id);
+    if (!table) return;
+    const ws = XLSX.utils.table_to_sheet(table);
+    XLSX.utils.book_append_sheet(wb, ws, s.name);
+    addedAny = true;
+  });
+
+  if (!addedAny) {
+    alert("ไม่มีข้อมูลให้ export");
+    return;
+  }
+
+  const start = document.getElementById("report-start")?.value || "";
+  const end = document.getElementById("report-end")?.value || "";
+  const filename = `รายงานสรุปทั้งหมด_${start}_ถึง_${end}`.replace(/\//g, "-");
+  XLSX.writeFile(wb, `${filename}.xlsx`);
+}
+window.exportAllReports = exportAllReports;
+
 // ---------- Export Excel (ใช้ SheetJS อ่านตาราง HTML ตรงๆ) ----------
 function exportTableExcel(tableId, filename) {
   const table = document.getElementById(tableId);
@@ -310,3 +348,41 @@ window.addEventListener("afterprint", () => {
     .querySelectorAll(".print-target")
     .forEach((el) => el.classList.remove("print-target"));
 });
+
+// ---------- 5) สรุปเชิงลึก: % การใช้งานต่อคัน / ชั่วโมงเร่งด่วน / ฝ่ายที่ใช้มากสุด ----------
+let chartPeakHours = null;
+function renderInsightsReport(ins) {
+  if (!ins) return;
+  const util = document.getElementById("report-util-tbody");
+  if (util) {
+    util.innerHTML =
+      (ins.utilization || [])
+        .map((r) => `<tr><td>${escapeHtml(r.CarPlate)}</td><td>${r.hours}</td><td>${r.percent}%</td></tr>`)
+        .join("") || `<tr><td colspan="3" style="text-align:center;">ไม่มีข้อมูลในช่วงนี้</td></tr>`;
+  }
+  const div = document.getElementById("report-division-tbody");
+  if (div) {
+    div.innerHTML =
+      (ins.top_divisions || [])
+        .map((r) => `<tr><td>${escapeHtml(r.name)}</td><td>${r.cnt}</td></tr>`)
+        .join("") || `<tr><td colspan="2" style="text-align:center;">ไม่มีข้อมูลในช่วงนี้</td></tr>`;
+  }
+  const km = document.getElementById("report-km-total");
+  if (km) km.textContent = `ระยะทางรวมในช่วงนี้: ${Number(ins.km_total || 0).toLocaleString()} กม.`;
+
+  const ctx = document.getElementById("chart-peak-hours");
+  if (!ctx || typeof Chart === "undefined") return;
+  if (chartPeakHours) chartPeakHours.destroy();
+  chartPeakHours = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: (ins.peak_hours || []).map((_, h) => String(h).padStart(2, "0")),
+      datasets: [{ label: "จำนวนการจองที่คร่อมชั่วโมงนี้", data: ins.peak_hours || [], backgroundColor: "#f59e0b" }],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+    },
+  });
+}

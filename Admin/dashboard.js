@@ -30,6 +30,12 @@ function fetchDashboardStats() {
       setText("stat-booked", data.counts.booked);
       setText("stat-maintenance", data.counts.maintenance);
 
+      const fbGood = data.feedback?.good || 0;
+      const fbBad = data.feedback?.bad || 0;
+      const fbTotal = fbGood + fbBad;
+      setText("stat-feedback", fbTotal ? Math.round((fbGood / fbTotal) * 100) + "%" : "-");
+      setText("stat-feedback-count", fbTotal);
+
       renderFleetStatusList(data.cars);
       renderWeekTimeline(data.cars, data.week_start, data.week_bookings);
       renderRecentBookings(data.recent);

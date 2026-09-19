@@ -1,0 +1,180 @@
+/* ===== Custom Date Picker — Admin (โทนขาว ใช้ token จาก style.css) ===== */
+.cdp-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.cdp-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  background: var(--bg-input, #fff);
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: var(--text-primary, #1e293b);
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.cdp-display:hover {
+  border-color: var(--blue, #2563eb);
+}
+
+.cdp-wrap.open .cdp-display {
+  border-color: var(--blue, #2563eb);
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.15);
+}
+
+.cdp-display .cdp-placeholder {
+  color: #94a3b8;
+}
+
+.cdp-icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.6;
+  flex-shrink: 0;
+  margin-left: 8px;
+  color: var(--text-secondary, #64748b);
+}
+
+.cdp-panel {
+  position: fixed;
+  z-index: 9999;
+  width: 280px;
+  max-width: 90vw;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.25);
+  padding: 14px;
+  color: var(--text-primary, #1e293b);
+}
+
+.cdp-panel.hidden {
+  display: none;
+}
+
+.cdp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.cdp-month-label {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-primary, #1e293b);
+}
+
+.cdp-nav {
+  display: flex;
+  gap: 4px;
+}
+
+.cdp-nav button {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #64748b);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cdp-nav button:hover {
+  background: #f1f5f9;
+  color: var(--text-primary, #1e293b);
+}
+
+.cdp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+
+.cdp-dow {
+  font-size: 11px;
+  color: var(--text-secondary, #64748b);
+  padding: 4px 0 8px;
+  font-weight: 600;
+}
+
+.cdp-day {
+  position: relative;
+  padding: 0;
+  height: 32px;
+  line-height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary, #1e293b);
+  font-size: 13px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.cdp-day:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.cdp-day.cdp-muted {
+  color: #cbd5e1;
+}
+
+.cdp-day.cdp-today {
+  color: var(--blue, #2563eb);
+  font-weight: 700;
+}
+
+.cdp-day.cdp-selected {
+  background: var(--blue, #2563eb);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+}
+
+.cdp-day:disabled {
+  cursor: not-allowed;
+}
+
+.cdp-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eef2f7;
+}
+
+.cdp-footer button {
+  background: transparent;
+  border: none;
+  color: var(--blue, #2563eb);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.cdp-footer button:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .cdp-panel {
+    width: 100%;
+    left: 0;
+    right: 0;
+  }
+}

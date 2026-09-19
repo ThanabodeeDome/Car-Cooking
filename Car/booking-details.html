@@ -1,19 +1,27 @@
 <?php require_once 'guard_user.php'; ?>
 <!doctype html>
-<html lang="en">
+<html lang="th">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>จองรถยนต์ - Corporate Car</title>
+    <title>รายละเอียดการจอง - Corporate Car</title>
     <link rel="stylesheet" href="navbar.css" />
-    <link rel="stylesheet" href="booking-details.css" />
+    <link rel="stylesheet" href="toast.css" />
+    <link rel="stylesheet" href="booking-details.css?v=3" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
   </head>
 
   <body>
+    <!-- 🧭 Navigation Bar -->
     <nav class="nav-bar">
       <div class="logo">
         <img src="assets/image/CH2.png" alt="nav-logo" />
@@ -26,43 +34,143 @@
       </div>
 
       <ul class="nav-links" id="nav-list">
-        <li>
-          <a href="homepage.html" class="Home-btn">หน้าหลัก</a>
-        </li>
-        <li>
-          <a href="booking.html" class="book-btn">จองรอบขับ</a>
-        </li>
-        <li>
-          <a href="car-status.html" class="Check-btn">เช็กคิว</a>
-        </li>
-        <li>
-          <a href="car-details.html" class="info-btn">รายละเอียดรถยนต์</a>
-        </li>
-        <li>
-          <a href="booking-details.html" class="Rules-btn">รายละเอียดการจอง</a>
-        </li>
-        <li>
-          <a href="profile.html" class="contact-btn">ข้อมูลผู้ใช้</a>
-        </li>
+        <li><a href="homepage.html" class="Home-btn">หน้าหลัก</a></li>
+        <li><a href="booking.html" class="book-btn">จองรอบขับ</a></li><li><a href="car-status.html" class="Check-btn">เช็กคิว</a></li>
+        <li><a href="car-details.html" class="info-btn">รายละเอียดรถยนต์</a></li>
+        <li><a href="booking-details.html" class="Rules-btn active">รายละเอียดการจอง</a></li>
+        <li><a href="profile.html" class="contact-btn">ข้อมูลผู้ใช้</a></li>
       </ul>
     </nav>
 
-    <div class="search-bar-wrap">
-      <input
-        type="text"
-        id="booking-search"
-        class="search-input"
-        placeholder="ค้นหาด้วยทะเบียน, ชื่อผู้ขับ หรือวันที่..."
-        oninput="filterBookingSearch(this.value)"
-      />
+    <!-- 📋 Main Content Wrapper -->
+    <div class="booking-page-container">
+      <div class="booking-layout-wrapper">
+        
+
+        <!-- 📊 Quick Summary Metrics -->
+        <section class="metrics-row" aria-label="สรุปสถิติการจอง">
+          <div class="metric-card" onclick="filterByTab('all')">
+            <div class="metric-icon metric-icon-all">
+              <i class="fa-solid fa-receipt"></i>
+            </div>
+            <div class="metric-info">
+              <span class="metric-num" id="count-all">0</span>
+              <span class="metric-label">การจองทั้งหมด</span>
+            </div>
+          </div>
+
+          <div class="metric-card" onclick="filterByTab('active')">
+            <div class="metric-icon metric-icon-active">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+            <div class="metric-info">
+              <span class="metric-num" id="count-active">0</span>
+              <span class="metric-label">รอเช็คอิน / กำลังใช้งาน</span>
+            </div>
+          </div>
+
+          <div class="metric-card" onclick="filterByTab('returned')">
+            <div class="metric-icon metric-icon-returned">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div class="metric-info">
+              <span class="metric-num" id="count-returned">0</span>
+              <span class="metric-label">คืนรถเรียบร้อย</span>
+            </div>
+          </div>
+
+          <div class="metric-card" onclick="filterByTab('cancelled')">
+            <div class="metric-icon metric-icon-cancelled">
+              <i class="fa-solid fa-ban"></i>
+            </div>
+            <div class="metric-info">
+              <span class="metric-num" id="count-cancelled">0</span>
+              <span class="metric-label">ยกเลิกแล้ว</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 🔍 Controls Card: Search & Filter Tabs -->
+        <div class="controls-card">
+          <div class="search-input-wrapper">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input
+              type="text"
+              id="booking-search"
+              class="search-input"
+              placeholder="ค้นหาด้วยเลขที่จอง, ทะเบียนรถ, ชื่อผู้ขับ, จุดหมาย, หรือวันที่..."
+              oninput="filterBookingSearch(this.value)"
+            />
+            <button
+              type="button"
+              class="btn-clear-search"
+              id="clear-search-btn"
+              onclick="clearSearch()"
+              title="ล้างคำค้นหา"
+              style="display: none;"
+            >
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <div class="filter-tabs" id="filter-tabs">
+            <button
+              type="button"
+              class="tab-pill active"
+              data-filter="all"
+              onclick="filterByTab('all')"
+            >
+              <span>ทั้งหมด</span>
+              <span class="tab-badge" id="badge-all">0</span>
+            </button>
+            <button
+              type="button"
+              class="tab-pill"
+              data-filter="active"
+              onclick="filterByTab('active')"
+            >
+              <span>รอเช็คอิน / กำลังใช้งาน</span>
+              <span class="tab-badge" id="badge-active">0</span>
+            </button>
+            <button
+              type="button"
+              class="tab-pill"
+              data-filter="returned"
+              onclick="filterByTab('returned')"
+            >
+              <span>คืนรถแล้ว</span>
+              <span class="tab-badge" id="badge-returned">0</span>
+            </button>
+            <button
+              type="button"
+              class="tab-pill"
+              data-filter="cancelled"
+              onclick="filterByTab('cancelled')"
+            >
+              <span>ยกเลิก</span>
+              <span class="tab-badge" id="badge-cancelled">0</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 📜 Dynamic Booking Cards List -->
+        <main class="booking-list-wrapper" id="booking-list-wrapper">
+          <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>กำลังโหลดประวัติการจองของคุณ...</p>
+          </div>
+        </main>
+
+      </div>
     </div>
 
-    <div class="booking-list-wrapper" id="booking-list-wrapper">
-      <p style="color: #94a3b8; text-align: center; padding: 20px">
-        กำลังโหลดข้อมูล...
-      </p>
-    </div>
+    <!-- Scripts -->
+    <script src="toast.js?v=3"></script>
     <script src="main.js"></script>
-    <script src="booking-details.js"></script>
+    <script src="booking-details.js?v=3"></script>
+    <script src="app-nav.js?v=4"></script>
+    <script src="notify-bell.js?v=5"></script>
+      <script src="ui-dialog.js?v=1"></script>
+      <script src="pwa.js?v=2"></script>
   </body>
 </html>

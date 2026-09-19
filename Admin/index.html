@@ -1,4 +1,4 @@
-<?php require_once '../auth_check.php'; ?>
+<?php require_once 'guard_admin.php'; ?>
 <!doctype html>
 <html lang="th">
   <head>
@@ -14,6 +14,7 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
     <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="admin-datepicker.css" />
   </head>
   <body>
     <aside class="sidebar">
@@ -45,6 +46,9 @@
         >
         <a href="#" class="menu-link" onclick="switchTab('users-tab')"
           ><i class="fa-solid fa-users"></i> <span>บัญชีผู้ใช้</span></a
+        >
+        <a href="geo-setup.php" class="menu-link"
+          ><i class="fa-solid fa-location-crosshairs"></i> <span>จุดตรวจพิกัด</span></a
         >
         <a href="#" class="menu-link" onclick="switchTab('reports-tab')"
           ><i class="fa-solid fa-chart-column"></i> <span>รายงาน</span></a
@@ -105,6 +109,13 @@
             <div>
               <h3 id="stat-maintenance">0</h3>
               <p>งดให้บริการ / ซ่อม</p>
+            </div>
+          </div>
+          <div class="stat-card-v2 c-available">
+            <i class="fa-solid fa-thumbs-up"></i>
+            <div>
+              <h3 id="stat-feedback">-</h3>
+              <p>พึงพอใจระบบ (<span id="stat-feedback-count">0</span> โหวต)</p>
             </div>
           </div>
         </div>
@@ -429,6 +440,11 @@
             <button class="btn btn-primary" onclick="fetchReports()">
               <span>ค้นหา</span> <i class="fa-solid fa-magnifying-glass"></i>
             </button>
+            <!-- 🌟 รวมปุ่ม Export เดิม 8 ปุ่ม (Excel+PDF x 4 หมวด) เหลือปุ่มเดียว
+                 export_ทุกหมวดพร้อมกันเป็น Excel ไฟล์เดียว หลาย sheet -->
+            <button class="btn btn-primary" onclick="exportAllReports()" style="background: #10b981;">
+              <span>Export ทั้งหมด</span> <i class="fa-solid fa-file-export"></i>
+            </button>
           </div>
         </div>
 
@@ -446,22 +462,6 @@
           <div class="fx-card">
             <div class="fx-card-head">
               <h3><i class="fa-solid fa-chart-line"></i> แนวโน้มการจอง</h3>
-              <div class="fx-card-actions">
-                <button
-                  class="op-edit"
-                  onclick="
-                    exportTableExcel('report-booking-table', 'รายงานการจอง')
-                  "
-                >
-                  Excel
-                </button>
-                <button
-                  class="op-edit"
-                  onclick="printReportSection('report-booking-section')"
-                >
-                  PDF
-                </button>
-              </div>
             </div>
             <div class="chart-box"><canvas id="chart-bookings"></canvas></div>
           </div>
@@ -469,22 +469,6 @@
           <div class="fx-card">
             <div class="fx-card-head">
               <h3><i class="fa-solid fa-car"></i> การใช้รถ</h3>
-              <div class="fx-card-actions">
-                <button
-                  class="op-edit"
-                  onclick="
-                    exportTableExcel('report-car-usage-table', 'รายงานการใช้รถ')
-                  "
-                >
-                  Excel
-                </button>
-                <button
-                  class="op-edit"
-                  onclick="printReportSection('report-car-usage-section')"
-                >
-                  PDF
-                </button>
-              </div>
             </div>
             <div class="chart-box"><canvas id="chart-car-usage"></canvas></div>
           </div>
@@ -522,25 +506,6 @@
               <h3>
                 <i class="fa-solid fa-screwdriver-wrench"></i> ค่าซ่อมต่อคัน
               </h3>
-              <div class="fx-card-actions">
-                <button
-                  class="op-edit"
-                  onclick="
-                    exportTableExcel(
-                      'report-repair-cost-table',
-                      'รายงานค่าซ่อม',
-                    )
-                  "
-                >
-                  Excel
-                </button>
-                <button
-                  class="op-edit"
-                  onclick="printReportSection('report-repair-cost-section')"
-                >
-                  PDF
-                </button>
-              </div>
             </div>
             <div class="chart-box">
               <canvas id="chart-repair-cost"></canvas>
@@ -607,6 +572,29 @@
           </div>
         </div>
 
+        <!-- 5. สรุปเชิงลึก -->
+        <div class="dash-panel" id="report-insights-section">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px">
+            <h2 class="panel-title"><i class="fa-solid fa-chart-pie"></i> สรุปเชิงลึก</h2>
+          </div>
+          <p id="report-km-total" style="margin: 10px 0; font-weight: 600"></p>
+          <h3 style="margin: 14px 0 6px; font-size: 15px">ชั่วโมงเร่งด่วน (ช่วงเวลาที่มีการจองมากสุด)</h3>
+          <canvas id="chart-peak-hours" height="90"></canvas>
+          <h3 style="margin: 18px 0 6px; font-size: 15px">% การใช้งานต่อคัน (ชั่วโมงที่จอง ÷ 24 ชม. × จำนวนวัน)</h3>
+          <div class="table-scroll-container">
+            <table class="car-data-table" id="report-util-table">
+              <thead><tr><th>ทะเบียนรถ</th><th>ชั่วโมงที่ถูกจอง</th><th>% การใช้งาน</th></tr></thead>
+              <tbody id="report-util-tbody"></tbody>
+            </table>
+          </div>
+          <h3 style="margin: 18px 0 6px; font-size: 15px">ฝ่ายที่ใช้รถมากสุด</h3>
+          <div class="table-scroll-container">
+            <table class="car-data-table" id="report-division-table">
+              <thead><tr><th>ฝ่าย</th><th>จำนวนครั้ง</th></tr></thead>
+              <tbody id="report-division-tbody"></tbody>
+            </table>
+          </div>
+        </div>
         <!-- 4. การยกเลิก -->
         <div class="dash-panel" id="report-cancel-section">
           <div
@@ -621,22 +609,6 @@
             <h2 class="panel-title">
               <i class="fa-solid fa-ban"></i> รายงานการยกเลิก
             </h2>
-            <div class="action-buttons-group" style="width: auto">
-              <button
-                class="op-edit"
-                onclick="
-                  exportTableExcel('report-cancel-table', 'รายงานการยกเลิก')
-                "
-              >
-                Excel
-              </button>
-              <button
-                class="op-edit"
-                onclick="printReportSection('report-cancel-section')"
-              >
-                PDF
-              </button>
-            </div>
           </div>
           <p
             id="report-cancel-summary"
@@ -650,6 +622,7 @@
                   <th>ทะเบียนรถ</th>
                   <th>ผู้จอง</th>
                   <th>สถานะ</th>
+                  <th>จัดการ</th>
                 </tr>
               </thead>
               <tbody id="report-cancel-tbody"></tbody>
@@ -667,8 +640,10 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="../Car/ui-dialog.js?v=1"></script>
     <script src="dashboard.js"></script>
     <script src="reports.js"></script>
-    <script src="app.js"></script>
+    <script src="admin-datepicker.js"></script>
+    <script src="app.js?v=3"></script>
   </body>
 </html>

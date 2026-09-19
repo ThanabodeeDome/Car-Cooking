@@ -76,6 +76,44 @@ try {
     $cancelledCount = count($cancelList);
     $rate = $totalBookings > 0 ? round($cancelledCount / $totalBookings * 100, 1) : 0;
 
+    // ---------- 5) สรุปเชิงลึก: % การใช้งานต่อคัน / ชั่วโมงเร่งด่วน / ฝ่ายที่ใช้มากสุด / ระยะทางรวม ----------
+    $insights = ['utilization' => [], 'peak_hours' => array_fill(0, 24, 0), 'top_divisions' => [], 'km_total' => 0];
+    try {
+        $stmt = $conn->prepare(
+            "SELECT CarPlate, CONVERT(varchar(10), BookingDate, 23) AS BookingDate, OutTime,
+                    CONVERT(varchar(5), PlannedReturnTime, 108) AS PlannedReturnTime,
+                    Department, StartMileage, EndMileage, BookingStatus
+             FROM CarBookings
+             WHERE BookingDate >= :start AND BookingDate < :endEx AND BookingStatus NOT LIKE N'ยกเลิก%'"
+        );
+        $stmt->execute([':start' => $start, ':endEx' => $endEx]);
+        $days = max(1, (int) round((strtotime($end) - strtotime($start)) / 86400) + 1);
+        $hoursByCar = [];
+        $divs = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $out = substr((string) $r['OutTime'], 0, 5);
+            $ret = substr((string) $r['PlannedReturnTime'], 0, 5);
+            if ($out !== '' && $ret !== '' && strpos($out, ':') !== false) {
+                $m1 = (int) substr($out, 0, 2) * 60 + (int) substr($out, 3, 2);
+                $m2 = (int) substr($ret, 0, 2) * 60 + (int) substr($ret, 3, 2);
+                if ($m2 <= $m1) $m2 += 1440; // ข้ามคืน
+                $hoursByCar[$r['CarPlate']] = ($hoursByCar[$r['CarPlate']] ?? 0) + ($m2 - $m1) / 60;
+                for ($m = intdiv($m1, 60) * 60; $m < $m2; $m += 60) $insights['peak_hours'][intdiv($m, 60) % 24]++;
+            }
+            $div = trim(explode('/', (string) $r['Department'])[0]);
+            if ($div !== '') $divs[$div] = ($divs[$div] ?? 0) + 1;
+            $km = (int) $r['EndMileage'] - (int) $r['StartMileage'];
+            if ($r['BookingStatus'] === 'คืนแล้ว' && $km > 0 && $km <= 1500) $insights['km_total'] += $km; // ตัดค่าเพี้ยนออก
+        }
+        arsort($hoursByCar);
+        foreach ($hoursByCar as $plate => $h) {
+            $insights['utilization'][] = ['CarPlate' => $plate, 'hours' => round($h, 1), 'percent' => round($h / ($days * 24) * 100, 1)];
+        }
+        arsort($divs);
+        foreach (array_slice($divs, 0, 8, true) as $name => $cnt) $insights['top_divisions'][] = ['name' => $name, 'cnt' => $cnt];
+    } catch (Throwable $e) {
+        error_log('get_reports_data insights: ' . $e->getMessage());
+    }
     echo json_encode([
         "success" => true,
         "bookings" => [
@@ -83,6 +121,7 @@ try {
             "by_day"    => $bookingByDay,
         ],
         "car_usage" => $carUsage,
+        "insights" => $insights,
         "repair_cost" => $repairCost,
         "cancellations" => [
             "list"            => $cancelList,

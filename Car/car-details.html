@@ -6,9 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>รายละเอียดรถยนต์ - Corporate Car</title>
     <link rel="stylesheet" href="navbar.css" />
+    <link rel="stylesheet" href="toast.css" />
     <link rel="stylesheet" href="car-details.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link
@@ -16,7 +19,8 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
   </head>
-  <body class="booking-page">
+  <body>
+    <!-- 🧭 Main Navigation Bar -->
     <nav class="nav-bar">
       <div class="logo">
         <img src="assets/image/CH2.png" alt="nav-logo" />
@@ -29,39 +33,143 @@
       </div>
 
       <ul class="nav-links" id="nav-list">
-        <li>
-          <a href="homepage.html" class="Home-btn">หน้าหลัก</a>
-        </li>
-        <li>
-          <a href="booking.html" class="book-btn">จองรอบขับ</a>
-        </li>
-        <li>
-          <a href="car-status.html" class="Check-btn">เช็กคิว</a>
-        </li>
-        <li>
-          <a href="car-details.html" class="info-btn">รายละเอียดรถยนต์</a>
-        </li>
-        <li>
-          <a href="booking-details.html" class="Rules-btn">รายละเอียดการจอง</a>
-        </li>
-        <li>
-          <a href="profile.html" class="contact-btn">ข้อมูลผู้ใช้</a>
-        </li>
+        <li><a href="homepage.html" class="Home-btn">หน้าหลัก</a></li>
+        <li><a href="booking.html" class="book-btn">จองรอบขับ</a></li><li><a href="car-status.html" class="Check-btn">เช็กคิว</a></li>
+        <li><a href="car-details.html" class="info-btn active">รายละเอียดรถยนต์</a></li>
+        <li><a href="booking-details.html" class="Rules-btn">รายละเอียดการจอง</a></li>
+        <li><a href="profile.html" class="contact-btn">ข้อมูลผู้ใช้</a></li>
       </ul>
     </nav>
 
-    <div class="status-container">
-      <div class="content-wrapper">
-        <h2 class="section-title">ข้อมูลรถยนต์ในระบบ</h2>
+    <!-- 🚗 Car Details Page Wrapper -->
+    <div class="car-page-container">
+      <div class="car-layout-wrapper">
+        
 
-        <div id="car-list-display" class="car-grid-vertical">
-          <p style="color: #666; text-align: center">
-            กำลังโหลดข้อมูลรถยนต์...
-          </p>
+        <!-- 📊 Fleet Overview Metrics -->
+        <section class="metrics-row" aria-label="สรุปสถานะรถยนต์">
+          <div class="metric-card" onclick="filterCarsByTab('all')">
+            <div class="metric-icon metric-icon-all">
+              <i class="fa-solid fa-warehouse"></i>
+            </div>
+            <div class="metric-info">
+              <span class="metric-num" id="car-count-all">0</span>
+              <span class="metric-label">รถทั้งหมดในระบบ</span>
+            </div>
+          </div>
+
+          <div class="metric-card" onclick="filterCarsByTab('available')">
+            <div class="metric-icon metric-icon-available">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <div class="metric-info">
+              <span class="metric-num" id="car-count-available">0</span>
+              <span class="metric-label">ว่างพร้อมใช้งาน</span>
+            </div>
+          </div>
+
+          <div class="metric-card" onclick="filterCarsByTab('inuse')">
+            <div class="metric-icon metric-icon-inuse">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+            <div class="metric-info">
+              <span class="metric-num" id="car-count-inuse">0</span>
+              <span class="metric-label">ติดจอง / กำลังใช้งาน</span>
+            </div>
+          </div>
+
+          <div class="metric-card" onclick="filterCarsByTab('maintenance')">
+            <div class="metric-icon metric-icon-maintenance">
+              <i class="fa-solid fa-screwdriver-wrench"></i>
+            </div>
+            <div class="metric-info">
+              <span class="metric-num" id="car-count-maintenance">0</span>
+              <span class="metric-label">งดบริการ / ซ่อมบำรุง</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 🔍 Controls Card: Search & Tabs -->
+        <div class="controls-card">
+          <div class="search-input-wrapper">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input
+              type="text"
+              id="car-search"
+              class="search-input"
+              placeholder="ค้นหาด้วยยี่ห้อ, รุ่นรถ, ทะเบียน, สี..."
+              oninput="filterCarSearch(this.value)"
+            />
+            <button
+              type="button"
+              class="btn-clear-search"
+              id="clear-search-btn"
+              onclick="clearCarSearch()"
+              title="ล้างคำค้นหา"
+              style="display: none;"
+            >
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+
+          <div class="filter-tabs" id="car-filter-tabs">
+            <button
+              type="button"
+              class="tab-pill active"
+              data-filter="all"
+              onclick="filterCarsByTab('all')"
+            >
+              <span>ทั้งหมด</span>
+              <span class="tab-badge" id="tab-badge-all">0</span>
+            </button>
+            <button
+              type="button"
+              class="tab-pill"
+              data-filter="available"
+              onclick="filterCarsByTab('available')"
+            >
+              <span>ว่างพร้อมใช้</span>
+              <span class="tab-badge" id="tab-badge-available">0</span>
+            </button>
+            <button
+              type="button"
+              class="tab-pill"
+              data-filter="inuse"
+              onclick="filterCarsByTab('inuse')"
+            >
+              <span>ติดจอง / ใช้งาน</span>
+              <span class="tab-badge" id="tab-badge-inuse">0</span>
+            </button>
+            <button
+              type="button"
+              class="tab-pill"
+              data-filter="maintenance"
+              onclick="filterCarsByTab('maintenance')"
+            >
+              <span>งดบริการ</span>
+              <span class="tab-badge" id="tab-badge-maintenance">0</span>
+            </button>
+          </div>
         </div>
+
+        <!-- 🚘 Car List Display -->
+        <main id="car-list-display" class="car-fleet-grid">
+          <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>กำลังโหลดข้อมูลรถยนต์ในระบบ...</p>
+          </div>
+        </main>
+
       </div>
     </div>
+
+    <!-- Scripts -->
+    <script src="toast.js?v=3"></script>
     <script src="main.js"></script>
-    <script src="car-details.js"></script>
+    <script src="car-details.js?v=2"></script>
+    <script src="app-nav.js?v=4"></script>
+    <script src="notify-bell.js?v=5"></script>
+      <script src="ui-dialog.js?v=1"></script>
+      <script src="pwa.js?v=2"></script>
   </body>
 </html>

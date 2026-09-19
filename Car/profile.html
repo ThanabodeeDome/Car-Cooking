@@ -6,9 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ข้อมูลผู้ใช้ - Corporate Car</title>
     <link rel="stylesheet" href="navbar.css" />
+    <link rel="stylesheet" href="toast.css" />
     <link rel="stylesheet" href="profile.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link
@@ -17,6 +20,7 @@
     />
   </head>
   <body>
+    <!-- 🧭 Main Navigation Bar -->
     <nav class="nav-bar">
       <div class="logo">
         <img src="assets/image/CH2.png" alt="nav-logo" />
@@ -30,112 +34,334 @@
 
       <ul class="nav-links" id="nav-list">
         <li><a href="homepage.html" class="Home-btn">หน้าหลัก</a></li>
-        <li><a href="booking.html" class="book-btn">จองรอบขับ</a></li>
-        <li><a href="car-status.html" class="Check-btn">เช็กคิว</a></li>
-        <li>
-          <a href="car-details.html" class="info-btn">รายละเอียดรถยนต์</a>
-        </li>
-        <li>
-          <a href="booking-details.html" class="Rules-btn">รายละเอียดการจอง</a>
-        </li>
-        <li><a href="profile.html" class="contact-btn">ข้อมูลผู้ใช้</a></li>
+        <li><a href="booking.html" class="book-btn">จองรอบขับ</a></li><li><a href="car-status.html" class="Check-btn">เช็กคิว</a></li>
+        <li><a href="car-details.html" class="info-btn">รายละเอียดรถยนต์</a></li>
+        <li><a href="booking-details.html" class="Rules-btn">รายละเอียดการจอง</a></li>
+        <li><a href="profile.html" class="contact-btn active">ข้อมูลผู้ใช้</a></li>
       </ul>
     </nav>
 
-    <div class="status-container">
-      <div class="content-wrapper">
-        <h2 class="section-title">ข้อมูลส่วนตัวพนักงาน</h2>
+    <!-- 👤 Profile Page Wrapper -->
+    <div class="profile-page-container">
+      <div class="profile-layout-wrapper">
+        
 
-        <div class="profile-card">
-          <div class="profile-header">
-            <div class="avatar-container">
-              <!-- แนะนำให้ใช้รูปจริงถ้ามี หากไม่มี default-avatar.png จะดูโล่งหน่อย -->
-              <img
-                src="assets/image/default-avatar.png"
-                id="user-avatar"
-                alt="Profile"
-              />
-              <label
-                for="upload-photo"
-                class="edit-avatar"
-                title="เปลี่ยนรูปโปรไฟล์"
-              >
-                <i class="fa-solid fa-camera"></i>
-              </label>
-              <input type="file" id="upload-photo" hidden />
+        <!-- 🧩 2-Column Responsive Grid -->
+        <div class="profile-grid">
+          
+          <!-- =========================================
+               LEFT COLUMN: Profile Identity & Quick Stats
+               ========================================= -->
+          <aside class="profile-sidebar">
+            
+            <!-- 📇 Identity Card -->
+            <div class="profile-card identity-card">
+              <!-- Banner Cover -->
+              <div class="profile-cover">
+                <div class="cover-overlay"></div>
+                <div class="cover-mesh"></div>
+              </div>
+
+              <!-- Content Inside Identity Card -->
+              <div class="profile-identity-content">
+                <!-- Avatar -->
+                <div class="avatar-wrapper">
+                  <div class="avatar-ring">
+                    <img
+                      src="assets/image/default-avatar.png"
+                      id="user-avatar"
+                      alt="Profile Avatar"
+                    />
+                  </div>
+                  <span class="online-indicator" title="เข้าสู่ระบบอยู่"></span>
+                  <label
+                    for="upload-photo"
+                    class="avatar-upload-btn"
+                    title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์"
+                  >
+                    <i class="fa-solid fa-camera"></i>
+                  </label>
+                  <input type="file" id="upload-photo" accept="image/*" hidden />
+                </div>
+
+                <h2 id="display-name" class="user-name">กำลังโหลด...</h2>
+                
+                <div class="user-role-badge">
+                  <i class="fa-solid fa-id-badge"></i>
+                  <span id="display-role">กำลังโหลดสังกัด...</span>
+                </div>
+
+                <!-- 📊 Stats Row -->
+                <div class="stats-container">
+                  <div class="stat-item">
+                    <div class="stat-icon-wrap stat-total-icon">
+                      <i class="fa-solid fa-car"></i>
+                    </div>
+                    <div class="stat-details">
+                      <span class="stat-number" id="stat-total">0</span>
+                      <span class="stat-text">การจองทั้งหมด</span>
+                    </div>
+                  </div>
+
+                  <div class="stat-item">
+                    <div class="stat-icon-wrap stat-done-icon">
+                      <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <div class="stat-details">
+                      <span class="stat-number" id="stat-complete">0</span>
+                      <span class="stat-text">เสร็จสิ้นแล้ว</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ⚡ Quick Sidebar Links -->
+                <div class="sidebar-actions">
+                  <a href="booking-details.html" class="btn-sidebar-history">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>ดูประวัติการจองของฉัน</span>
+                  </a>
+                  <button type="button" class="btn-sidebar-logout" onclick="logout()">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    <span>ออกจากระบบ</span>
+                  </button>
+                </div>
+              </div>
             </div>
-            <h3 id="display-name">สมชาย สายลุย</h3>
-            <p id="display-role">พนักงานขับรถ / หน่วยงาน A</p>
-          </div>
 
-          <div class="profile-body">
-            <div class="info-grid">
-              <div class="info-item">
-                <label><i class="fa-solid fa-id-badge"></i> รหัสพนักงาน</label>
-                <input type="text" id="emp-id" value="0000" readonly />
+            <!-- 💡 System Tip Card -->
+            <div class="profile-card tip-card">
+              <div class="tip-icon">
+                <i class="fa-solid fa-lightbulb"></i>
               </div>
-              <div class="info-item">
-                <label><i class="fa-solid fa-envelope"></i> อีเมล</label>
-                <input
-                  type="email"
-                  id="emp-email"
-                  value="somchai@company.com"
-                  readonly
-                />
-              </div>
-              <div class="info-item">
-                <label><i class="fa-solid fa-phone"></i> เบอร์โทรศัพท์</label>
-                <input
-                  type="text"
-                  id="emp-phone"
-                  value="081-234-5678"
-                  readonly
-                />
-              </div>
-              <div class="info-item">
-                <label><i class="fa-solid fa-sitemap"></i> ฝ่าย</label>
-                <input type="text" id="emp-division" value="" readonly />
-              </div>
-              <div class="info-item">
-                <label><i class="fa-solid fa-building"></i> แผนก</label>
-                <input type="text" id="emp-dept" value="" readonly />
-              </div>
-              <div class="info-item">
-                <label><i class="fa-solid fa-users"></i> หน่วยงาน</label>
-                <input type="text" id="emp-unit" value="" readonly />
+              <div class="tip-text">
+                <h4>คำแนะนำระบบ</h4>
+                <p>กรุณาตรวจสอบเบอร์โทรศัพท์และฝ่าย/แผนกให้ถูกต้องเสมอ เพื่อความสะดวกรวดเร็วในการประสานงานคืนรถและอนุมัติการเดินทาง</p>
               </div>
             </div>
 
-            <div class="profile-stats">
-              <div class="stat-box">
-                <span class="stat-num" id="stat-total">12</span>
-                <span class="stat-label">จองทั้งหมด</span>
+          </aside>
+
+          <!-- =========================================
+               RIGHT COLUMN: Detailed Info & Security
+               ========================================= -->
+          <main class="profile-main-area">
+            
+            <!-- 🏢 Card 1: Personal & Organization Information -->
+            <div class="profile-card" id="personal-info-card">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <div class="card-title-icon">
+                    <i class="fa-solid fa-address-card"></i>
+                  </div>
+                  <div>
+                    <h3 class="card-title">ข้อมูลพนักงานและสังกัด</h3>
+                    <p class="card-subtitle">ข้อมูลส่วนตัวและหน่วยงานสังกัดที่ผูกกับบัญชีการจองรถ</p>
+                  </div>
+                </div>
+
+                <div class="card-header-actions">
+                  <button
+                    type="button"
+                    class="btn-edit-toggle"
+                    id="edit-toggle-btn"
+                    onclick="toggleEditMode()"
+                  >
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>แก้ไขข้อมูล</span>
+                  </button>
+                </div>
               </div>
-              <div class="stat-box">
-                <span class="stat-num" id="stat-complete">10</span>
-                <span class="stat-label">เสร็จสิ้น</span>
+
+              <!-- ⚠️ Edit Mode Alert Banner (Toggled in JS) -->
+              <div class="edit-mode-banner" id="edit-banner" style="display: none;">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <div>
+                  <strong>กำลังอยู่ในโหมดแก้ไขข้อมูล</strong>
+                  <span>ท่านสามารถแก้ไขอีเมล เบอร์โทรศัพท์ และสังกัดได้ จากนั้นกดบันทึก</span>
+                </div>
+              </div>
+
+              <div class="card-body">
+                <!-- Group 1: Identity & Contact -->
+                <div class="form-group-section">
+                  <h4 class="form-section-title">
+                    <i class="fa-solid fa-id-card-clip"></i>
+                    <span>ข้อมูลประจำตัวและการติดต่อ</span>
+                  </h4>
+                  <div class="fields-grid">
+                    <div class="field-item">
+                      <div class="field-label-row">
+                        <label for="emp-id">รหัสพนักงาน</label>
+                        <span class="badge-locked" title="รหัสพนักงานถูกผูกกับระบบกลาง ไม่สามารถแก้ไขเองได้">
+                          <i class="fa-solid fa-lock"></i> ล็อคระบบ
+                        </span>
+                      </div>
+                      <div class="input-icon-wrapper">
+                        <i class="fa-solid fa-id-badge input-icon"></i>
+                        <input
+                          type="text"
+                          id="emp-id"
+                          value="-"
+                          readonly
+                          class="readonly-locked"
+                          title="รหัสพนักงานไม่สามารถแก้ไขได้"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="field-item">
+                      <div class="field-label-row">
+                        <label for="emp-email">อีเมล</label>
+                      </div>
+                      <div class="input-icon-wrapper">
+                        <i class="fa-solid fa-envelope input-icon"></i>
+                        <input
+                          type="email"
+                          id="emp-email"
+                          value=""
+                          placeholder="example@company.com"
+                          readonly
+                        />
+                      </div>
+                    </div>
+
+                    <div class="field-item field-full">
+                      <div class="field-label-row">
+                        <label for="emp-phone">เบอร์โทรศัพท์</label>
+                      </div>
+                      <div class="input-icon-wrapper">
+                        <i class="fa-solid fa-phone input-icon"></i>
+                        <input
+                          type="tel"
+                          id="emp-phone"
+                          value=""
+                          placeholder="เช่น 081-234-5678"
+                          readonly
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Group 2: Department & Hierarchy -->
+                <div class="form-group-section">
+                  <h4 class="form-section-title">
+                    <i class="fa-solid fa-sitemap"></i>
+                    <span>สังกัดและหน่วยงานในองค์กร</span>
+                  </h4>
+                  <div class="fields-grid">
+                    <div class="field-item">
+                      <div class="field-label-row">
+                        <label for="emp-division">ฝ่าย</label>
+                      </div>
+                      <div class="select-icon-wrapper">
+                        <i class="fa-solid fa-network-wired select-icon"></i>
+                        <select id="emp-division" disabled onchange="onEditDivisionChange()">
+                          <option value="" disabled selected>-- เลือกฝ่าย --</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="field-item">
+                      <div class="field-label-row">
+                        <label for="emp-dept">แผนก</label>
+                      </div>
+                      <div class="select-icon-wrapper">
+                        <i class="fa-solid fa-building select-icon"></i>
+                        <select id="emp-dept" disabled onchange="onEditDeptChange()">
+                          <option value="" disabled selected>-- เลือกแผนก --</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="field-item field-full">
+                      <div class="field-label-row">
+                        <label for="emp-unit">หน่วยงาน</label>
+                      </div>
+                      <div class="select-icon-wrapper">
+                        <i class="fa-solid fa-users-rectangle select-icon"></i>
+                        <select id="emp-unit" disabled>
+                          <option value="" disabled selected>-- เลือกหน่วยงาน --</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 💾 Card Actions Footer (Visible only in Edit Mode) -->
+              <div class="card-footer-actions" id="edit-actions-footer" style="display: none;">
+                <button
+                  type="button"
+                  class="btn-action-cancel"
+                  id="cancel-edit-btn"
+                  onclick="cancelEditMode()"
+                >
+                  <i class="fa-solid fa-xmark"></i>
+                  <span>ยกเลิก</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn-action-save"
+                  id="save-profile-btn"
+                  onclick="saveProfile()"
+                >
+                  <i class="fa-solid fa-floppy-disk"></i>
+                  <span>บันทึกการเปลี่ยนแปลง</span>
+                </button>
               </div>
             </div>
-          </div>
 
-          <!-- ปุ่มถูกย้ายออกมานอก profile-body เล็กน้อยตาม CSS ใหม่ -->
-          <div class="profile-footer">
-            <button
-              class="btn-save"
-              id="edit-toggle-btn"
-              onclick="toggleEditMode()"
-            >
-              <i class="fa-solid fa-pen"></i> แก้ไขข้อมูล
-            </button>
-            <button class="btn-logout" onclick="logout()">
-              <i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ
-            </button>
-          </div>
+
+            <!-- 📅 Card: ปฏิทินในมือถือ -->
+            <div class="profile-card" id="calendar-card">
+              <div class="card-header">
+                <div class="card-title-group">
+                  <div>
+                    <h3 class="card-title">เพิ่มการจองลงปฏิทินมือถือ</h3>
+                    <p class="card-subtitle">
+                      ตั้งครั้งเดียว การจองของคุณจะขึ้นในปฏิทินพร้อมเตือนก่อนถึงเวลา 60 และ 15 นาที ไม่ต้องเปิดแอปบ่อยๆ
+                      ยกเลิกหรือเปลี่ยนเวลาแล้วปฏิทินอัปเดตตามเอง
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div id="cal-body" style="display: flex; flex-direction: column; gap: 10px; padding: 0 20px 20px">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap">
+                  <a id="cal-ios" href="#" class="cal-btn cal-primary">iPhone / Mac: เพิ่มเลย</a>
+                  <button type="button" id="cal-copy" class="cal-btn">คัดลอกลิงก์ปฏิทิน</button>
+                </div>
+                <p class="cal-help">
+                  <b>Android (Google Calendar):</b> คัดลอกลิงก์ แล้วเปิด
+                  <a href="https://calendar.google.com/calendar/u/0/r/settings/addbyurl" target="_blank" rel="noopener">Google Calendar บนเว็บ</a>
+                  → เมนู "เพิ่มปฏิทินอื่นๆ" → "จาก URL" วางลิงก์ แล้วกดเพิ่ม (ปฏิทินจะซิงค์ลงมือถือเอง อาจใช้เวลาสักพัก)
+                </p>
+                <p class="cal-help">ลิงก์นี้เป็นของคุณคนเดียว อย่าส่งให้คนอื่น</p>
+              </div>
+            </div>
+
+            <style>
+              #calendar-card .cal-btn{font:inherit;font-size:14px;padding:11px 16px;border-radius:12px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#e5e7eb;cursor:pointer;text-decoration:none;display:inline-block}
+              #calendar-card .cal-btn:hover{border-color:#ff6b6b}
+              #calendar-card .cal-primary{background:#ff4d4d;border-color:transparent;color:#fff;font-weight:600}
+              #calendar-card .cal-help{margin:0;font-size:12.5px;line-height:1.6;color:#9ea3b3}
+              #calendar-card .cal-help a{color:#7cc4ff}
+            </style>
+          </main>
         </div>
+
       </div>
     </div>
 
+    <!-- Scripts -->
+    <script src="toast.js?v=3"></script>
     <script src="main.js"></script>
-    <script src="profile.js"></script>
+    <script src="dept-data.js"></script>
+    <script src="profile.js?v=3"></script>
+    <script src="app-nav.js?v=4"></script>
+    <script src="calendar-card.js?v=1"></script>
+    <script src="notify-bell.js?v=5"></script>
+      <script src="ui-dialog.js?v=1"></script>
+      <script src="pwa.js?v=2"></script>
   </body>
 </html>

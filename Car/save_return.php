@@ -4,6 +4,7 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once 'db_connect.php';
+require_once __DIR__ . '/geo_lib.php';
 
 if (!isset($_SESSION['user_id']) || empty($_SESSION['employee_id'])) {
     echo json_encode(["success" => false, "message" => "กรุณาเข้าสู่ระบบก่อน"]);
@@ -53,6 +54,12 @@ try {
         exit;
     }
 
+    // กันเลขไมล์เพี้ยน (พิมพ์ผิด/OCR อ่านผิด): ทริปเดียวเกิน 1,500 กม. ให้แอดมินเป็นคนบันทึก
+    if (strtolower($sessionRole) !== 'admin' && ($endMile - $startMileage) > 1500) {
+        echo json_encode(["success" => false, "message" => "ระยะทาง " . number_format($endMile - $startMileage) . " กม. ผิดปกติ (เกิน 1,500) กรุณาตรวจเลขไมล์ที่กรอกอีกครั้ง หากถูกต้องจริงให้แจ้งแอดมิน"]);
+        exit;
+    }
+
     $conn->beginTransaction();
 
     $update = $conn->prepare(
@@ -82,7 +89,11 @@ try {
 
     $conn->commit();
 
-    echo json_encode(["success" => true, "message" => "บันทึกการคืนรถสำเร็จ"]);
+    // แท็บคืนรถมือใน booking.js ไม่ส่ง geo มา (ไม่ใช่การสแกนที่รถ) = ไม่ติดธง
+    $ev = array_key_exists('geo', $data) ? geo_evaluate($data['geo']) : ['geo' => 'nosite', 'dist' => null, 'lat' => null, 'lng' => null, 'acc' => null];
+    if (array_key_exists('geo', $data)) geo_store($conn, (int)$booking['BookingID'], 'Return', $ev);
+
+    echo json_encode(["success" => true, "message" => "บันทึกการคืนรถสำเร็จ" . geo_user_note($ev, 'คืนรถ'), "geo" => $ev['geo']]);
 } catch (PDOException $e) {
     if ($conn->inTransaction()) {
         $conn->rollBack();

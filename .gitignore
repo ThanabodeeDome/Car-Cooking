@@ -1,2 +1,12 @@
 Car/db_connect.php
 Admin/db_connect.php
+Car/mail_config.php
+Car/geo_sites.json
+Car/app_secret.php
+Car/ocr_config.php
+Car/uploads/
+Car/assets/img-avatar/
+Thumbs.db
+router.php
+Car/cacert.pem
+web.config
