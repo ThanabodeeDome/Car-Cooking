@@ -550,15 +550,19 @@ function compressImageDataUrl(dataUrl, maxDimension, quality) {
     const img = new Image();
     img.onload = () => {
       let { width, height } = img;
-      if (width > maxDimension || height > maxDimension) {
-        const scale = maxDimension / Math.max(width, height);
-        width = Math.round(width * scale);
-        height = Math.round(height * scale);
-      }
+      const longest = Math.max(width, height);
+      // 🩹 รูปแคปจอเล็กๆ (ตัวเลขไม่กี่สิบ px) ขยายให้ใหญ่ขึ้นก่อน OCR จะอ่านแม่นขึ้น (ขยายไม่เกิน 3 เท่า)
+      const scale = longest > maxDimension ? maxDimension / longest : longest < 800 ? Math.min(3, 800 / longest) : 1;
+      width = Math.max(1, Math.round(width * scale));
+      height = Math.max(1, Math.round(height * scale));
       const canvas = document.createElement("canvas");
       canvas.width = width;
       canvas.height = height;
-      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      const ctx = canvas.getContext("2d");
+      // 🩹 ปูพื้นขาวก่อน: PNG พื้นโปร่งใสพอแปลงเป็น JPEG พื้นจะกลายเป็นสีดำ ตัวเลขสีดำจมหาย OCR อ่านไม่ได้เลย
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
       resolve(canvas.toDataURL("image/jpeg", quality));
     };
     img.onerror = () => resolve(dataUrl); // ย่อไม่สำเร็จ ส่งต้นฉบับไปแทน (ดีกว่าไม่ส่งเลย)
@@ -581,17 +585,13 @@ function runOcrAuto(dataUrl) {
   fetch("ocr_odometer.php", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image: dataUrl }),
+    // ส่งไมล์ตอนออกไปด้วย ให้ server เลือกชุดตัวเลขที่เป็นไปได้ เมื่อในรูปมีตัวเลขหลายชุด (trip, นาฬิกา ฯลฯ)
+    body: JSON.stringify({ image: dataUrl, start_mileage: startMileage || null }),
   })
     .then((res) => res.json())
     .then((result) => {
       if (result.success && result.digits && result.digits.length >= 3) {
-        endMileInput.value = result.digits;
-        statusEl.innerText =
-          "อ่านได้: " +
-          result.digits +
-          " กรุณาตรวจสอบตัวเลขให้ตรงก่อนกดยืนยัน";
-        statusEl.style.color = "#4ade80";
+        showOcrResult(statusEl, endMileInput, Number(result.digits), result.candidates || []);
       } else {
         console.warn(
           "OCR.space อ่านไม่สำเร็จ กำลัง fallback ไปตัวอ่านในเครื่อง:",
@@ -609,6 +609,36 @@ function runOcrAuto(dataUrl) {
     });
 }
 
+// เลขไมล์ตอนคืนที่เป็นไปได้: มากกว่าไมล์ตอนออก และขับไม่เกิน 1,500 กม. (เกณฑ์เดียวกับ save_return.php)
+function isPlausibleMile(v) {
+  if (!Number.isFinite(v) || v <= 0) return false;
+  return !startMileage || (v > startMileage && v <= startMileage + 1500);
+}
+
+// แสดงผล OCR: ใส่เลขที่ดีที่สุด + ตัวเลือกอื่นที่เจอในรูป (กดเลือกได้) + เตือนถ้าไม่อยู่ในช่วงที่เป็นไปได้
+function showOcrResult(statusEl, endMileInput, value, candidates) {
+  endMileInput.value = String(value); // ตัด 0 นำหน้า เช่น 0185318 -> 185318
+  const ok = isPlausibleMile(value);
+  statusEl.textContent =
+    "อ่านได้: " + value + (ok ? " กรุณาตรวจสอบตัวเลขให้ตรงก่อนกดยืนยัน" : " ⚠️ ไม่อยู่ในช่วงที่เป็นไปได้ (ไมล์ตอนออก " + startMileage + ") กรุณาตรวจ/แก้ให้ถูกต้อง");
+  statusEl.style.color = ok ? "#4ade80" : "#f59e0b";
+  const others = candidates.map(Number).filter((c) => c !== value && c > 0);
+  if (others.length) {
+    const wrap = document.createElement("div");
+    wrap.style.marginTop = "6px";
+    wrap.append("ตัวเลขอื่นในรูป: ");
+    others.forEach((c) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = String(c);
+      b.style.cssText = "margin:2px 4px;padding:2px 10px;border-radius:999px;border:1px solid #64748b;background:transparent;color:inherit;cursor:pointer";
+      b.addEventListener("click", () => showOcrResult(statusEl, endMileInput, c, [value, ...others.filter((x) => x !== c)]));
+      wrap.appendChild(b);
+    });
+    statusEl.appendChild(wrap);
+  }
+}
+
 // 🌟 ตัวอ่านสำรอง (seven-segment reader เขียนเอง, อ่านทั้งภาพผ่าน findBrightRegion เดาโซนเอง)
 // ใช้เมื่อ OCR.space ตอบไม่สำเร็จหรือเน็ตหลุด — ทำงาน offline ได้เสมอ กันผู้ใช้ติดค้าง
 function runLocalFallbackOcr(dataUrl, statusEl, endMileInput) {
@@ -617,11 +647,13 @@ function runLocalFallbackOcr(dataUrl, statusEl, endMileInput) {
   img.onload = () => {
     try {
       const digits = recognizeOdometerDigits(img);
-      if (digits && digits.length >= 3) {
-        endMileInput.value = digits;
+      // 🩹 ตัวอ่านสำรองออกแบบมาสำหรับจอ LCD 7-segment เท่านั้น รูปแบบอื่นมักได้ตัวเลขมั่ว
+      // -> ใส่ให้เฉพาะเมื่ออยู่ในช่วงที่เป็นไปได้ (มากกว่าไมล์ตอนออก ไม่เกิน +1,500 กม.) ไม่งั้นให้กรอกเอง
+      if (digits && digits.length >= 3 && isPlausibleMile(Number(digits))) {
+        endMileInput.value = String(Number(digits));
         statusEl.innerText =
           "อ่านได้ (โหมดสำรอง): " +
-          digits +
+          Number(digits) +
           " กรุณาตรวจสอบตัวเลขให้ตรงก่อนกดยืนยัน";
         statusEl.style.color = "#f59e0b";
       } else {
@@ -785,7 +817,10 @@ function compressImage(file, maxDim = 1600, quality = 0.75) {
         const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
-        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        const ctx2 = canvas.getContext("2d");
+        ctx2.fillStyle = "#fff"; // PNG โปร่งใส -> JPEG พื้นดำ ถ้าไม่ปูพื้นขาวก่อน
+        ctx2.fillRect(0, 0, width, height);
+        ctx2.drawImage(img, 0, 0, width, height);
         canvas.toBlob(
           (blob) => {
             if (!blob) return resolve(file);

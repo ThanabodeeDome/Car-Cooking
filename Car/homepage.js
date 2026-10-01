@@ -124,7 +124,7 @@ function loadCarData(statusFilter = "all", btn = null) {
         .map(
           (car) => `
                 <div class="car-card">
-                    <img src="${car.image}" class="card-img" onerror="this.src='assets/img-car/default.png'">
+                    <img src="${car.image}" class="card-img" onerror="this.src='assets/img-car/car-placeholder.png'">
                     <div class="card-content">
                         <h3 class="car-plate">${car.plate}</h3>
                         <p class="car-brand">${car.brand}</p>

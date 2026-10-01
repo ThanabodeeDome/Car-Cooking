@@ -196,7 +196,7 @@ function updateCarDetails(plate) {
       previewImg.alt = `${car.Plate} (${car.Brand || ""})`;
       previewImg.classList.remove("hidden");
       previewImg.onerror = () => {
-        previewImg.src = "assets/img-car/default.png";
+        previewImg.src = "assets/img-car/car-placeholder.png";
       };
     } else {
       previewImg.classList.add("hidden");
