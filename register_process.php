@@ -11,7 +11,8 @@ $first_name  = isset($_POST['first_name']) ? trim($_POST['first_name']) : '';
 $last_name   = isset($_POST['last_name']) ? trim($_POST['last_name']) : '';
 $phone       = isset($_POST['phone']) ? trim($_POST['phone']) : '';
 $email       = isset($_POST['email']) ? trim($_POST['email']) : '';
-$employee_id = isset($_POST['employee_id']) ? trim($_POST['employee_id']) : '';
+require_once __DIR__ . '/user_dup_check.php';
+$employee_id = isset($_POST['employee_id']) ? normalizeEmployeeId((string)$_POST['employee_id']) : ''; // 91 -> 00091 เหมือนหน้าเว็บ
 // 🌟 แยกจาก department field เดียว เป็น 3 ระดับ
 $division    = isset($_POST['division']) ? trim($_POST['division']) : '';   // ฝ่าย
 $department  = isset($_POST['department']) ? trim($_POST['department']) : ''; // แผนก
@@ -46,21 +47,11 @@ if (in_array(strtolower($username), $reservedUsernames, true)) {
 }
 
 try {
-    // 3. ตรวจสอบว่า Username ซ้ำในระบบหรือไม่
-    $check_sql = "SELECT COUNT(*) FROM Users WHERE username = :username";
-    $stmt = $conn->prepare($check_sql);
-    $stmt->execute([':username' => $username]);
-
-    if ($stmt->fetchColumn() > 0) {
-        echo json_encode(['success' => false, 'message' => 'Username นี้ถูกใช้งานแล้ว ลองเปลี่ยนใหม่นะครับ']);
-        exit;
-    }
-
-    // 3.5 รหัสพนักงานต้องไม่ซ้ำ (กันสมัครซ้อน/สวมรหัสพนักงานคนอื่นที่ยังไม่ได้สมัคร)
-    $dup = $conn->prepare("SELECT COUNT(*) FROM Users WHERE employee_id = :emp");
-    $dup->execute([':emp' => $employee_id]);
-    if ($dup->fetchColumn() > 0) {
-        echo json_encode(['success' => false, 'message' => 'รหัสพนักงานนี้มีบัญชีในระบบแล้ว หากลืมรหัสผ่านให้ใช้ "ลืมรหัสผ่าน"']);
+    // 3. ตรวจซ้ำ: username / รหัสพนักงาน (1267 = 01267) / ชื่อ-นามสกุล — กันคนเดียวสมัครหลายบัญชี
+    //    (เคยเกิดจริง: คนเดียวกันสมัคร 2 บัญชีด้วย username ต่างกัน)
+    $dupMsg = duplicateUserMessage(findDuplicateUser($conn, $username, $employee_id, $first_name, $last_name));
+    if ($dupMsg !== null) {
+        echo json_encode(['success' => false, 'message' => $dupMsg]);
         exit;
     }
 
@@ -92,6 +83,11 @@ try {
     }
 
 } catch (PDOException $e) {
+    // 2627/2601 = ชน unique index (กดสมัครพร้อมกัน 2 ครั้งด้วยข้อมูลเดียวกัน หลุดเช็คด้านบนมาได้)
+    if (in_array((int)($e->errorInfo[1] ?? 0), [2627, 2601], true)) {
+        echo json_encode(['success' => false, 'message' => 'Username หรือรหัสพนักงานนี้มีบัญชีในระบบแล้ว']);
+        exit;
+    }
     error_log('register_process.php error: ' . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'ระบบฐานข้อมูลขัดข้อง กรุณาลองใหม่อีกครั้งครับ']);
 }

@@ -11,8 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
       navLinks.classList.toggle("active");
       console.log("Menu Toggled!"); // เช็คใน Console (F12) ว่ากดติดไหม
     });
-  } else {
-    // ถ้าขึ้นข้อความนี้ใน Console แสดงว่า HTML หน้านั้นไม่มี ID ที่กำหนด
-    console.error("Error: ไม่พบ ID #mobile-menu หรือ #nav-list ในหน้านี้");
   }
+  // 🩹 ไม่มีเมนูเดิมก็ไม่ใช่ error: app-nav.js ลบ <nav class="nav-bar"> เก่าทิ้งแล้วใช้เมนูใหม่แทน
+  // (เดิมขึ้น console.error ทุกหน้าของผู้ใช้ ทำให้ดู error จริงใน F12 ยาก)
 });

@@ -47,11 +47,16 @@ try {
         exit;
     }
 
-    // เช็ค username ซ้ำกับคนอื่น (ไม่รวมตัวเอง)
-    $checkStmt = $conn->prepare("SELECT id FROM Users WHERE username = :username AND id != :id");
-    $checkStmt->execute([':username' => $username, ':id' => $id]);
-    if ($checkStmt->fetch()) {
+    // เช็ค username / รหัสพนักงานซ้ำกับคนอื่น (ไม่รวมตัวเอง) — เดิมเช็คแค่ username แอดมินแก้รหัสพนักงานให้ชนคนอื่นได้
+    require_once __DIR__ . '/../user_dup_check.php';
+    $employeeId = normalizeEmployeeId($employeeId);
+    $dup = findDuplicateUser($conn, $username, $employeeId, '', '', (int)$id);
+    if ($dup['username']) {
         echo json_encode(["success" => false, "message" => "Username นี้ถูกใช้แล้ว"]);
+        exit;
+    }
+    if ($dup['employee_id']) {
+        echo json_encode(["success" => false, "message" => "รหัสพนักงานนี้มีผู้ใช้คนอื่นใช้อยู่แล้ว"]);
         exit;
     }
 

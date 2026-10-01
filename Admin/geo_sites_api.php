@@ -28,6 +28,22 @@ if (($in['action'] ?? '') === 'add') {
         'lng'    => round((float)$lng, 6),
         'radius' => max(50, min(5000, (int)($in['radius'] ?? 300))),
     ];
+} elseif (($in['action'] ?? '') === 'update') {
+    // ย้ายหมุด/แก้รัศมีของจุดเดิม (ลากหมุดบนแผนที่หน้า geo-setup.php)
+    $i = (int)($in['index'] ?? -1);
+    $lat = $in['lat'] ?? null; $lng = $in['lng'] ?? null;
+    if (!isset($sites[$i])) {
+        echo json_encode(['success' => false, 'message' => 'ไม่พบจุดนี้']);
+        exit;
+    }
+    if (!is_numeric($lat) || !is_numeric($lng) || abs($lat) > 90 || abs($lng) > 180) {
+        echo json_encode(['success' => false, 'message' => 'พิกัดไม่ถูกต้อง']);
+        exit;
+    }
+    $sites[$i]['lat'] = round((float)$lat, 6);
+    $sites[$i]['lng'] = round((float)$lng, 6);
+    if (isset($in['radius'])) $sites[$i]['radius'] = max(50, min(5000, (int)$in['radius']));
+    if (isset($in['name']) && trim((string)$in['name']) !== '') $sites[$i]['name'] = mb_substr(trim((string)$in['name']), 0, 60);
 } elseif (($in['action'] ?? '') === 'delete') {
     $i = (int)($in['index'] ?? -1);
     if (!isset($sites[$i])) {

@@ -419,3 +419,76 @@ if (registerFormEl) {
     true,
   );
 }
+
+// 🌟 สมัครสมาชิก: เช็คทันทีตอนกรอกเสร็จแต่ละช่องว่า username / รหัสพนักงาน / ชื่อ-นามสกุล มีบัญชีในระบบแล้วหรือยัง
+// (กันคนเดียวสมัครซ้ำหลายบัญชี) — register_process.php ตรวจซ้ำอีกรอบตอนบันทึกจริงเสมอ
+if (registerFormEl) {
+  const regTaken = { username: false, employee_id: false, name: false };
+  const regVal = (id) => (document.getElementById(id)?.value || "").trim();
+  const setRegHint = (hintId, msg) => {
+    const el = document.getElementById(hintId);
+    if (!el) return;
+    el.textContent = msg || "";
+    el.className = "pw-hint" + (msg ? " bad" : "");
+  };
+
+  const checkRegField = (field) => {
+    const params = new URLSearchParams();
+    if (field === "username") {
+      if (!regVal("reg-username")) return setRegHint("reg-username-hint", "");
+      params.set("username", regVal("reg-username"));
+    } else if (field === "employee_id") {
+      if (!regVal("reg-employee-id")) return setRegHint("reg-employee-id-hint", "");
+      params.set("employee_id", regVal("reg-employee-id"));
+    } else {
+      if (!regVal("reg-first-name") || !regVal("reg-last-name")) return setRegHint("reg-name-hint", "");
+      params.set("first_name", regVal("reg-first-name"));
+      params.set("last_name", regVal("reg-last-name"));
+    }
+    fetch("../check_availability.php?" + params.toString())
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.success || !d.taken) return; // ตรวจไม่ได้ (เช่นเน็ตหลุด) ปล่อยให้ server ตรวจตอนกดสมัครแทน
+        regTaken[field] = !!d.taken[field];
+        const msgs = {
+          username: ["reg-username-hint", "Username นี้ถูกใช้งานแล้ว"],
+          employee_id: ["reg-employee-id-hint", 'รหัสพนักงานนี้มีบัญชีแล้ว หากลืมรหัสผ่านให้ใช้ "ลืมรหัสผ่าน"'],
+          name: ["reg-name-hint", 'ชื่อ-นามสกุลนี้มีบัญชีแล้ว หากลืมรหัสผ่านให้ใช้ "ลืมรหัสผ่าน"'],
+        };
+        setRegHint(msgs[field][0], regTaken[field] ? msgs[field][1] : "");
+      })
+      .catch(() => {});
+  };
+
+  const bind = (id, field) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("change", () => checkRegField(field));
+    el.addEventListener("input", () => {
+      regTaken[field] = false; // แก้ค่าแล้วล้างสถานะเดิม รอเช็คใหม่ตอนออกจากช่อง
+    });
+  };
+  bind("reg-username", "username");
+  bind("reg-employee-id", "employee_id");
+  bind("reg-first-name", "name");
+  bind("reg-last-name", "name");
+  // padEmployeeId() เติม 0 ตอน blur โดยไม่ยิง change -> เช็คอีกรอบหลังเติมแล้ว
+  document.getElementById("reg-employee-id")?.addEventListener("blur", () => checkRegField("employee_id"));
+
+  registerFormEl.addEventListener(
+    "submit",
+    function (e) {
+      if (regTaken.username || regTaken.employee_id || regTaken.name) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        const text = regTaken.employee_id
+          ? 'รหัสพนักงานนี้มีบัญชีในระบบแล้ว หากลืมรหัสผ่านให้ใช้ "ลืมรหัสผ่าน"'
+          : regTaken.username
+            ? "Username นี้ถูกใช้งานแล้ว กรุณาเปลี่ยนใหม่"
+            : 'ชื่อ-นามสกุลนี้มีบัญชีในระบบแล้ว หากลืมรหัสผ่านให้ใช้ "ลืมรหัสผ่าน"';
+        AppModal.fire({ icon: "warning", title: "มีบัญชีอยู่แล้ว", text });
+      }
+    },
+    true,
+  );
+}
