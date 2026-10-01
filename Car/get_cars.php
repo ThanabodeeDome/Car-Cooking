@@ -17,6 +17,7 @@ if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $targetDate)) {
 $isToday = $targetDate === date('Y-m-d');
 
 $sql = "SELECT c.CarID, c.Plate, c.Brand, c.Model, c.Color, c.Mileage, c.Carimage, c.CarStatus,
+  c.InsuranceExpiry, c.ActExpiry, c.LastMaintenance, c.NextMaintenance,
   CASE 
     WHEN c.CarStatus = N'เช็คระยะ' THEN N'งดให้บริการ'
     WHEN :isToday1 = 1 AND EXISTS (
@@ -24,7 +25,7 @@ $sql = "SELECT c.CarID, c.Plate, c.Brand, c.Model, c.Color, c.Mileage, c.Carimag
       WHERE cb.CarPlate = c.Plate 
         AND cb.BookingStatus = N'ขาไป'
         AND cb.CheckInTime IS NOT NULL
-        AND cb.BookingDate = :targetDate1
+        -- ขาไป = รถออกไปแล้วยังไม่คืน (ไม่ผูกกับวันที่จอง: ทริปข้ามคืน/เช็คอินก่อนวันจองก็ยังใช้งานอยู่)
     ) THEN N'กำลังใช้งาน'
     WHEN EXISTS (
       SELECT 1 FROM CarBookings cb
@@ -40,7 +41,6 @@ try {
     $stmt = $conn->prepare($sql);
     $stmt->execute([
         ':isToday1'    => $isToday ? 1 : 0,
-        ':targetDate1' => $targetDate,
         ':targetDate2' => $targetDate,
     ]);
     $results = $stmt->fetchAll(PDO::FETCH_ASSOC);

@@ -21,6 +21,11 @@ function formatThaiTime(dateTimeStr) {
 /* =========================================
    1. ฟังก์ชันดึงประวัติการจอง (ตารางด้านล่าง)
    ========================================= */
+// 🔒 กัน Stored XSS: ชื่อผู้ขับ/ผู้ร่วมทางมาจากที่ผู้ใช้กรอกเอง ต้อง escape ก่อนแปะลง innerHTML
+function escHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
 function updateHistoryTable() {
   const tableBody = document.getElementById("history-table-body");
   if (!tableBody) return;
@@ -30,7 +35,7 @@ function updateHistoryTable() {
     .then((data) => {
       if (data && data.error) {
         console.error("get_history.php error:", data.error);
-        tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">เกิดข้อผิดพลาด: ${data.error}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:red;">เกิดข้อผิดพลาด: ${escHtml(data.error)}</td></tr>`;
         return;
       }
 
@@ -64,15 +69,15 @@ function updateHistoryTable() {
           }
           return `
       <tr>
-          <td>${item.out_date || "-"}</td>
-          <td>${formatThaiTime(item.checkin_time)}</td>
-          <td>${item.return_time || "-"}</td>
+          <td>${escHtml(item.out_date || "-")}</td>
+          <td>${escHtml(formatThaiTime(item.checkin_time))}</td>
+          <td>${escHtml(item.return_time || "-")}</td>
           <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
-          <td>${item.car_plate || "-"}</td>
-          <td>${item.driver_name || "-"}</td>
-          <td>${item.employeeId || "-"}</td>
-          <td>${item.passengers || "-"}</td>
-          <td>${item.passenger_ids || "-"}</td>
+          <td>${escHtml(item.car_plate || "-")}</td>
+          <td>${escHtml(item.driver_name || "-")}</td>
+          <td>${escHtml(item.employeeId || "-")}</td>
+          <td>${escHtml(item.passengers || "-")}</td>
+          <td>${escHtml(item.passenger_ids || "-")}</td>
       </tr>`;
         })
         .join("");

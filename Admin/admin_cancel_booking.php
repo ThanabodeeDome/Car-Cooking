@@ -15,8 +15,13 @@ if (!$data || empty($data['booking_id'])) {
 }
 
 try {
-    $stmt = $conn->prepare("UPDATE CarBookings SET BookingStatus = 'ยกเลิก' WHERE BookingID = :id");
+    // ยกเลิกได้เฉพาะรายการที่ยังไม่จบ (เดิมกดแล้วทับรายการ "คืนแล้ว" ให้กลายเป็น "ยกเลิก" ได้ ทำให้ประวัติเพี้ยน)
+    $stmt = $conn->prepare("UPDATE CarBookings SET BookingStatus = N'ยกเลิก' WHERE BookingID = :id AND BookingStatus IN (N'จองแล้ว', N'ขาไป')");
     $stmt->execute([':id' => $data['booking_id']]);
+    if ($stmt->rowCount() === 0) {
+        echo json_encode(["success" => false, "message" => "ยกเลิกไม่ได้ รายการนี้คืนรถแล้ว ยกเลิกไปแล้ว หรือไม่พบรายการ"]);
+        exit;
+    }
     echo json_encode(["success" => true]);
 } catch (PDOException $e) {
     error_log('admin_cancel_booking DB error: ' . $e->getMessage());

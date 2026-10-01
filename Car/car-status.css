@@ -1,327 +1,1173 @@
+/* =========================================
+   Corporate Car — Redesigned Car Status Page
+   Theme: Obsidian Dark + Crimson Red Accent
+   ========================================= */
+
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap");
+
+:root {
+  --primary-color: #ff4d4d;
+  --primary-hover: #ff6666;
+  --primary-active: #e60000;
+  --primary-glow: rgba(255, 77, 77, 0.35);
+  --primary-subtle: rgba(255, 77, 77, 0.12);
+
+  --bg-dark: #0a0e17;
+  --bg-card: #131722;
+  --bg-card-alt: #171b28;
+  --bg-card-header: #191e2c;
+  --bg-input: #0e121a;
+  --bg-input-focus: #161c29;
+
+  --text-main: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-medium: rgba(255, 255, 255, 0.12);
+  --border-focus: #ff4d4d;
+
+  --success: #10b981;
+  --success-subtle: rgba(16, 185, 129, 0.15);
+  --warning: #f59e0b;
+  --warning-subtle: rgba(245, 158, 11, 0.15);
+  --info: #3b82f6;
+  --info-subtle: rgba(59, 130, 246, 0.15);
+  --danger: #ef4444;
+  --danger-subtle: rgba(239, 68, 68, 0.15);
+
+  --radius-xl: 20px;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+
+  --font-family: "Poppins", "Prompt", sans-serif;
+  --shadow-card: 0 20px 45px -10px rgba(0, 0, 0, 0.65);
+}
+
+/* ---------------- Global Reset & Background ---------------- */
 * {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
-  font-family: "Prompt", sans-serif;
 }
 
 body {
-  font-family: "Poppins", "Prompt", sans-serif;
-  padding-top: 60px;
-  background-color: #0a0e17;
-  color: #fff;
+  font-family: var(--font-family);
+  background-color: var(--bg-dark);
+  color: var(--text-main);
   min-height: 100vh;
+  background-image:
+    radial-gradient(at 15% 15%, rgba(255, 77, 77, 0.07) 0px, transparent 45%),
+    radial-gradient(at 85% 20%, rgba(59, 130, 246, 0.05) 0px, transparent 45%),
+    radial-gradient(at 50% 90%, rgba(255, 77, 77, 0.04) 0px, transparent 50%),
+    linear-gradient(180deg, #090c14 0%, #0d121c 100%);
+  background-attachment: fixed;
+  padding-top: 60px; /* Offset for fixed navbar */
   overflow-x: hidden;
 }
 
-.status-container {
-  padding: 100px 5% 50px;
-  background:
-    radial-gradient(
-      circle at 15% 0%,
-      rgba(59, 130, 246, 0.08),
-      transparent 40%
-    ),
-    radial-gradient(
-      circle at 85% 10%,
-      rgba(255, 77, 77, 0.06),
-      transparent 40%
-    ),
-    #0a0e17;
-  min-height: 100vh;
-}
-
-.section-title {
-  color: #ff4d4d;
-  margin-bottom: 20px;
-  font-size: 1.4rem;
-  border-left: 5px solid #ff4d4d;
-  padding-left: 15px;
-}
-
-/* ---------- การ์ดรถ (แนวนอน เลื่อนได้) ---------- */
-.scroll-container {
-  width: 100%;
-  overflow-x: auto;
-  padding: 10px 0 20px;
-}
-.scroll-container::-webkit-scrollbar {
-  height: 8px;
-}
-.scroll-container::-webkit-scrollbar-track {
-  background: #0c0c0c;
-}
-.scroll-container::-webkit-scrollbar-thumb {
-  background: #ff4d4d;
-  border-radius: 10px;
-}
-
-#car-grid {
+/* ---------------- Layout Wrapper ---------------- */
+.status-page-container {
   display: flex;
-  flex-wrap: nowrap;
-  gap: 20px;
-  padding: 0 5px;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 20px 80px;
+  min-height: calc(100vh - 60px);
 }
 
-.car-card {
-  flex: 0 0 260px;
-  background: #1a1a1a;
-  border-radius: 18px;
-  padding: 18px;
-  border: 1px solid #2a2a2a;
-  transition: 0.3s ease;
-}
-.car-card:hover:not(.is-off) {
-  transform: translateY(-6px);
-  border-color: #ff4d4d;
-}
-.car-card.is-off {
-  filter: grayscale(100%);
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-.car-item {
-  cursor: pointer;
-}
-.car-item.is-selected {
-  outline: 3px solid #ff4d4d;
-  outline-offset: 2px;
-  border-radius: 14px;
-}
-
-.card-image {
-  position: relative;
-  height: 140px;
-  margin-bottom: 12px;
-  overflow: hidden;
-  border-radius: 10px;
-}
-.card-image img {
+.status-layout-wrapper {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  max-width: 1080px;
 }
 
-.status-tag {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  padding: 4px 12px;
-  border-radius: 15px;
-  font-size: 0.75rem;
-  font-weight: bold;
+/* ---------------- Page Top Header ---------------- */
+.page-top-header {
+  margin-bottom: 24px;
 }
 
-/* ---------- สถานะรถ (ชื่อใหม่ ตรงกับ car-status.js) ---------- */
-@keyframes badge-glow {
-  0%,
-  100% {
-    box-shadow: 0 0 6px 0 currentColor;
-  }
-  50% {
-    box-shadow: 0 0 14px 3px currentColor;
-  }
-}
-
-.status-tag {
+.header-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  animation: badge-glow 1.6s ease-in-out infinite;
+  gap: 8px;
+  background: var(--primary-subtle);
+  color: var(--primary-color);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 77, 77, 0.25);
+  margin-bottom: 12px;
 }
 
-.tag-available {
-  color: #fff;
-  border: 1px solid #10b981;
-  background: rgba(16, 185, 129, 0.6);
-}
-.tag-available::before {
-  content: "✅";
-}
-.tag-booked {
-  color: #fff;
-  border: 1px solid #f59e0b;
-  background: rgba(245, 158, 11, 0.6);
-}
-.tag-booked::before {
-  content: "⏳";
-}
-.tag-inuse {
-  color: #fff;
-  border: 1px solid #3b82f6;
-  background: rgba(59, 130, 246, 0.6);
-}
-.tag-inuse::before {
-  content: "🚗";
-}
-.tag-maintenance {
-  color: #fff;
-  border: 1px solid #6b7280;
-  background: rgba(107, 114, 128, 0.6);
-}
-.tag-maintenance::before {
-  content: "🛠️";
-}
-
-.card-body h4 {
-  color: #fff;
-  font-size: 1.05rem;
-  margin-bottom: 4px;
-}
-.card-body p {
-  color: #9ca3af;
+.header-badge i {
   font-size: 0.9rem;
 }
 
-/* ---------- ตัวเลือกวันที่ ---------- */
-.date-picker-section {
-  margin: 35px 0;
+.header-main-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  flex-wrap: wrap;
 }
 
-.date-picker-header {
+.page-main-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.5px;
+  line-height: 1.25;
+  margin-bottom: 6px;
+}
+
+.page-sub-title {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 400;
+}
+
+.btn-new-booking {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, #ff6666 0%, #ff4d4d 100%);
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 4px 15px rgba(255, 77, 77, 0.35);
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.btn-new-booking:hover {
+  background: linear-gradient(135deg, #ff4d4d 0%, #e60000 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255, 77, 77, 0.5);
+}
+
+/* =========================================
+   Stepper Progress Row
+   ========================================= */
+.steps-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.step-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  padding: 7px 16px;
+  border-radius: 30px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.step-badge .step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.step-badge.active {
+  background: var(--primary-subtle);
+  border-color: rgba(255, 77, 77, 0.4);
+  color: #fff;
+}
+
+.step-badge.active .step-num {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.step-arrow {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}
+
+/* =========================================
+   Status Card Panels (Base)
+   ========================================= */
+.status-card-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 24px 26px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(10px);
+}
+
+.panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.panel-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.step-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--primary-subtle);
+  color: var(--primary-color);
+  font-size: 1.05rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: "Poppins", sans-serif;
+  border: 1px solid rgba(255, 77, 77, 0.25);
+}
+
+.panel-title {
+  font-size: 1.18rem;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.3;
+}
+
+.panel-desc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* =========================================
+   Step 1: Date Picker Section
+   ========================================= */
+.month-select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.month-select-wrapper .select-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  pointer-events: none;
 }
 
 .month-dropdown {
-  background: #1a1a1a;
+  background-color: var(--bg-input);
   color: #fff;
-  border: 1px solid #333;
-  border-radius: 10px;
-  padding: 10px 16px;
-  font-size: 0.95rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 38px 10px 42px;
+  font-size: 0.92rem;
+  font-family: var(--font-family);
   cursor: pointer;
-}
-.month-dropdown:focus {
-  border-color: #ff4d4d;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='10' viewBox='0 0 14 10'%3E%3Cpath fill='%2394a3b8' d='M7 10L0 1.5 1.5 0 7 6.8 12.5 0 14 1.5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  transition: all 0.25s ease;
   outline: none;
 }
 
+.month-dropdown:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(255, 77, 77, 0.18);
+}
+
+.month-dropdown option {
+  background-color: #1a1f2e;
+  color: #fff;
+}
+
+/* Day Strip */
 .day-strip {
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding: 5px 5px 15px;
+  padding: 6px 4px 14px;
   scroll-behavior: smooth;
 }
+
 .day-strip::-webkit-scrollbar {
   height: 6px;
 }
-.day-strip::-webkit-scrollbar-thumb {
-  background: #333;
+
+.day-strip::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
   border-radius: 10px;
 }
 
+.day-strip::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+}
+
+.day-strip::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color);
+}
+
 .day-pill {
-  flex: 0 0 56px;
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
-  border-radius: 14px;
-  padding: 10px 0;
-  color: #ccc;
+  flex: 0 0 60px;
+  height: 74px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 10px 4px;
+  color: var(--text-muted);
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  transition: 0.2s;
+  transition: all 0.2s ease;
+  user-select: none;
 }
+
 .day-pill:hover {
-  border-color: #ff4d4d;
+  border-color: rgba(255, 77, 77, 0.4);
+  color: #fff;
+  transform: translateY(-2px);
 }
+
 .day-pill.is-today {
-  border-color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.5);
+  position: relative;
 }
+
+.day-pill.is-today::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 6px;
+  height: 6px;
+  background: var(--info);
+  border-radius: 50%;
+}
+
 .day-pill.active {
-  background: #ff4d4d;
-  border-color: #ff4d4d;
+  background: linear-gradient(135deg, #ff6666 0%, #ff4d4d 100%);
+  border-color: transparent;
   color: #fff;
-  box-shadow: 0 4px 15px rgba(255, 77, 77, 0.4);
+  box-shadow: 0 4px 18px rgba(255, 77, 77, 0.45);
+  transform: translateY(-2px);
 }
+
 .day-weekday {
-  font-size: 0.75rem;
-  opacity: 0.8;
+  font-size: 0.74rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  opacity: 0.85;
 }
+
 .day-num {
-  font-size: 1.15rem;
+  font-size: 1.3rem;
   font-weight: 700;
+  font-family: "Poppins", sans-serif;
+  line-height: 1;
 }
 
-/* ---------- แผงสถานะเช้า/บ่าย ---------- */
-.booking-status-panel {
-  background: #141414;
-  border: 1px solid #2a2a2a;
-  border-radius: 18px;
-  padding: 25px;
+/* =========================================
+   Step 2: Car Selector Section
+   ========================================= */
+.scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  padding: 6px 4px 16px;
 }
 
-.slot-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+.scroll-container::-webkit-scrollbar {
+  height: 6px;
 }
 
-.slot-card {
+.scroll-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 10px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-color);
+}
+
+.car-grid-horizontal {
   display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 18px;
-  border-radius: 14px;
-  border: 1px solid;
-}
-.slot-free {
-  background: rgba(16, 185, 129, 0.08);
-  border-color: rgba(16, 185, 129, 0.3);
-}
-.slot-busy {
-  background: rgba(239, 68, 68, 0.08);
-  border-color: rgba(239, 68, 68, 0.3);
+  flex-wrap: nowrap;
+  gap: 18px;
 }
 
-.slot-icon {
-  font-size: 1.8rem;
+/* Individual Car Mini Card */
+.car-card {
+  flex: 0 0 270px;
+  background: var(--bg-card-alt);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  border: 1px solid var(--border-subtle);
+  transition: all 0.25s ease;
+  cursor: pointer;
+  position: relative;
 }
-.slot-info h4 {
+
+.car-card:hover:not(.is-off) {
+  transform: translateY(-4px);
+  border-color: rgba(255, 77, 77, 0.35);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+.car-card.is-off {
+  opacity: 0.45;
+  filter: grayscale(80%);
+  cursor: not-allowed;
+}
+
+.car-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.car-card.is-selected {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-color), 0 8px 30px rgba(255, 77, 77, 0.35);
+  background: rgba(25, 30, 44, 0.95);
+}
+
+.car-card.is-selected::before {
+  content: "✓ เลือกอยู่";
+  position: absolute;
+  top: -10px;
+  left: 14px;
+  background: var(--primary-color);
   color: #fff;
-  font-size: 0.95rem;
-  margin-bottom: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  z-index: 5;
 }
-.slot-info p {
-  color: #b0b0b0;
-  font-size: 0.85rem;
+
+.card-image {
+  position: relative;
+  height: 145px;
+  margin-bottom: 12px;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, #181d2c 0%, #0d1017 100%);
+  border: 1px solid var(--border-subtle);
+}
+
+.card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.car-card:hover:not(.is-off) .card-image img {
+  transform: scale(1.05);
+}
+
+/* Status Tag Over Car Card */
+.status-tag {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  z-index: 2;
 }
 
 .tag-available {
+  background: rgba(16, 185, 129, 0.85);
   color: #fff;
   border: 1px solid #10b981;
-  background: rgba(16, 185, 129, 0.6);
-}
-.tag-booked {
-  color: #fff;
-  border: 1px solid #f59e0b;
-  background: rgba(245, 158, 11, 0.6);
-}
-.tag-inuse {
-  color: #fff;
-  border: 1px solid #3b82f6;
-  background: rgba(59, 130, 246, 0.6);
-}
-.tag-maintenance {
-  color: #fff;
-  border: 1px solid #6b7280;
-  background: rgba(107, 114, 128, 0.6);
 }
 
-@media (max-width: 600px) {
+.tag-booked {
+  background: rgba(245, 158, 11, 0.85);
+  color: #fff;
+  border: 1px solid #f59e0b;
+}
+
+.tag-inuse {
+  background: rgba(59, 130, 246, 0.85);
+  color: #fff;
+  border: 1px solid #3b82f6;
+}
+
+.tag-maintenance {
+  background: rgba(107, 114, 128, 0.85);
+  color: #fff;
+  border: 1px solid #6b7280;
+}
+
+/* Card Body */
+.card-body h4 {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.plate-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.5px;
+}
+
+/* =========================================
+   Step 3: Booking Status Schedule Panel
+   ========================================= */
+.booking-status-panel {
+  background: rgba(14, 18, 26, 0.65);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 24px;
+}
+
+.selected-car-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.selected-car-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.selected-car-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.selected-car-date i {
+  color: var(--primary-color);
+}
+
+/* Status Alert Bar (Red when booked, Green when free) */
+.status-alert-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.status-alert-bar.alert-busy {
+  background: rgba(239, 68, 68, 0.09);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-left: 5px solid var(--danger);
+  color: #fca5a5;
+}
+
+.status-alert-bar.alert-free {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-left: 5px solid var(--success);
+  color: #6ee7b7;
+}
+
+.alert-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.alert-bar-icon {
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.alert-busy .alert-bar-icon {
+  color: var(--danger);
+}
+
+.alert-free .alert-bar-icon {
+  color: var(--success);
+}
+
+.alert-bar-text strong {
+  display: block;
+  font-size: 1rem;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.alert-bar-text span {
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.btn-book-now-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 3px 12px rgba(16, 185, 129, 0.35);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-book-now-mini:hover {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  transform: translateY(-1px);
+}
+
+/* Section Header Titles Inside Panel */
+.panel-sub-section {
+  margin-bottom: 24px;
+}
+
+.panel-sub-section:last-child {
+  margin-bottom: 0;
+}
+
+.panel-sub-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.panel-sub-title.title-busy {
+  color: #f87171;
+}
+
+.panel-sub-title.title-busy i {
+  color: var(--danger);
+}
+
+/* Booked Items Notice Cards (Red Theme, NO Green) */
+.booked-notice-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.booked-notice-card {
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-left: 4px solid var(--danger);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: transform 0.2s ease;
+}
+
+.booked-notice-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+.booked-notice-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.booked-time-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #fff;
+  font-family: "Poppins", sans-serif;
+}
+
+.booked-time-pill i {
+  color: #f87171;
+}
+
+.booked-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 14px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.booked-notice-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+.booked-detail-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.booked-detail-cell .lbl {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+.booked-detail-cell .val {
+  font-size: 0.9rem;
+  color: #e2e8f0;
+  font-weight: 500;
+}
+
+.booked-detail-cell .val.highlight-dest {
+  color: #f87171;
+}
+
+/* 24-Hour Visual Timeline Bar */
+.visual-timeline-bar-wrap {
+  background: rgba(14, 18, 26, 0.9);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 18px;
+}
+
+.timeline-bar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.timeline-legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.legend-box {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.legend-box.box-busy {
+  background: var(--danger);
+}
+
+.legend-box.box-free {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.timeline-track {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 3px;
+  height: 24px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 2px;
+}
+
+.timeline-block {
+  border-radius: 3px;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  position: relative;
+}
+
+.timeline-block.is-busy {
+  background: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+}
+
+.timeline-block.is-free {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.timeline-block:hover {
+  opacity: 0.8;
+  transform: scaleY(1.15);
+}
+
+.timeline-hours-markers {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-top: 6px;
+  font-family: "Poppins", sans-serif;
+  padding: 0 2px;
+}
+
+/* Hourly Slots Grid (24 Slots) */
+.hourly-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+  gap: 10px;
+}
+
+.hour-slot-card {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1px solid var(--border-subtle);
+  transition: all 0.2s ease;
+  text-decoration: none;
+  font-family: var(--font-family);
+}
+
+.hour-slot-card .slot-time {
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: "Poppins", sans-serif;
+  color: #fff;
+}
+
+.hour-slot-card .slot-status-lbl {
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Hourly Busy (Red Theme, NO Green) */
+.hour-slot-card.is-busy {
+  background: rgba(239, 68, 68, 0.09);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.hour-slot-card.is-busy .slot-status-lbl {
+  color: #f87171;
+}
+
+.hour-slot-card.is-busy .slot-driver {
+  font-size: 0.7rem;
+  color: #fca5a5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Hourly Free */
+.hour-slot-card.is-free {
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+}
+
+.hour-slot-card.is-free:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 77, 77, 0.4);
+  transform: translateY(-2px);
+}
+
+.hour-slot-card.is-free .slot-status-lbl {
+  color: #94a3b8;
+}
+
+.hour-slot-card.is-free:hover .slot-status-lbl {
+  color: #fff;
+}
+
+/* Placeholder for unselected car */
+.empty-selection-placeholder {
+  text-align: center;
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.placeholder-icon {
+  font-size: 2.5rem;
+  color: var(--primary-color);
+  margin-bottom: 14px;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-8px);
+  }
+  60% {
+    transform: translateY(-4px);
+  }
+}
+
+.empty-selection-placeholder h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.empty-selection-placeholder p {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  max-width: 420px;
+  line-height: 1.45;
+}
+
+/* =========================================
+   Responsive Breakpoints
+   ========================================= */
+@media (max-width: 768px) {
+  .status-page-container {
+    padding: 24px 14px 60px;
+  }
+
+  .page-main-title {
+    font-size: 1.6rem;
+  }
+
+  .header-main-flex {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .btn-new-booking {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .status-card-panel {
+    padding: 18px;
+  }
+
+  .panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .month-select-wrapper {
+    width: 100%;
+  }
+
+  .month-dropdown {
+    width: 100%;
+  }
+
   .slot-grid {
     grid-template-columns: 1fr;
   }
-  .date-picker-header {
+
+  .slot-free-card {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .slot-free-left {
+    flex-direction: column;
+  }
+
+  .btn-book-slot {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .day-pill {
+    flex: 0 0 52px;
+    height: 68px;
+  }
+
+  .day-num {
+    font-size: 1.15rem;
+  }
+
+  .car-card {
+    flex: 0 0 240px;
+  }
+}
+
+/* ===== 24-hour availability timeline (red = busy, green = free) ===== */
+.tl24 {
+  margin: 18px 0 20px;
+}
+.tl24-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin-bottom: 12px;
+}
+.tl24-head h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #fff;
+}
+.tl24-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+.tl24-legend i {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  margin-right: 6px;
+  border-radius: 3px;
+  vertical-align: -1px;
+}
+.tl24-legend .lg-free { background: #10b981; }
+.tl24-legend .lg-busy { background: #ef4444; }
+.tl24-legend .lg-past { background: #4b5563; }
+.tl24-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+.tl24-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 58px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid;
+  text-decoration: none;
+  overflow: hidden;
+}
+.tl24-cell .tl-h {
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: ui-monospace, Consolas, monospace;
+}
+.tl24-cell .tl-s {
+  font-size: 0.78rem;
+}
+.tl24-cell .tl-who {
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.85;
+}
+.tl24-cell.is-free {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.5);
+}
+.tl24-cell.is-free:hover {
+  background: rgba(16, 185, 129, 0.28);
+}
+.tl24-cell.is-busy {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.26);
+  border-color: #ef4444;
+}
+.tl24-cell.is-past {
+  color: #6b7280;
+  background: rgba(255, 255, 255, 0.03);
+  border-color: transparent;
+}
+@media (max-width: 600px) {
+  .tl24-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }

@@ -40,5 +40,10 @@ function requireAdminAccess(): string
         echo json_encode(["success" => false, "message" => "ไม่มีสิทธิ์เข้าถึง"]);
         exit;
     }
+    // กัน CSRF: คำสั่งที่แก้ข้อมูล (ไม่ใช่ GET) ต้องมาจากหน้าเว็บของเราเอง
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
+        require_once __DIR__ . '/same_origin.php';
+        require_same_origin();
+    }
     return $role;
 }

@@ -1,18 +1,50 @@
 <?php
 // 🌟 Session Hardening — ต้องตั้งก่อน session_start() เท่านั้น
+// 🩹 secure=true บังคับ cookie ส่งผ่าน HTTPS เท่านั้น — ถ้า deploy ผ่าน HTTP ตรงๆ (ยังไม่มี Tunnel/SSL)
+// จะทำให้ session หายทันทีทุก request เช็คจาก request จริงแทน hardcode true ตายตัว
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https'); // เผื่อผ่าน Cloudflare Tunnel/proxy
+
 session_set_cookie_params([
     'lifetime' => 0,
     'path'     => '/',
-    'secure'   => true,     // ส่งผ่าน HTTPS เท่านั้น (Cloudflare Tunnel ให้ HTTPS มาแล้ว)
+    'secure'   => $isHttps,  // true อัตโนมัติเมื่อเข้าผ่าน HTTPS จริง (เช่นหลัง Cloudflare Tunnel)
     'httponly' => true,     // JS อ่าน cookie นี้ไม่ได้ กัน XSS ขโมย session
     'samesite' => 'Strict', // กัน CSRF แบบพื้นฐาน
 ]);
 session_start();
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/same_origin.php';
+require_same_origin();
 require_once 'db_connect.php';
+require_once 'Car/remember_helpers.php';
 
-// 🌟 Rate Limit กันเดารหัสผ่าน (brute-force) — ล็อกตาม IP ไม่ต้องแก้ DB schema
-$ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+// 🩹 FIX: ระบบนี้รันอยู่หลัง Cloudflare Tunnel — REMOTE_ADDR ที่เซิร์ฟเวอร์เห็นจะเป็น
+// IP ของตัว tunnel เอง "เหมือนกันหมดทุกเครื่อง" ไม่ใช่ IP ของผู้ใช้แต่ละคนจริงๆ
+// เดิมใช้ $_SERVER['REMOTE_ADDR'] ตรงๆ เลยทำให้คนเดียวกรอกรหัสผิด 5 ครั้ง
+// -> ไฟล์ lock ใช้ md5(IP) เดียวกันทุกเครื่อง -> ล็อกทุกคนพร้อมกันหมดทั้งที่คนละเครื่อง
+// แก้โดยอ่าน IP จริงจาก header ที่ Cloudflare ใส่มาให้แทน (เชื่อถือได้ เพราะ Cloudflare
+// เขียนทับ header นี้เสมอ client ปลอมไม่ได้ ตราบใด traffic ต้องผ่าน Cloudflare เท่านั้น)
+function getClientIp(): string {
+    $remote = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    // 🔒 เชื่อ header จาก proxy เฉพาะเมื่อ request มาจาก tunnel/proxy ในเครื่องหรือวง LAN เท่านั้น
+    // ถ้ายิงตรงเข้า IIS จาก IP สาธารณะ คนร้ายปลอม header นี้เปลี่ยน IP ทุกครั้งเพื่อหลบ rate limit ได้
+    $fromProxy = filter_var($remote, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
+    if ($fromProxy) {
+        if (!empty($_SERVER['HTTP_CF_CONNECTING_IP']) && filter_var(trim($_SERVER['HTTP_CF_CONNECTING_IP']), FILTER_VALIDATE_IP)) {
+            return trim($_SERVER['HTTP_CF_CONNECTING_IP']);
+        }
+        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            // อาจมีหลาย IP คั่นด้วยจุลภาคถ้าผ่านหลายชั้น proxy เอาตัวแรกสุด (client จริง)
+            $first = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
+            if (filter_var($first, FILTER_VALIDATE_IP)) return $first;
+        }
+    }
+    return $remote;
+}
+
+// 🌟 Rate Limit กันเดารหัสผ่าน (brute-force) — ล็อกตาม IP จริงของผู้ใช้ ไม่ใช่ IP ของ tunnel
+$ip = getClientIp();
 $lockDir = sys_get_temp_dir() . '/login_attempts';
 if (!is_dir($lockDir)) mkdir($lockDir, 0700, true);
 $lockFile = $lockDir . '/' . md5($ip) . '.json';
@@ -46,11 +78,11 @@ if (empty($username) || empty($password)) {
 // 🌟 กัน open-redirect: รับเฉพาะ relative path ธรรมดาในโฟลเดอร์ Car/ เท่านั้น
 // ห้ามมี :// (ลิงก์ไปโดเมนอื่น) และห้ามขึ้นต้นด้วย // (protocol-relative URL)
 function isSafeRedirect($path) {
-    if (empty($path)) return false;
-    if (strpos($path, '://') !== false) return false;
-    if (substr($path, 0, 2) === '//') return false;
+    if (empty($path) || strlen($path) > 500) return false;
     if (strpos($path, '..') !== false) return false; // กัน path traversal
-    return true;
+    // 🔒 รับเฉพาะชื่อไฟล์ .html/.php แบบ relative (+ query string) เท่านั้น
+    // เดิมเช็คแค่ :// กับ // ทำให้ "javascript:..." หรือ "/\evil.com" ผ่านได้ -> XSS/เด้งออกนอกเว็บหลัง login
+    return (bool) preg_match('#^(?:[A-Za-z0-9_\-]+/)*[A-Za-z0-9_\-]+\.(?:html|php)(?:\?[^\s"\'<>\\\\]*)?$#D', $path);
 }
 
 try {
@@ -75,6 +107,13 @@ try {
         $_SESSION['first_name'] = $user['first_name'];
         $_SESSION['employee_id'] = $user['employee_id'];
         $_SESSION['role']       = $user['role'];
+
+        // 🌟 Remember-me 90 วัน เฉพาะผู้ใช้ทั่วไป (ไม่ใช่ admin) — ตามที่ตกลงกันไว้
+        // แก้ปัญหา login บ่อยของพนักงาน โดยไม่ยืด session ฝั่ง admin ที่คุมข้อมูลทั้งระบบ
+        // ต้องติ๊ก "จดจำฉัน" (checkbox name=remember) ถึงจะออก token
+        if ($user['role'] !== 'admin' && !empty($_POST['remember'])) {
+            issueRememberToken($conn, (int)$user['id'], $isHttps);
+        }
 
         // 3. ตรวจสอบสิทธิ์ (Role) เพื่อกำหนดปลายทางที่จะส่งไป (Fix ปัญหาหน้า 404)
         if ($user['role'] === 'admin') {

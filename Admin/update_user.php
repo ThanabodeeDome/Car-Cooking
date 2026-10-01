@@ -3,11 +3,9 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once '../Car/db_connect.php';
 
+require_once __DIR__ . '/../require_admin.php';
+requireAdminAccess();
 $allowed_admin_ids = require __DIR__ . '/../admin_whitelist.php';
-if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin' || !in_array((int)$_SESSION['user_id'], $allowed_admin_ids, true)) {
-    echo json_encode(["success" => false, "message" => "ไม่มีสิทธิ์เข้าถึง"]);
-    exit;
-}
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
@@ -21,6 +19,11 @@ $newPassword = $data['new_password'] ?? '';
 
 if (empty($id) || empty($username) || !in_array($role, ['admin', 'user'], true)) {
     echo json_encode(["success" => false, "message" => "ข้อมูลไม่ครบหรือ role ไม่ถูกต้อง"]);
+    exit;
+}
+
+if ($newPassword !== '' && strlen($newPassword) < 6) {
+    echo json_encode(["success" => false, "message" => "รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร"]);
     exit;
 }
 
@@ -67,6 +70,12 @@ try {
             ':pw'    => $hash,
             ':id'    => $id,
         ]);
+        // 🔒 รีเซ็ตรหัสแล้วเตะ remember-me ของ user นี้ทุกเครื่องทิ้งด้วย (ไม่งั้น cookie เก่ายังเข้าได้ 90 วัน)
+        try {
+            $conn->prepare("DELETE FROM RememberTokens WHERE user_id = :id")->execute([':id' => $id]);
+        } catch (PDOException $e) {
+            // ตารางนี้อาจยังไม่มีบน DB ที่ยังไม่รัน migration
+        }
     } else {
         // ไม่แตะรหัสผ่านเดิม
         $stmt = $conn->prepare(

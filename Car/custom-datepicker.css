@@ -1,0 +1,185 @@
+/* ===== Custom Date Picker (dark theme) — ใช้ token เดียวกับ booking.css ===== */
+.cdp-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.cdp-display {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  font-family: "Prompt", sans-serif;
+  font-size: 0.95rem;
+  cursor: pointer;
+  user-select: none;
+  box-sizing: border-box;
+  transition: 0.25s ease;
+}
+
+.cdp-display:hover {
+  border-color: var(--accent);
+}
+
+.cdp-wrap.open .cdp-display {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.cdp-display .cdp-placeholder {
+  color: #5c5c66;
+}
+
+.cdp-icon {
+  width: 16px;
+  height: 16px;
+  opacity: 0.7;
+  flex-shrink: 0;
+  margin-left: 8px;
+  color: var(--text-main);
+}
+
+.cdp-panel {
+  position: fixed;
+  z-index: 9999;
+  width: 280px;
+  max-width: 90vw;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 14px;
+  font-family: "Prompt", sans-serif;
+  color: var(--text-main);
+}
+
+.cdp-panel.hidden {
+  display: none;
+}
+
+.cdp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.cdp-month-label {
+  font-family: "Poppins", sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-main);
+}
+
+.cdp-nav {
+  display: flex;
+  gap: 4px;
+}
+
+.cdp-nav button {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cdp-nav button:hover {
+  background: var(--bg-input);
+  color: var(--text-main);
+}
+
+.cdp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+
+.cdp-dow {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 4px 0 8px;
+  font-weight: 600;
+}
+
+.cdp-day {
+  position: relative;
+  padding: 0;
+  height: 32px;
+  line-height: 32px;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 13px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.cdp-day:hover:not(:disabled) {
+  background: var(--bg-input);
+}
+
+.cdp-day.cdp-muted {
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+
+.cdp-day.cdp-today {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.cdp-day.cdp-selected {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 0 14px rgba(255, 77, 77, 0.4);
+}
+
+.cdp-day:disabled {
+  cursor: not-allowed;
+}
+
+.cdp-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+}
+
+.cdp-footer button {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.cdp-footer button:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .cdp-panel {
+    width: 100%;
+    left: 0;
+    right: 0;
+  }
+}

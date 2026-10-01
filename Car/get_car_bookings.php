@@ -2,12 +2,14 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once 'db_connect.php';
+require_once __DIR__ . '/auto_cancel_noshows.php';
 
-// 🌟 ไฟล์นี้ไม่มี login check เลยมาก่อน!
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(["success" => false, "message" => "กรุณาเข้าสู่ระบบก่อน"]);
     exit;
 }
+// ยกเลิกคิวที่ไม่มาเช็คอิน — ทำหลังเช็ค login (ไม่ให้คนนอกยิงสั่งเขียน DB ได้)
+autoReleaseNoShows($conn);
 
 $plate = $_GET['plate'] ?? '';
 if (empty($plate)) {
@@ -16,15 +18,15 @@ if (empty($plate)) {
 }
 
 try {
-    // เดิม filter ออกแค่ 'ยกเลิก' อย่างเดียว ทำให้ booking ที่คืนแล้ว (BookingStatus = 'ขากลับ')
-    // ยังถูกนับว่า "ไม่ว่าง" ต่อไปเรื่อยๆ ทั้งที่คืนรถไปแล้ว
-    //
-    // แก้ใหม่: สถานะ 'จองแล้ว' (จองไว้ ยังไม่เช็คอิน) และ 'ขาไป' (เช็คอินแล้ว กำลังใช้งาน)
-    // ทั้งสองสถานะแปลว่า slot นั้นไม่ว่างแล้ว ต้องนับทั้งคู่
-    // ค่าอื่น (คืนแล้ว, ยกเลิก) ไม่นับว่าจอง slot ไว้
-    $sql = "SELECT BookingID, BookingNumber, DriverName, 
+    // 🩹 FIX: เพิ่ม OutTime/PlannedReturnTime (เวลาไป-กลับแบบอิสระ ระบบใหม่)
+    // ควบคู่กับ TimeSlot เดิม (ระบบเก่า) — booking เก่ามีแต่ TimeSlot, booking ใหม่มีแต่ OutTime/PlannedReturnTime
+    // ฝั่ง JS จะเช็คว่าแถวไหนมีอะไรแล้วแปลงเป็นช่วงเวลาให้ตรงกันก่อนแสดงผล
+    $sql = "SELECT BookingID, BookingNumber, DriverName, Destination,
                    CONVERT(varchar, BookingDate, 23) AS BookingDate, 
-                   TimeSlot, BookingStatus
+                   TimeSlot,
+                   CONVERT(varchar(8), OutTime, 108) AS OutTime,
+                   CONVERT(varchar(8), PlannedReturnTime, 108) AS PlannedReturnTime,
+                   BookingStatus
             FROM CarBookings
             WHERE CarPlate = :plate AND BookingStatus IN ('จองแล้ว', 'ขาไป')
             ORDER BY BookingDate ASC";

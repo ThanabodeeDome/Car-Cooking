@@ -3,12 +3,13 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once 'db_connect.php';
 require_once 'auto_cancel_noshows.php';
-autoCancelNoShows($conn);
 
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(["success" => false, "message" => "กรุณาเข้าสู่ระบบก่อน"]);
     exit;
 }
+// ยกเลิกคิวที่ไม่มาเช็คอิน — ทำหลังเช็ค login (ไม่ให้คนนอกยิงสั่งเขียน DB ได้)
+autoCancelNoShows($conn);
 
 try {
     $stmt = $conn->prepare("SELECT employee_id FROM Users WHERE id = :id");

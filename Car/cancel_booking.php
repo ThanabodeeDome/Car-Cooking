@@ -1,6 +1,8 @@
 <?php
 session_start();
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/../same_origin.php';
+require_same_origin();
 require_once 'db_connect.php';
 
 if (!isset($_SESSION['user_id']) || empty($_SESSION['employee_id'])) {
@@ -19,10 +21,11 @@ if (!$data || empty($data['booking_id'])) {
 
 try {
     // 🩹 เพิ่ม 'จองแล้ว' เข้าเงื่อนไข — booking ใหม่ตอนนี้เริ่มที่สถานะนี้ (ยังไม่เช็คอิน)
-    // เดิมเช็คแค่ 'ขาไป' อย่างเดียว ทำให้จองแล้วเปลี่ยนใจไม่มารับรถ ยกเลิกไม่ได้เลย
-    $stmt = $conn->prepare("UPDATE CarBookings SET BookingStatus = 'ยกเลิก' 
-                         WHERE BookingID = :id AND EmployeeID = :emp 
-                           AND (BookingStatus = 'จองแล้ว' OR BookingStatus = 'ขาไป' OR BookingStatus IS NULL)");
+    // 🩹 ตัด 'ขาไป' ออก: ตอนนี้ 'ขาไป' = เช็คอินรับรถไปแล้ว ถ้ายกเลิกได้ รถที่ยังไม่คืนจะกลายเป็น "ว่าง"
+    // ให้คนอื่นจองซ้อน และไม่มีการบันทึกเลขไมล์คืน (ต้องคืนรถแทน หรือให้แอดมินยกเลิก)
+    $stmt = $conn->prepare("UPDATE CarBookings SET BookingStatus = 'ยกเลิก'
+                         WHERE BookingID = :id AND EmployeeID = :emp
+                           AND (BookingStatus = 'จองแล้ว' OR BookingStatus IS NULL)");
     $stmt->execute([':id' => $data['booking_id'], ':emp' => $sessionEmployeeId]);
 
     if ($stmt->rowCount() === 0) {

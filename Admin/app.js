@@ -16,6 +16,14 @@ function escapeHtml(str) {
     .replace(/'/g, "&#039;");
 }
 
+// 🌟 ระยะทางที่ขับจริง = เลขไมล์ตอนคืน - เลขไมล์ตอนยืม (มีข้อมูลพร้อมอยู่แล้ว ไม่ต้องพึ่ง API แผนที่)
+function adminDistanceText(bk) {
+  const start = Number(bk.StartMileage);
+  const end = Number(bk.EndMileage);
+  if (!end || !start || end <= start) return "-";
+  return (end - start).toLocaleString("th-TH") + " กม.";
+}
+
 function switchTab(tabId) {
   document
     .querySelectorAll(".tab-content")
@@ -62,7 +70,7 @@ function loadUsers() {
     .then((res) => res.json())
     .then((data) => {
       if (!data.success) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#ef4444;">${data.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#ef4444;">${escapeHtml(data.message)}</td></tr>`;
         return;
       }
       allUsersCache = data.users || [];
@@ -91,12 +99,12 @@ function renderUsersTable(users) {
       <tr>
         <td>${escapeHtml(u.employee_id) || "-"}</td>
         <td>${escapeHtml(u.username) || "-"}</td>
-        <td>${escapeHtml(u.first_name) || "-"}</td>
+        <td>${escapeHtml(((u.first_name || "") + " " + (u.last_name || "")).trim()) || "-"}</td>
         <td>${roleLabel[u.role] || u.role || "-"}</td>
         <td>
           <div class="action-buttons-group">
-            <button class="op-edit" onclick='openUserEditModal(${JSON.stringify(u).replace(/'/g, "&apos;")})'>แก้ไข</button>
-            <button class="op-del" onclick="deleteUser(${u.id}, '${(u.username || "").replace(/'/g, "")}')">ลบ</button>
+            <button class="op-edit" onclick="openUserEditModal(${escapeHtml(JSON.stringify(u))})">แก้ไข</button>
+            ${u.role === "admin" || Number(u.id) === Number(window.currentAdminId) ? "" : `<button class="op-del" onclick="deleteUser(${Number(u.id)}, ${escapeHtml(JSON.stringify(u.username || ""))})">ลบ</button>`}
           </div>
         </td>
       </tr>`,
@@ -108,7 +116,7 @@ function filterUsersTable(keyword) {
   const q = (keyword || "").trim().toLowerCase();
   if (!q) return renderUsersTable(allUsersCache);
   const filtered = allUsersCache.filter((u) =>
-    `${u.username} ${u.first_name} ${u.employee_id}`.toLowerCase().includes(q),
+    `${u.username} ${u.first_name} ${u.last_name || ""} ${u.employee_id} ${u.email || ""}`.toLowerCase().includes(q),
   );
   renderUsersTable(filtered);
 }
@@ -214,20 +222,20 @@ function loadCarsToWorkspaceTable() {
           statusPillClass = "pill-maintenance";
 
         const tr = document.createElement("tr");
-        const carJsonString = JSON.stringify(car).replace(/"/g, "&quot;");
+        const carJsonString = escapeHtml(JSON.stringify(car));
 
         // รูปภาพ
         const imgName = car.CarImage ? car.CarImage.trim() : "";
         const imgPath = imgName
-          ? `../Car/assets/img-car/${imgName}`
+          ? `../Car/assets/img-car/${encodeURIComponent(imgName)}`
           : `../Car/assets/img-car/car-placeholder.png`;
 
         // สร้างแถวให้ครบ 7 คอลัมน์ ตามหัวตาราง
         tr.innerHTML = `
           <td><img src="${imgPath}" width="50" height="35" style="border-radius:6px; object-fit:cover;" onerror="this.onerror=null; this.src='../Car/assets/img-car/car-placeholder.png';"></td>
-          <td>${car.Plate}</td>
-          <td>${car.Model}</td>
-          <td>${car.Mileage}</td>
+          <td>${escapeHtml(car.Plate)}</td>
+          <td>${escapeHtml(car.Model)}</td>
+          <td>${escapeHtml(car.Mileage)}</td>
           <td>${car.InsuranceExpiry || "-"}</td>
           <td>${car.ActExpiry || "-"}</td>
           <td>${car.LastMaintenanceLog || car.LastMaintenance || "-"}</td>
@@ -236,7 +244,7 @@ function loadCarsToWorkspaceTable() {
             <div class="action-buttons-group">
               <button class="op-edit" onclick="fillWorkspaceForm(${carJsonString})">แก้ไข</button>
               <button class="op-del" onclick="deleteCarFromWorkspace(${car.CarID})">ลบ</button>
-              <button class="op-edit" onclick="openMaintenanceModal(${car.CarID}, '${(car.Plate || "").replace(/'/g, "")}')">ประวัติซ่อม</button>
+              <button class="op-edit" onclick="openMaintenanceModal(${Number(car.CarID)}, ${escapeHtml(JSON.stringify(car.Plate || ""))})">ประวัติซ่อม</button>
             </div>
           </td>
         `;
@@ -350,15 +358,15 @@ function clearToInputMode() {
 /**
  * ❌ 5. ฟังก์ชันลบรถยนต์ออกจากระบบ
  */
-function deleteCarFromWorkspace(carId) {
+async function deleteCarFromWorkspace(carId) {
   if (!carId) {
     alert("ไม่พบรหัสรถยนต์ที่จะทำการลบ");
     return;
   }
 
-  if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลรถยนต์คันนี้ออกจากระบบ?")) {
-    fetch(`manage_cars.php?action=delete&id=${carId}`, {
-      method: "GET",
+  if (await AppDialog.confirm({ title: "ยืนยันการลบรถ", message: "คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลรถยนต์คันนี้ออกจากระบบ?", danger: true })) {
+    fetch(`manage_cars.php?action=delete&id=${encodeURIComponent(carId)}`, {
+      method: "POST", // ลบต้องเป็น POST (GET ถูกหลอกให้ลบผ่านลิงก์/รูปจากเว็บอื่นได้)
     })
       .then((res) => res.json())
       .then((data) => {
@@ -380,6 +388,16 @@ function deleteCarFromWorkspace(carId) {
   }
 }
 
+// 🩹 FIX: ระบบเปลี่ยนจาก TimeSlot คงที่ (เช้า/บ่าย/ทั้งวัน/กลางคืน) มาเป็นเวลาอิสระ
+// (OutTime/PlannedReturnTime) แล้ว แต่หน้า Admin ยังอ่านแค่ TimeSlot เดิม -> โชว์ "-" ทุกแถว
+// ฟังก์ชันนี้โชว์ "ไป HH:MM - กลับ HH:MM" ถ้ามีเวลาแบบใหม่ ถ้าไม่มี (booking เก่า) fallback ไป TimeSlot
+function formatBookingTimeRange(bk) {
+  const out = (bk.OutTime || "").slice(0, 5);
+  const ret = (bk.PlannedReturnTime || "").slice(0, 5);
+  if (out && ret) return `ไป ${out} - กลับ ${ret}`;
+  return bk.TimeSlot || "-";
+}
+
 function loadAdminBookings() {
   const tbody = document.getElementById("admin-bookings-tbody");
   if (!tbody) return;
@@ -390,7 +408,7 @@ function loadAdminBookings() {
     .then((res) => res.json())
     .then((data) => {
       if (!data.success) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#ef4444;">${data.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#ef4444;">${escapeHtml(data.message)}</td></tr>`;
         return;
       }
 
@@ -401,14 +419,14 @@ function loadAdminBookings() {
 
       tbody.innerHTML = data.bookings
         .map((bk) => {
-          const canCancel = bk.BookingStatus === "ขาไป";
+          // ยกเลิกได้ทั้งที่ยังไม่เช็คอิน (จองแล้ว) และที่ใช้งานอยู่ (ขาไป) — เดิมยกเลิกได้เฉพาะ "ขาไป" ทำให้ยกเลิกรายการที่ยังไม่เช็คอินไม่ได้เลย
+          const canCancel = bk.BookingStatus === "จองแล้ว" || bk.BookingStatus === "ขาไป";
           // ใช้ badge ชุดเดียวกับ homepage.js/.css (.status-badge + .status-xxx)
-          // map ให้ตรงกับตรรกะเดียวกับหน้า user: ขากลับ = คืนแล้ว(purple), ไม่ใช่ inuse
-          let statusClass = "status-booked"; // default: "ขาไป" ยังไม่เช็คอิน = ติดจอง
-          if (bk.BookingStatus === "ขากลับ") statusClass = "status-returned";
-          else if (bk.BookingStatus && bk.BookingStatus.includes("ยกเลิก"))
-            statusClass = "status-cancelled";
-          else if (bk.CheckInTime) statusClass = "status-inuse"; // เช็คอินแล้ว = กำลังใช้งาน
+          // สถานะจริงในระบบ: จองแล้ว(ติดจอง) → ขาไป(กำลังใช้งาน) → คืนแล้ว | ยกเลิก | ยกเลิก (ไม่มาใช้งาน)
+          let statusClass = "status-booked";
+          if (bk.BookingStatus === "คืนแล้ว" || bk.BookingStatus === "ขากลับ") statusClass = "status-returned";
+          else if (bk.BookingStatus && bk.BookingStatus.includes("ยกเลิก")) statusClass = "status-cancelled";
+          else if (bk.BookingStatus === "ขาไป") statusClass = "status-inuse";
 
           const passengerNames = (bk.Passengers || "")
             .split(",")
@@ -424,8 +442,10 @@ function loadAdminBookings() {
             })
             .join("");
 
+          const bkJson = JSON.stringify(bk).replace(/'/g, "&apos;");
+
           return `
-            <tr>
+            <tr class="clickable-row" style="cursor:pointer;" onclick='openBookingDetailModal(${bkJson})'>
               <td>${bk.BookingNumber}</td>
               <td>${escapeHtml(bk.DriverName)} ${bk.EmployeeID ? `<span class="emp-id-tag">#${escapeHtml(bk.EmployeeID)}</span>` : ""}</td>
               <td>
@@ -437,18 +457,18 @@ function loadAdminBookings() {
               </td>
               <td>${escapeHtml(bk.CarPlate)}</td>
               <td>${bk.BookingDate || "-"}</td>
-              <td>${bk.TimeSlot || "-"}</td>
+              <td>${formatBookingTimeRange(bk)}</td>
               <td class="status-cell"><span class="status-badge no-glow ${statusClass}">${bk.BookingStatus || "-"}</span></td>
-              <td>
-                <button class="op-edit" onclick='openBookingDetailModal(${JSON.stringify(bk).replace(/'/g, "&apos;")})'>รายละเอียด</button>
-                <button class="op-edit" onclick='openBookingEditModal(${JSON.stringify(bk).replace(/'/g, "&apos;")})'>แก้ไข</button>
+              <td onclick="event.stopPropagation()">
+                <button class="op-edit" onclick='openBookingEditModal(${bkJson})'>แก้ไข</button>
               </td>
-              <td>
+              <td onclick="event.stopPropagation()">
                 ${
                   canCancel
                     ? `<button class="op-del" onclick="adminCancelBooking(${bk.BookingID})">ยกเลิก</button>`
                     : `<span style="color:#64748b;">-</span>`
                 }
+                <button class="op-del" onclick="adminDeleteBooking(${bk.BookingID})">ลบ</button>
               </td>
             </tr>`;
         })
@@ -460,8 +480,31 @@ function loadAdminBookings() {
     });
 }
 
-function adminCancelBooking(bookingId) {
-  if (!confirm("ยืนยันยกเลิกการจองนี้ในนามแอดมิน?")) return;
+async function adminDeleteBooking(bookingId) {
+  if (!(await AppDialog.confirm({ title: "ยืนยันการลบ", message: "ยืนยันลบรายการจองนี้ถาวร? ข้อมูลจะหายไปทั้งหมดกู้คืนไม่ได้", danger: true }))) return;
+
+  fetch("admin_delete_booking.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ booking_id: bookingId }),
+  })
+    .then((res) => res.json())
+    .then((result) => {
+      if (result.success) {
+        alert("ลบรายการจองสำเร็จ");
+        loadAdminBookings();
+      } else {
+        alert("ลบไม่สำเร็จ: " + (result.message || ""));
+      }
+    })
+    .catch((err) => {
+      console.error("adminDeleteBooking error:", err);
+      alert("ติดต่อเซิร์ฟเวอร์ไม่ได้");
+    });
+}
+
+async function adminCancelBooking(bookingId) {
+  if (!(await AppDialog.confirm({ title: "ยืนยันการทำรายการ", message: "ยืนยันยกเลิกการจองนี้ในนามแอดมิน?", danger: false }))) return;
 
   fetch("admin_cancel_booking.php", {
     method: "POST",
@@ -522,16 +565,50 @@ function renderCalendar() {
     events: "get_calendar_events.php",
     eventClick: function (info) {
       const p = info.event.extendedProps;
-      alert(
-        `เลขที่จอง: ${p.bookingNumber || "-"}\n` +
-          `${info.event.title}\n` +
-          `ช่วงเวลา: ${p.timeSlot || "-"}\n` +
-          `สถานะ: ${p.status || "-"}`,
-      );
+      // 🩹 FIX: เดิมใช้ alert() ดิบๆ ของเบราว์เซอร์ (เห็นเป็นกล่อง "carbooking.chshiftgo.uk says"
+      // ไม่ตรงธีมเว็บเลย) เปลี่ยนมาใช้ modal เดียวกับที่ใช้ทั่วทั้งระบบ (.modal-overlay/.modal-content)
+      openCalendarEventModal({
+        bookingNumber: p.bookingNumber || "-",
+        title: info.event.title || "-",
+        timeSlot: p.timeSlot || "-",
+        status: p.status || "-",
+      });
     },
   });
 
   calendarInstance.render();
+}
+
+// 🌟 popup รายละเอียด event ปฏิทิน — แทนที่ alert() เดิม ให้เข้าธีมเว็บเหมือน modal อื่นในระบบ
+function openCalendarEventModal(ev) {
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.id = "calendar-event-modal-overlay";
+  overlay.innerHTML = `
+    <div class="modal-content" style="width: 420px; max-width: 92vw;">
+      <h2 style="margin-top:0; margin-bottom:14px;">
+        <i class="fa-solid fa-calendar-day"></i> รายละเอียดการจอง
+      </h2>
+      <div style="display:grid; grid-template-columns: auto 1fr; gap: 10px 14px; font-size:14px;">
+        <strong>เลขที่จอง:</strong><span>${escapeHtml(ev.bookingNumber)}</span>
+        <strong>รายการ:</strong><span>${escapeHtml(ev.title)}</span>
+        <strong>ช่วงเวลา:</strong><span>${escapeHtml(ev.timeSlot)}</span>
+        <strong>สถานะ:</strong><span>${escapeHtml(ev.status)}</span>
+      </div>
+      <div style="display:flex; justify-content:flex-end; margin-top:18px;">
+        <button type="button" class="btn-clear" onclick="closeCalendarEventModal()">ปิด</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closeCalendarEventModal();
+  });
+}
+
+function closeCalendarEventModal() {
+  const overlay = document.getElementById("calendar-event-modal-overlay");
+  if (overlay) overlay.remove();
 }
 
 /**
@@ -548,7 +625,7 @@ function openMaintenanceModal(carId, plate) {
   overlay.innerHTML = `
     <div class="modal-content" style="width: 820px; max-width: 95vw; max-height: 92vh; overflow: hidden; display: flex; flex-direction: column;">
       <h2 style="margin-top:0; margin-bottom:14px;">
-        <i class="fa-solid fa-screwdriver-wrench"></i> ประวัติซ่อม — ${plate}
+        <i class="fa-solid fa-screwdriver-wrench"></i> ประวัติซ่อม — ${escapeHtml(plate)}
       </h2>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; overflow: hidden;">
@@ -623,6 +700,19 @@ function closeMaintenanceModal() {
 /**
  * 📋 6.5 รายละเอียดการจอง (ขาไป/ขากลับ) — โชว์เลขไมล์ + เวลาเช็คอิน/คืน + รูปถ่ายทั้ง 3 จุด
  */
+// พิกัดจาก GPS มือถือตอนเช็คอิน/คืนรถ: ok=อยู่ในจุด far=นอกจุด none=ไม่มีพิกัด nosite=ยังไม่ได้ตั้งจุดบริษัท
+function geoLine(label, geo, lat, lng, dist, happened) {
+  if (!happened) return "";
+  const map = lat && lng ? ` <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank" rel="noopener">เปิดแผนที่</a>` : "";
+  const txt = {
+    ok: `<span style="color:#16a34a">อยู่ในจุดบริษัท</span>${dist != null ? ` (ห่าง ${dist} ม.)` : ""}`,
+    far: `<span style="color:#dc2626">นอกจุดบริษัท ห่าง ${dist ?? "?"} ม.</span>`,
+    none: `<span style="color:#d97706">ไม่ได้ยืนยันพิกัด</span>`,
+    nosite: "บันทึกพิกัดแล้ว (ยังไม่ได้ตั้งจุดบริษัท)",
+  }[geo] || "-";
+  return `<div style="grid-column: span 2;"><strong>${label}:</strong> ${txt}${map}</div>`;
+}
+
 function openBookingDetailModal(bk) {
   const overlay = document.createElement("div");
   overlay.className = "modal-overlay";
@@ -632,15 +722,20 @@ function openBookingDetailModal(bk) {
   // ไฟล์นี้รันอยู่ใน Admin/ ต้องถอยไป ../Car/ ก่อนถึงจะเจอไฟล์จริง
   const photoUrl = (path) => (path ? `../Car/${path}` : null);
 
-  const photoBlock = (label, path) => {
+  // 🌟 ชี้แจง: booking มี 2 ทางคืนรถ — สแกน QR (มีรูปเสมอ) กับแท็บคืนรถมือใน booking.html (ไม่บังคับถ่ายรูป)
+  // ข้อความเดิม "ไม่มีรูป" เฉยๆ ทำให้ดูเหมือนระบบพัง ทั้งที่บาง booking ตั้งใจไม่มีรูปตามดีไซน์
+  const photoBlock = (label, path, isCheckin) => {
     const url = photoUrl(path);
+    const emptyMsg = isCheckin
+      ? "ไม่มีรูป (ไม่บังคับถ่ายก่อนออกรถ)"
+      : "ไม่มีรูป (คืนผ่านฟอร์มมือ ไม่ได้สแกน QR)";
     return `
       <div style="text-align:center;">
         <p style="font-size:13px; font-weight:600; margin-bottom:6px;">${label}</p>
         ${
           url
-            ? `<img src="${url}" style="width:100%; max-height:180px; object-fit:cover; border-radius:8px; cursor:pointer;" onclick="window.open('${url}', '_blank')" />`
-            : `<div style="height:120px; display:flex; align-items:center; justify-content:center; background:#f1f5f9; border-radius:8px; color:#94a3b8; font-size:13px;">ไม่มีรูป</div>`
+            ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener"><img src="${escapeHtml(url)}" style="width:100%; max-height:180px; object-fit:cover; border-radius:8px; cursor:pointer;" /></a>`
+            : `<div style="height:120px; display:flex; align-items:center; justify-content:center; background:#f1f5f9; border-radius:8px; color:#94a3b8; font-size:12px; padding:0 8px; text-align:center;">${emptyMsg}</div>`
         }
       </div>`;
   };
@@ -656,7 +751,7 @@ function openBookingDetailModal(bk) {
         <div><strong>หน่วยงาน:</strong> ${escapeHtml(bk.Department) || "-"}</div>
         <div><strong>ทะเบียนรถ:</strong> ${escapeHtml(bk.CarPlate) || "-"}</div>
         <div><strong>สถานที่ไป:</strong> ${escapeHtml(bk.Destination) || "-"}</div>
-        <div><strong>วันที่ / ช่วงเวลา:</strong> ${bk.BookingDate || "-"} (${bk.TimeSlot || "-"})</div>
+        <div><strong>วันที่ / ช่วงเวลา:</strong> ${bk.BookingDate || "-"} (${formatBookingTimeRange(bk)})</div>
         <div><strong>สถานะ:</strong> ${bk.BookingStatus || "-"}</div>
       </div>
 
@@ -665,14 +760,17 @@ function openBookingDetailModal(bk) {
         <div><strong>เลขไมล์ตอนออก:</strong> ${bk.StartMileage ?? "-"}</div>
         <div><strong>วันที่/เวลาคืน:</strong> ${bk.ReturnDate ? `${bk.ReturnDate} ${bk.ReturnTime || ""}` : "ยังไม่คืน"}</div>
         <div><strong>เลขไมล์ตอนคืน:</strong> ${bk.EndMileage ?? "-"}</div>
+        <div><strong>ระยะทางที่ใช้:</strong> ${adminDistanceText(bk)}</div>
+        ${geoLine("พิกัดเช็คอิน", bk.CheckInGeo, bk.CheckInLat, bk.CheckInLng, bk.CheckInDist, !!bk.CheckInTime)}
+        ${geoLine("พิกัดตอนคืน", bk.ReturnGeo, bk.ReturnLat, bk.ReturnLng, bk.ReturnDist, !!bk.ReturnDate)}
         ${bk.ReturnRemark && bk.ReturnRemark !== "-" ? `<div style="grid-column: span 2;"><strong>ปัญหาที่แจ้ง:</strong> ${escapeHtml(bk.ReturnRemark)}</div>` : ""}
       </div>
 
       <h3 style="margin-bottom:10px;">รูปถ่ายประกอบ</h3>
       <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 18px;">
-        ${photoBlock("ก่อนออก (ถ้ามีตำหนิ)", bk.CheckinPhotoPath)}
-        ${photoBlock("เลขไมล์ตอนคืน", bk.OdometerPhotoPath)}
-        ${photoBlock("สภาพรถตอนคืน", bk.ReturnPhotoPath)}
+        ${photoBlock("ก่อนออก (ถ้ามีตำหนิ)", bk.CheckinPhotoPath, true)}
+        ${photoBlock("เลขไมล์ตอนคืน", bk.OdometerPhotoPath, false)}
+        ${photoBlock("สภาพรถตอนคืน", bk.ReturnPhotoPath, false)}
       </div>
 
       <div style="display:flex; justify-content:flex-end;">
@@ -717,15 +815,16 @@ function openBookingEditModal(bk) {
           <input type="date" id="edit-booking-date" value="${bk.BookingDate || ""}" style="margin-bottom:0;">
         </div>
         <div>
-          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ช่วงเวลา</label>
-          <select id="edit-time-slot" style="margin-bottom:0;">
-            ${["เช้า", "บ่าย", "ทั้งวัน", "กลางคืน"]
-              .map(
-                (s) =>
-                  `<option value="${s}" ${bk.TimeSlot === s ? "selected" : ""}>${s}</option>`,
-              )
-              .join("")}
-          </select>
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">เวลาไป</label>
+          <!-- 🩹 FIX: เดิมช่องนี้เป็น select ฟิก 4 ตัวเลือก (เช้า/บ่าย/ทั้งวัน/กลางคืน) แล้วเปลี่ยนเป็น
+               text input ผูกกับ TimeSlot แต่ระบบจองจริงเปลี่ยนไปเก็บ OutTime/PlannedReturnTime
+               (เวลาอิสระ) ไปแล้ว แก้ TimeSlot ไม่มีผลอะไรกับเวลาที่โชว์จริงเลย
+               เปลี่ยนเป็น time input ผูกกับ OutTime/PlannedReturnTime ตรงๆ ให้แก้ได้ตรงค่าจริง -->
+          <input type="time" id="edit-out-time" value="${(bk.OutTime || "").slice(0, 5)}" style="margin-bottom:0;">
+        </div>
+        <div>
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">เวลากลับ (โดยประมาณ)</label>
+          <input type="time" id="edit-return-time" value="${(bk.PlannedReturnTime || "").slice(0, 5)}" style="margin-bottom:0;">
         </div>
 
         <div style="grid-column: span 2;">
@@ -745,7 +844,7 @@ function openBookingEditModal(bk) {
         <div style="grid-column: span 2;">
           <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">สถานะ</label>
           <select id="edit-booking-status" style="margin-bottom:0;">
-            ${["ขาไป", "ขากลับ", "ยกเลิก", "ยกเลิก (ไม่มาใช้งาน)"]
+            ${["จองแล้ว", "ขาไป", "คืนแล้ว", "ยกเลิก", "ยกเลิก (ไม่มาใช้งาน)"]
               .map(
                 (s) =>
                   `<option value="${s}" ${bk.BookingStatus === s ? "selected" : ""}>${s}</option>`,
@@ -777,7 +876,8 @@ function submitBookingEdit(bookingId) {
     employee_id: document.getElementById("edit-employee-id").value.trim(),
     car_plate: document.getElementById("edit-car-plate").value.trim(),
     booking_date: document.getElementById("edit-booking-date").value,
-    time_slot: document.getElementById("edit-time-slot").value,
+    out_time: document.getElementById("edit-out-time").value,
+    planned_return_time: document.getElementById("edit-return-time").value,
     destination: document.getElementById("edit-destination").value.trim(),
     start_mileage: document.getElementById("edit-start-mileage").value,
     end_mileage: document.getElementById("edit-end-mileage").value,
@@ -817,7 +917,7 @@ function loadMaintenanceHistory(carId) {
     .then((res) => res.json())
     .then((data) => {
       if (!data.success) {
-        wrap.innerHTML = `<p style="color:#ef4444;">${data.message}</p>`;
+        wrap.innerHTML = `<p style="color:#ef4444;">${escapeHtml(data.message)}</p>`;
         return;
       }
       const rows = data.history || [];
@@ -831,9 +931,9 @@ function loadMaintenanceHistory(carId) {
           return `
           <div class="fleet-row" style="align-items:flex-start;">
             <div class="fleet-row-name">
-              <strong>${r.MaintenanceType || "-"}</strong>
+              <strong>${escapeHtml(r.MaintenanceType) || "-"}</strong>
               <span>${r.StartDate} → ${r.EndDate || "ยังไม่เสร็จ"}${r.Cost ? " • " + r.Cost + " บาท" : ""}</span>
-              ${r.Note ? `<span>${r.Note}</span>` : ""}
+              ${r.Note ? `<span>${escapeHtml(r.Note)}</span>` : ""}
               ${r.NextDueDate ? `<span>เช็คถัดไป: ${r.NextDueDate}</span>` : ""}
             </div>
             ${
@@ -884,8 +984,8 @@ function submitMaintenanceRecord() {
     .catch(() => alert("ติดต่อเซิร์ฟเวอร์ไม่ได้"));
 }
 
-function closeMaintenanceRecord(maintenanceId) {
-  if (!confirm("ยืนยันปิดงานซ่อมนี้? (รถจะกลับมาสถานะว่างอัตโนมัติ)")) return;
+async function closeMaintenanceRecord(maintenanceId) {
+  if (!(await AppDialog.confirm({ title: "ยืนยันการทำรายการ", message: "ยืนยันปิดงานซ่อมนี้? (รถจะกลับมาสถานะว่างอัตโนมัติ)", danger: false }))) return;
 
   fetch("manage_maintenance.php", {
     method: "POST",
@@ -893,7 +993,7 @@ function closeMaintenanceRecord(maintenanceId) {
     body: JSON.stringify({
       action: "close",
       maintenance_id: maintenanceId,
-      end_date: new Date().toISOString().split("T")[0],
+      end_date: ((d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0])(new Date()), // วันที่ท้องถิ่น ไม่ใช่ UTC
     }),
   })
     .then((res) => res.json())
@@ -909,8 +1009,8 @@ function closeMaintenanceRecord(maintenanceId) {
     .catch(() => alert("ติดต่อเซิร์ฟเวอร์ไม่ได้"));
 }
 
-function deleteMaintenanceRecord(maintenanceId) {
-  if (!confirm("ยืนยันลบรายการนี้?")) return;
+async function deleteMaintenanceRecord(maintenanceId) {
+  if (!(await AppDialog.confirm({ title: "ยืนยันการลบ", message: "ยืนยันลบรายการนี้?", danger: true }))) return;
 
   fetch("manage_maintenance.php", {
     method: "POST",
@@ -1018,8 +1118,8 @@ function saveUserEdit(userId) {
     .catch(() => alert("ติดต่อเซิร์ฟเวอร์ไม่ได้"));
 }
 
-function deleteUser(userId, username) {
-  if (!confirm(`ยืนยันลบผู้ใช้ "${username}" ออกจากระบบ?`)) return;
+async function deleteUser(userId, username) {
+  if (!(await AppDialog.confirm({ title: "ยืนยันการลบ", message: `ยืนยันลบผู้ใช้ "${username}" ออกจากระบบ?`, danger: true }))) return;
 
   fetch("delete_user.php", {
     method: "POST",

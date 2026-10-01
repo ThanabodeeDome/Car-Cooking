@@ -11,11 +11,20 @@ try {
     autoCancelNoShows($conn);
 
     // 🌟 เพิ่มคอลัมน์ขาไป/ขากลับ + รูปถ่ายทั้ง 3 จุด ให้หน้า Admin ดึงไปโชว์ใน modal รายละเอียดได้
+    // 🩹 FIX: เพิ่ม OutTime/PlannedReturnTime (ระบบใหม่ใช้เวลาอิสระแทน TimeSlot เดิม
+    // เก็บ TimeSlot ไว้เผื่อ booking เก่าก่อนอัปเดตยังมีค่านี้อยู่)
+    require_once '../Car/geo_lib.php';
+    $geoCols = geo_columns_ok($conn)
+        ? ", CheckInLat, CheckInLng, CheckInGeo, CheckInDist, ReturnLat, ReturnLng, ReturnGeo, ReturnDist"
+        : '';
     $sql = "SELECT BookingID, BookingNumber, DriverName, EmployeeID, Department, Destination,
-                   CarPlate, BookingDate, TimeSlot, BookingStatus,
+                   CarPlate, BookingDate, TimeSlot,
+                   CONVERT(varchar(8), OutTime, 108) AS OutTime,
+                   CONVERT(varchar(8), PlannedReturnTime, 108) AS PlannedReturnTime,
+                   BookingStatus,
                    StartMileage, EndMileage, CheckInTime, ReturnDate, ReturnTime, ReturnRemark,
                    CheckinPhotoPath, OdometerPhotoPath, ReturnPhotoPath,
-                   Passengers, PassengerIDs
+                   Passengers, PassengerIDs$geoCols
             FROM CarBookings
             ORDER BY BookingID DESC";
     $stmt = $conn->query($sql);

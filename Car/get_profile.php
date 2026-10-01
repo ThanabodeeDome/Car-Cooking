@@ -23,7 +23,7 @@ try {
     $stmt2->execute([':emp_id' => $user['employee_id']]);
     $user['total_bookings'] = $stmt2->fetch(PDO::FETCH_ASSOC)['total'];
 
-    $stmt3 = $conn->prepare("SELECT COUNT(*) as done FROM CarBookings WHERE EmployeeID = :emp_id AND BookingStatus = 'ขากลับ'");
+    $stmt3 = $conn->prepare("SELECT COUNT(*) as done FROM CarBookings WHERE EmployeeID = :emp_id AND BookingStatus = N'คืนแล้ว'");
     $stmt3->execute([':emp_id' => $user['employee_id']]);
     $user['completed_bookings'] = $stmt3->fetch(PDO::FETCH_ASSOC)['done'];
 

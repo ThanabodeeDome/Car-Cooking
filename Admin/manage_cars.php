@@ -1,6 +1,6 @@
 <?php
 session_start();
-header("Content-Type: application/json");
+header("Content-Type: application/json; charset=utf-8");
 include_once "../db_connect.php";
 
 // 🌟 ไฟล์นี้ไม่มี auth check เลยมาก่อน! ใครก็ยิง action=delete/save ได้โดยไม่ต้อง login
@@ -36,7 +36,11 @@ if ($action === 'fetch') {
 
 // 2. ลบข้อมูลรถยนต์
 if ($action === 'delete') {
-    $id = $_GET['id'] ?? 0;
+    if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+        echo json_encode(["success" => false, "message" => "ต้องใช้ POST"]);
+        exit;
+    }
+    $id = (int)($_GET['id'] ?? 0);
     try {
         $stmt = $conn->prepare("DELETE FROM Cars WHERE CarID = ?");
         $stmt->execute([$id]);
@@ -60,6 +64,30 @@ if ($action === 'save') {
     //   'ว่าง'     = ปกติ ให้ระบบคำนวณ ว่าง/ไม่ว่าง เองจากตาราง CarBookings
     //   'เช็คระยะ' = แอดมิน override ปิดใช้งานรถคันนี้ (งดให้บริการ) ไม่ว่า booking จะว่างหรือไม่
     $carStatus  = $_POST['CarStatus'] ?? 'ว่าง';
+
+    // ตรวจข้อมูลพื้นฐานก่อนบันทึก
+    $plate = trim($plate);
+    if ($plate === '') {
+        echo json_encode(["success" => false, "message" => "กรุณากรอกทะเบียนรถ"]);
+        exit;
+    }
+    if (!is_numeric($mileage) || $mileage < 0) {
+        echo json_encode(["success" => false, "message" => "เลขไมล์ต้องเป็นตัวเลขไม่ติดลบ"]);
+        exit;
+    }
+    if (!in_array($carStatus, ['ว่าง', 'เช็คระยะ'], true)) {
+        $carStatus = 'ว่าง';
+    }
+    try { // ทะเบียนซ้ำกับรถคันอื่น
+        $dup = $conn->prepare("SELECT COUNT(*) FROM Cars WHERE REPLACE(Plate, ' ', '') = REPLACE(?, ' ', '') AND CarID <> ?");
+        $dup->execute([$plate, (int)$carID]);
+        if ($dup->fetchColumn() > 0) {
+            echo json_encode(["success" => false, "message" => "ทะเบียนนี้มีอยู่ในระบบแล้ว"]);
+            exit;
+        }
+    } catch (PDOException $e) {
+        error_log('manage_cars dup check: ' . $e->getMessage());
+    }
     
     // 🌟 รับค่าข้อมูลวันที่ทั้ง 6 ช่องจากฟอร์มหน้าเว็บ (หากไม่มีการกรอก ให้บันทึกเป็น null)
     $insuranceExpiry = !empty($_POST['InsuranceExpiry']) ? $_POST['InsuranceExpiry'] : null;
@@ -72,8 +100,14 @@ if ($action === 'save') {
     // จัดการอัปโหลดไฟล์รูปภาพ
     $imageName = null;
     if (isset($_FILES['CarImage']) && $_FILES['CarImage']['error'] === UPLOAD_ERR_OK) {
-        $ext = pathinfo($_FILES['CarImage']['name'], PATHINFO_EXTENSION);
-        $imageName = "car_" . time() . "." . $ext; 
+        // 🔒 รับเฉพาะไฟล์รูปจริง (เดิมรับนามสกุลอะไรก็ได้ = อัปโหลด .php ขึ้นเซิร์ฟเวอร์ได้)
+        $ext = strtolower(pathinfo($_FILES['CarImage']['name'], PATHINFO_EXTENSION));
+        $info = @getimagesize($_FILES['CarImage']['tmp_name']);
+        if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'], true) || $info === false || $_FILES['CarImage']['size'] > 5 * 1024 * 1024) {
+            echo json_encode(["success" => false, "message" => "รูปรถต้องเป็นไฟล์ jpg/png/webp/gif ขนาดไม่เกิน 5MB"]);
+            exit;
+        }
+        $imageName = "car_" . time() . "_" . bin2hex(random_bytes(3)) . "." . $ext; 
         $upload_path = "../Car/assets/img-car/" . $imageName; 
 
         if (!move_uploaded_file($_FILES['CarImage']['tmp_name'], $upload_path)) {

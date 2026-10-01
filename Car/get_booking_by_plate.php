@@ -21,12 +21,14 @@ if (empty($plate)) {
 try {
     $sql = "SELECT TOP 1 BookingID, BookingNumber, DriverName, EmployeeID, Department,
                    Destination, CarPlate, StartMileage, Passengers, PassengerIDs,
-                   BookingDate, TimeSlot
+                   CONVERT(varchar(10), BookingDate, 23) AS BookingDate, TimeSlot,
+                   LEFT(OutTime, 5) AS OutTime, CONVERT(varchar(5), PlannedReturnTime, 108) AS PlannedReturnTime
             FROM CarBookings
             WHERE REPLACE(CarPlate, ' ', '') = REPLACE(:plate, ' ', '') AND BookingStatus = :status
-            ORDER BY BookingID DESC";
+            ORDER BY CASE WHEN EmployeeID = :emp THEN 0 ELSE 1 END, ABS(DATEDIFF(MINUTE, GETDATE(), CAST(BookingDate AS DATETIME) + CASE WHEN ISDATE(OutTime) = 1 THEN CAST(OutTime AS DATETIME) ELSE CAST('00:00' AS DATETIME) END)), BookingID ASC";
     $stmt = $conn->prepare($sql);
-    $stmt->execute([':plate' => $plate, ':status' => $status]);
+    // คิวของคนที่สแกนเองมาก่อน (ลำดับเดียวกับ confirm_checkin.php)
+    $stmt->execute([':plate' => $plate, ':status' => $status, ':emp' => (string)($_SESSION['employee_id'] ?? '')]);
     $booking = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$booking) {

@@ -4,12 +4,22 @@
 // ต้องมี library phpqrcode วางไว้ที่ Car/lib/phpqrcode/qrlib.php ก่อน
 // (ดาวน์โหลดจาก https://github.com/t0k4rt/phpqrcode)
 
+// 🔒 เดิมใครก็เปิด URL นี้ได้โดยไม่ต้อง login (สั่งเขียนไฟล์ QR ทับ + เห็น error DB) — ให้รันจาก command line หรือแอดมินเท่านั้น
+if (PHP_SAPI !== 'cli') {
+    require_once __DIR__ . '/../require_admin.php';
+    if (currentAdminRole() === false) {
+        http_response_code(403);
+        exit;
+    }
+    header('Content-Type: text/plain; charset=utf-8');
+}
+
 require_once __DIR__ . '/lib/phpqrcode/qrlib.php';
 require_once __DIR__ . '/db_connect.php';
 
 // 🌟 แก้ตรงนี้เป็นโดเมนจริงหลังตั้ง Cloudflare Tunnel เสร็จแล้ว
 // ห้ามใช้ localhost เด็ดขาด เพราะมือถือคนสแกนจะเข้า localhost ของตัวเอง ไม่ใช่ server จริง
-define('BASE_URL', 'http://192.168.5.52/car-booking/Car/scan.php');
+define('BASE_URL', 'https://carbooking.chshiftgo.uk/Car/scan.php');
 
 $outputDir = __DIR__ . '/assets/QRcode/';
 if (!is_dir($outputDir)) {
@@ -44,5 +54,6 @@ try {
 
     echo "\nเสร็จสิ้น สร้าง QR ทั้งหมด {$count} คัน ในโฟลเดอร์ assets/QRcode/\n";
 } catch (PDOException $e) {
-    die("DB error: " . $e->getMessage() . "\n");
+    error_log('generate_qrcodes DB error: ' . $e->getMessage());
+    die("DB error\n");
 }

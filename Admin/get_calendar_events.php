@@ -10,35 +10,48 @@ if (currentAdminRole() === false) {
     exit;
 }
 
-// ช่วงเวลาแต่ละ TimeSlot ใช้แปลงเป็นเวลาเริ่ม/จบของ event บนปฏิทิน + label อ่านง่าย
+// ช่วงเวลาแบบเก่า (ก่อนใช้เวลาอิสระ) — ใช้เฉพาะแถวเก่าที่ยังไม่มี OutTime/PlannedReturnTime
 $slotTimes = [
-    'เช้า'   => ['08:00:00', '12:00:00', 'เช้า'],
-    'บ่าย'   => ['13:00:00', '17:00:00', 'บ่าย'],
-    'ทั้งวัน' => ['08:00:00', '17:00:00', 'ทั้งวัน'],
+    'เช้า'   => ['08:00', '12:00'],
+    'บ่าย'   => ['13:00', '17:00'],
+    'ทั้งวัน' => ['08:00', '17:00'],
 ];
 
 try {
-    $sql = "SELECT BookingID, BookingNumber, DriverName, CarPlate, BookingDate, TimeSlot, BookingStatus
+    $sql = "SELECT BookingID, BookingNumber, DriverName, CarPlate, BookingStatus, TimeSlot,
+                   CONVERT(varchar(10), BookingDate, 23) AS BookingDate,
+                   LEFT(OutTime, 5) AS OutTime,
+                   CONVERT(varchar(5), PlannedReturnTime, 108) AS PlannedReturnTime
             FROM CarBookings
             WHERE BookingDate IS NOT NULL
               AND BookingStatus NOT LIKE N'ยกเลิก%'";
     $rows = $conn->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 
+    $colors = ['คืนแล้ว' => '#8b5cf6', 'ขาไป' => '#2563eb', 'จองแล้ว' => '#f59e0b'];
+
     $events = [];
     foreach ($rows as $r) {
-        [$startT, $endT, $slotLabel] = $slotTimes[$r['TimeSlot']] ?? ['08:00:00', '17:00:00', ''];
-        $isReturned = $r['BookingStatus'] === 'ขากลับ';
+        $out = $r['OutTime'];
+        $ret = $r['PlannedReturnTime'];
+        if (!$out || !$ret) {
+            [$out, $ret] = $slotTimes[$r['TimeSlot']] ?? ['08:00', '17:00'];
+        }
+        $endDate = $r['BookingDate'];
+        if ($ret <= $out) { // ข้ามคืน -> จบเช้าวันถัดไป
+            $endDate = date('Y-m-d', strtotime($r['BookingDate'] . ' +1 day'));
+        }
+        $range = "$out-$ret น.";
 
         $events[] = [
             'id'    => $r['BookingID'],
-            'title' => "[{$slotLabel}] {$r['CarPlate']} - {$r['DriverName']}",
-            'start' => $r['BookingDate'] . 'T' . $startT,
-            'end'   => $r['BookingDate'] . 'T' . $endT,
-            'color' => $isReturned ? '#8b5cf6' : '#3b82f6', // คืนแล้ว=ม่วง, กำลังจอง/ใช้งาน=ฟ้า
+            'title' => "[$range] {$r['CarPlate']} - {$r['DriverName']}",
+            'start' => $r['BookingDate'] . 'T' . $out . ':00',
+            'end'   => $endDate . 'T' . $ret . ':00',
+            'color' => $colors[$r['BookingStatus']] ?? '#64748b',
             'extendedProps' => [
                 'bookingNumber' => $r['BookingNumber'],
                 'status'        => $r['BookingStatus'],
-                'timeSlot'      => $r['TimeSlot'],
+                'timeSlot'      => $range,
             ],
         ];
     }

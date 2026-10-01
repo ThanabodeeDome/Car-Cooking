@@ -8,7 +8,7 @@ requireAdminAccess();
 
 try {
     // ไม่ select password ออกมาเด็ดขาด แม้เป็น hash ก็ตาม
-    $sql = "SELECT id, employee_id, username, first_name, role FROM Users
+    $sql = "SELECT id, employee_id, username, first_name, last_name, email, role FROM Users
             ORDER BY
               CASE WHEN TRY_CAST(employee_id AS INT) IS NULL THEN 1 ELSE 0 END,
               TRY_CAST(employee_id AS INT) ASC,

@@ -1,6 +1,8 @@
 <?php
 session_start();
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/../same_origin.php';
+require_same_origin();
 require_once 'db_connect.php';
 
 if (!isset($_SESSION['user_id'])) {
@@ -13,10 +15,12 @@ if (!isset($_FILES['avatar']) || $_FILES['avatar']['error'] !== UPLOAD_ERR_OK) {
     exit;
 }
 
-$allowedExt = ['jpg', 'jpeg', 'png', 'webp'];
-$ext = strtolower(pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION));
+// 🔒 ตรวจว่าเป็นรูปจริงจากเนื้อไฟล์ (เดิมดูแค่นามสกุล = อัปไฟล์ HTML/สคริปต์ตั้งชื่อ .png ได้)
+$imgInfo = @getimagesize($_FILES['avatar']['tmp_name']);
+$extByType = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'];
+$ext = ($imgInfo && isset($extByType[$imgInfo[2]])) ? $extByType[$imgInfo[2]] : null;
 
-if (!in_array($ext, $allowedExt)) {
+if (!$ext) {
     echo json_encode(["success" => false, "message" => "รองรับเฉพาะไฟล์ jpg, png, webp"]);
     exit;
 }

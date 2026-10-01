@@ -6,9 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>สถานะรถยนต์ - Corporate Car</title>
     <link rel="stylesheet" href="navbar.css" />
-    <link rel="stylesheet" href="car-status.css" />
+    <link rel="stylesheet" href="toast.css" />
+    <link rel="stylesheet" href="car-status.css?v=2" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link
@@ -16,56 +19,121 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
   </head>
-  <body class="booking-page">
+  <body>
+    <!-- 🧭 Main Navigation Bar -->
     <nav class="nav-bar">
       <div class="logo">
         <img src="assets/image/CH2.png" alt="nav-logo" />
       </div>
+
       <div class="menu-toggle" id="mobile-menu">
         <span class="bar"></span>
         <span class="bar"></span>
         <span class="bar"></span>
       </div>
+
       <ul class="nav-links" id="nav-list">
         <li><a href="homepage.html" class="Home-btn">หน้าหลัก</a></li>
         <li><a href="booking.html" class="book-btn">จองรอบขับ</a></li>
-        <li><a href="car-status.html" class="Check-btn">เช็กคิว</a></li>
-        <li>
-          <a href="car-details.html" class="info-btn">รายละเอียดรถยนต์</a>
-        </li>
-        <li>
-          <a href="booking-details.html" class="Rules-btn">รายละเอียดการจอง</a>
-        </li>
+        <li><a href="car-status.html" class="Check-btn active">เช็กคิว</a></li>
+        <li><a href="car-details.html" class="info-btn">รายละเอียดรถยนต์</a></li>
+        <li><a href="booking-details.html" class="Rules-btn">รายละเอียดการจอง</a></li>
         <li><a href="profile.html" class="contact-btn">ข้อมูลผู้ใช้</a></li>
       </ul>
     </nav>
 
-    <div class="status-container">
-      <section class="date-picker-section">
-        <div class="date-picker-header">
-          <h2 class="section-title" style="margin-bottom: 0">1. เลือกวันที่</h2>
-          <select id="month-select" class="month-dropdown"></select>
-        </div>
-        <div id="day-strip" class="day-strip"></div>
-      </section>
+    <!-- 📅 Car Status Page Wrapper -->
+    <div class="status-page-container">
+      <div class="status-layout-wrapper">
+        
 
-      <section class="car-section">
-        <h2 class="section-title">2. สถานะรถของวันที่เลือก</h2>
-        <div class="scroll-container">
-          <div id="car-grid" class="car-grid-horizontal"></div>
+        <!-- 🪜 Stepper Progress -->
+        <div class="steps-progress-row" aria-label="ขั้นตอนการตรวจสอบคิว">
+          <div class="step-badge active" id="step-badge-date">
+            <span class="step-num">1</span>
+            <span>เลือกวันที่</span>
+          </div>
+          <i class="fa-solid fa-chevron-right step-arrow"></i>
+          <div class="step-badge" id="step-badge-car">
+            <span class="step-num">2</span>
+            <span>เลือกรถยนต์</span>
+          </div>
+          <i class="fa-solid fa-chevron-right step-arrow"></i>
+          <div class="step-badge" id="step-badge-time">
+            <span class="step-num">3</span>
+            <span>ดูตารางคิวเวลา</span>
+          </div>
         </div>
-      </section>
 
-      <section class="booking-status-section">
-        <div id="booking-status-panel" class="booking-status-panel">
-          <p style="color: #94a3b8; text-align: center">
-            👆 กดเลือกรถด้านบนเพื่อดูรายละเอียดช่วงเวลา
-          </p>
-        </div>
-      </section>
+        <!-- 1️⃣ Step 1: Date Ribbon Picker -->
+        <section class="status-card-panel date-picker-section">
+          <div class="panel-header">
+            <div class="panel-title-wrap">
+              <div class="step-circle">1</div>
+              <div>
+                <h2 class="panel-title">เลือกวันที่ต้องการตรวจสอบ</h2>
+                <p class="panel-desc">เลือกเดือนและวันเพื่อดูสถานะความพร้อมของรถแต่ละคัน</p>
+              </div>
+            </div>
+
+            <div class="month-select-wrapper">
+              <i class="fa-regular fa-calendar-days select-icon"></i>
+              <select id="month-select" class="month-dropdown"></select>
+            </div>
+          </div>
+
+          <div id="day-strip" class="day-strip"></div>
+        </section>
+
+        <!-- 2️⃣ Step 2: Car Fleet Selector -->
+        <section class="status-card-panel car-section">
+          <div class="panel-header">
+            <div class="panel-title-wrap">
+              <div class="step-circle">2</div>
+              <div>
+                <h2 class="panel-title">สถานะรถยนต์ของวันที่เลือก</h2>
+                <p class="panel-desc" id="car-section-date-hint">คลิกเลือกรถคันที่ต้องการเพื่อดูคิวเวลาว่าง</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="scroll-container">
+            <div id="car-grid" class="car-grid-horizontal"></div>
+          </div>
+        </section>
+
+        <!-- 3️⃣ Step 3: Booking Status Schedule Panel -->
+        <section class="status-card-panel booking-status-section">
+          <div class="panel-header">
+            <div class="panel-title-wrap">
+              <div class="step-circle">3</div>
+              <div>
+                <h2 class="panel-title">ตารางการจองและช่วงเวลาว่าง</h2>
+                <p class="panel-desc" id="slot-section-hint">รายละเอียดช่วงเวลาของรถยนต์ที่เลือก</p>
+              </div>
+            </div>
+          </div>
+
+          <div id="booking-status-panel" class="booking-status-panel">
+            <div class="empty-selection-placeholder">
+              <i class="fa-solid fa-hand-pointer placeholder-icon"></i>
+              <h3>ยังไม่ได้เลือกรถยนต์</h3>
+              <p>โปรดคลิกเลือกรถยนต์จากรายการด้านบน เพื่อดูตารางเวลาการจองและคิวว่างของวันนั้น</p>
+            </div>
+          </div>
+        </section>
+
+      </div>
     </div>
 
+    <!-- Scripts -->
+    <script src="toast.js?v=5"></script>
     <script src="main.js"></script>
-    <script src="car-status.js"></script>
+    <script src="car-status.js?v=2"></script>
+    <script src="app-nav.js?v=4"></script>
+    <script src="notify-bell.js?v=5"></script>
+      <script src="ui-dialog.js?v=3"></script>
+      <script src="fx.js?v=1"></script>
+      <script src="pwa.js?v=2"></script>
   </body>
 </html>

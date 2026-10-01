@@ -30,6 +30,12 @@ function fetchDashboardStats() {
       setText("stat-booked", data.counts.booked);
       setText("stat-maintenance", data.counts.maintenance);
 
+      const fbGood = data.feedback?.good || 0;
+      const fbBad = data.feedback?.bad || 0;
+      const fbTotal = fbGood + fbBad;
+      setText("stat-feedback", fbTotal ? Math.round((fbGood / fbTotal) * 100) + "%" : "-");
+      setText("stat-feedback-count", fbTotal);
+
       renderFleetStatusList(data.cars);
       renderWeekTimeline(data.cars, data.week_start, data.week_bookings);
       renderRecentBookings(data.recent);
@@ -107,13 +113,16 @@ function renderWeekTimeline(cars, weekStartStr, bookings) {
     "เสาร์",
     "อาทิตย์",
   ];
+  // 🩹 toISOString() เป็นเวลา UTC — ไทย (UTC+7) เที่ยงคืนท้องถิ่นจะกลายเป็นวันก่อนหน้า ตารางเลื่อนไป 1 วัน
+  // แปลงเป็นวันที่ตามเวลาเครื่องก่อน
+  const localYmd = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0];
   const start = new Date(weekStartStr + "T00:00:00");
   const dateList = dayLabels.map((_, i) => {
     const d = new Date(start);
     d.setDate(d.getDate() + i);
-    return d.toISOString().split("T")[0];
+    return localYmd(d);
   });
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = localYmd(new Date());
 
   // จัดกลุ่ม booking ตาม ทะเบียน+วันที่ เพื่อ lookup ไว
   const map = {};
@@ -145,7 +154,7 @@ function renderWeekTimeline(cars, weekStartStr, bookings) {
             return `<td>${items
               .map(
                 (bk) =>
-                  `<span class="week-chip" title="${escapeHtml(bk.TimeSlot) || ""}">${escapeHtml(bk.DriverName) || "-"}</span>`,
+                  `<span class="week-chip" title="${escapeHtml(dashTimeRange(bk))}">${escapeHtml(bk.DriverName) || "-"}</span>`,
               )
               .join("")}</td>`;
           })
@@ -172,17 +181,19 @@ function renderRecentBookings(list) {
     .map((bk) => {
       const isCancelled =
         bk.BookingStatus && bk.BookingStatus.includes("ยกเลิก");
-      const isReturned = bk.BookingStatus === "ขากลับ";
+      const isReturned = bk.BookingStatus === "คืนแล้ว";
       const cls = isCancelled
         ? "status-cancelled"
         : isReturned
           ? "status-returned"
-          : "status-booked";
+          : bk.BookingStatus === "ขาไป"
+            ? "status-inuse"
+            : "status-booked";
       return `
         <div class="recent-row">
           <div class="recent-row-main">
             <strong>${escapeHtml(bk.DriverName) || "-"}</strong>
-            <span>${escapeHtml(bk.CarPlate) || "-"} • ${bk.BookingDate || "-"} (${bk.TimeSlot || "-"})</span>
+            <span>${escapeHtml(bk.CarPlate) || "-"} • ${bk.BookingDate || "-"} (${dashTimeRange(bk)})</span>
           </div>
           <span class="status-badge ${cls}">${bk.BookingStatus || "-"}</span>
         </div>`;
@@ -274,3 +285,11 @@ function startDashboardPolling() {
 }
 
 document.addEventListener("DOMContentLoaded", startDashboardPolling);
+
+
+// เวลาจองแบบใหม่ (ไป HH:MM - กลับ HH:MM); แถวเก่ายังมีแค่ TimeSlot
+function dashTimeRange(bk) {
+  const out = (bk.OutTime || "").slice(0, 5);
+  const ret = (bk.PlannedReturnTime || "").slice(0, 5);
+  return out && ret ? `${out}-${ret} น.` : bk.TimeSlot || "-";
+}

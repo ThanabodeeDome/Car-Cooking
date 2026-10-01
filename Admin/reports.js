@@ -1,312 +1,329 @@
 /**
- * 📊 Reports.js — รายงาน 4 หมวด: การจอง / การใช้รถ / ค่าซ่อม / การยกเลิก
- * Export Excel (SheetJS) + PDF (print CSS)
+ * 📊 reports.js — หน้ารายงาน (ออกแบบใหม่)
+ * KPI + กราฟ (Chart.js) + ตารางรายคัน/ผู้ใช้ + ความคิดเห็น/ปัญหา + Export Excel (SheetJS)
+ * ข้อมูลมาจาก get_reports_data.php (ช่วงวันที่เดียวกันทั้งหน้า)
  */
-let chartBookings = null;
-let chartCarUsage = null;
-let chartRepairCost = null;
-let chartCancelRate = null;
-const FX_COLORS = [
-  "#10b981",
-  "#ef4444",
-  "#3b82f6",
-  "#f59e0b",
-  "#8b5cf6",
-  "#06b6d4",
-];
+const RP_COLORS = { blue: "#2563eb", sky: "#0ea5e9", green: "#10b981", amber: "#f59e0b", red: "#ef4444", violet: "#8b5cf6", slate: "#94a3b8" };
+const RP_STATUS_COLOR = {
+  คืนแล้ว: RP_COLORS.green,
+  ขาไป: RP_COLORS.blue,
+  จองแล้ว: RP_COLORS.amber,
+  ยกเลิก: RP_COLORS.red,
+  "ยกเลิก (ไม่มาใช้งาน)": RP_COLORS.violet,
+};
+const rpCharts = {};
+let rpData = null;
 
+const rpNum = (n) => Number(n || 0).toLocaleString("th-TH");
+const rpEsc = (s) => (typeof escapeHtml === "function" ? escapeHtml(s) : String(s ?? ""));
+const rpYmd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const rpThai = (ymd) => {
+  const [y, m, d] = String(ymd).slice(0, 10).split("-").map(Number);
+  const mo = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  return y ? `${d} ${mo[m - 1]} ${String(y + 543).slice(2)}` : "-";
+};
+
+// ---------- ช่วงวันที่ ----------
 function initReportDates() {
-  const startInput = document.getElementById("report-start");
-  const endInput = document.getElementById("report-end");
-  if (!startInput || !endInput) return;
-
+  const s = document.getElementById("report-start");
+  const e = document.getElementById("report-end");
+  if (!s || !e) return;
   const end = new Date();
   const start = new Date();
-  start.setDate(start.getDate() - 30);
-
-  startInput.value = start.toISOString().split("T")[0];
-  endInput.value = end.toISOString().split("T")[0];
+  start.setDate(start.getDate() - 29);
+  s.value = rpYmd(start);
+  e.value = rpYmd(end);
+  markPreset("30d");
 }
 
-// ---------- Quick preset ช่วงวันที่ ----------
-function setReportRange(preset) {
-  const startInput = document.getElementById("report-start");
-  const endInput = document.getElementById("report-end");
-  if (!startInput || !endInput) return;
+function markPreset(name) {
+  document.querySelectorAll(".rp-pill").forEach((b) => b.classList.toggle("on", b.dataset.preset === name));
+}
 
+function setReportRange(preset) {
+  const s = document.getElementById("report-start");
+  const e = document.getElementById("report-end");
+  if (!s || !e) return;
   const end = new Date();
   const start = new Date();
-
-  if (preset === "today") {
-    // start = end = วันนี้
-  } else if (preset === "7d") {
-    start.setDate(start.getDate() - 6);
-  } else if (preset === "30d") {
-    start.setDate(start.getDate() - 29);
-  } else if (preset === "month") {
-    start.setDate(1);
-  }
-
-  startInput.value = start.toISOString().split("T")[0];
-  endInput.value = end.toISOString().split("T")[0];
+  if (preset === "7d") start.setDate(start.getDate() - 6);
+  else if (preset === "30d") start.setDate(start.getDate() - 29);
+  else if (preset === "90d") start.setDate(start.getDate() - 89);
+  else if (preset === "month") start.setDate(1);
+  s.value = rpYmd(start);
+  e.value = rpYmd(end);
+  markPreset(preset);
   fetchReports();
 }
 
-// ---------- Realtime แบบ polling: ดึงข้อมูลใหม่อัตโนมัติตอนอยู่แท็บรายงาน ----------
-const REPORTS_POLL_INTERVAL_MS = 20000; // 20s — เท่ากับ dashboard/bookings กัน server รับ load ไม่เท่ากัน
+// ---------- Realtime polling ----------
 let reportsPollTimer = null;
-
 function startReportsPolling() {
   if (reportsPollTimer) return;
   reportsPollTimer = setInterval(() => {
     const tab = document.getElementById("reports-tab");
-    if (tab && tab.classList.contains("active") && !document.hidden) {
-      fetchReports();
-    }
-  }, REPORTS_POLL_INTERVAL_MS);
+    if (tab && tab.classList.contains("active") && !document.hidden) fetchReports(true);
+  }, 20000);
 }
+document.addEventListener("DOMContentLoaded", startReportsPolling);
 
-document.addEventListener("DOMContentLoaded", () => {
-  startReportsPolling();
-});
-
-function fetchReports() {
+function fetchReports(silent) {
+  if (!document.getElementById("report-start")?.value) initReportDates(); // เปิดหน้ารายงานตรงๆ (ลิงก์ #reports-tab) ก่อนตั้งวันที่
   const start = document.getElementById("report-start")?.value;
   const end = document.getElementById("report-end")?.value;
   if (!start || !end) return;
+  if (start > end) {
+    if (!silent) AppDialog.alert("วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด", { type: "warning", title: "ช่วงวันที่ไม่ถูกต้อง" });
+    return;
+  }
+  document.querySelectorAll(".rp-pill").forEach((b) => {
+    const t = new Date();
+    const e = rpYmd(t);
+    const back = { today: 0, "7d": 6, "30d": 29, "90d": 89 }[b.dataset.preset];
+    let expect = null;
+    if (back !== undefined) {
+      const d = new Date();
+      d.setDate(d.getDate() - back);
+      expect = rpYmd(d);
+    } else if (b.dataset.preset === "month") {
+      expect = rpYmd(new Date(t.getFullYear(), t.getMonth(), 1));
+    }
+    b.classList.toggle("on", expect === start && end === e);
+  });
 
   fetch(`get_reports_data.php?start=${start}&end=${end}`)
-    .then((res) => res.json())
-    .then((data) => {
-      if (!data.success) {
-        alert(data.message || "โหลดรายงานไม่สำเร็จ");
+    .then((r) => r.json())
+    .then((d) => {
+      if (!d.success) {
+        if (!silent) AppDialog.alert(d.message || "โหลดรายงานไม่สำเร็จ", { type: "error" });
         return;
       }
-      renderBookingReport(data.bookings);
-      renderCarUsageReport(data.car_usage);
-      renderRepairCostReport(data.repair_cost);
-      renderCancellationReport(data.cancellations);
+      rpData = d;
+      renderReports(d, start, end);
     })
     .catch((err) => {
       console.error("Error loading reports:", err);
-      alert("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้");
+      if (!silent) AppDialog.alert("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", { type: "error" });
     });
 }
 
-// ---------- 1) การจอง ----------
-function renderBookingReport(b) {
-  const tbody = document.getElementById("report-booking-tbody");
-  const byStatus = b.by_status || [];
-  tbody.innerHTML =
-    byStatus
-      .map(
-        (r) => `<tr><td>${r.BookingStatus || "-"}</td><td>${r.total}</td></tr>`,
-      )
-      .join("") ||
-    `<tr><td colspan="2" style="text-align:center;">ไม่มีข้อมูลในช่วงนี้</td></tr>`;
+// ---------- render ----------
+function renderReports(d, start, end) {
+  const k = d.kpi || {};
+  const label = document.getElementById("rp-range-label");
+  if (label) label.textContent = `ข้อมูลตั้งแต่ ${rpThai(start)} ถึง ${rpThai(end)} (${k.days || 0} วัน)`;
 
-  const statsBox = document.getElementById("booking-status-stats");
-  if (statsBox) {
-    statsBox.innerHTML = byStatus.length
-      ? byStatus
-          .map(
-            (r, i) => `
-        <div class="fx-num-item">
-          <strong style="color:${FX_COLORS[i % FX_COLORS.length]}">${r.total}</strong>
-          <span>${r.BookingStatus || "-"}</span>
-        </div>`,
-          )
-          .join("")
-      : `<div class="fx-empty"><i class="fa-solid fa-inbox"></i><span>ไม่มีข้อมูลในช่วงนี้</span></div>`;
-  }
+  renderAlert(k);
+  renderKpis(d, k);
+  renderTrend(d.bookings?.by_day || []);
+  renderStatus(d.bookings?.by_status || []);
+  renderBar("rp-c-util", (d.per_car || []).map((c) => c.CarPlate), (d.per_car || []).map((c) => c.percent), RP_COLORS.blue, "% ใช้งาน", { max: 100, suffix: "%" });
+  renderBar("rp-c-peak", (d.insights?.peak_hours || []).map((_, h) => String(h).padStart(2, "0")), d.insights?.peak_hours || [], RP_COLORS.amber, "จำนวนการจองที่คร่อมชั่วโมงนี้");
+  renderBar("rp-c-div", (d.insights?.top_divisions || []).map((r) => r.name), (d.insights?.top_divisions || []).map((r) => r.cnt), RP_COLORS.violet, "ครั้ง", { horizontal: true });
+  renderBar("rp-c-repair", (d.repair_cost || []).map((r) => r.Plate), (d.repair_cost || []).map((r) => Number(r.totalCost || 0)), RP_COLORS.red, "ค่าซ่อม (บาท)");
+  renderCarTable(d.per_car || []);
+  renderDrivers(d.top_drivers || []);
+  renderFeed("rp-comments", d.comments || [], "ยังไม่มีความคิดเห็นในช่วงนี้", true);
+  renderFeed("rp-problems", d.problems || [], "ไม่มีการแจ้งปัญหาในช่วงนี้ 🎉", false);
+  renderCancel(d.cancellations || {});
 
-  const byDay = b.by_day || [];
-  const labels = byDay.map((r) => r.BookingDate);
-  const values = byDay.map((r) => r.cnt);
-
-  if (chartBookings) chartBookings.destroy();
-  const ctx = document.getElementById("chart-bookings");
-  if (!ctx || typeof Chart === "undefined") return;
-  chartBookings = new Chart(ctx, {
-    type: "line",
-    data: {
-      labels,
-      datasets: [
-        {
-          label: "จำนวนการจอง/วัน",
-          data: values,
-          borderColor: "#0284c7",
-          backgroundColor: "rgba(2,132,199,0.15)",
-          fill: true,
-          tension: 0.3,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
-    },
-  });
+  const fb = document.getElementById("rp-fb-sum");
+  if (fb) fb.textContent = k.votes ? `👍 ${k.good} · 👎 ${k.bad}` : "";
+  const rs = (d.repair_cost || []).reduce((s, r) => s + Number(r.totalCost || 0), 0);
+  const rj = (d.repair_cost || []).reduce((s, r) => s + Number(r.jobs || 0), 0);
+  const rsEl = document.getElementById("rp-repair-sum");
+  if (rsEl) rsEl.textContent = rj ? `รวม ${rpNum(rs)} บาท · ${rj} งาน` : "";
 }
 
-// ---------- 2) การใช้รถ ----------
-function renderCarUsageReport(list) {
-  const tbody = document.getElementById("report-car-usage-tbody");
-  tbody.innerHTML =
-    (list || [])
-      .map(
-        (r) =>
-          `<tr><td>${escapeHtml(r.CarPlate) || "-"}</td><td>${r.cnt}</td></tr>`,
-      )
-      .join("") ||
-    `<tr><td colspan="2" style="text-align:center;">ไม่มีข้อมูลในช่วงนี้</td></tr>`;
-
-  const labels = (list || []).map((r) => r.CarPlate);
-  const values = (list || []).map((r) => r.cnt);
-
-  if (chartCarUsage) chartCarUsage.destroy();
-  const ctx = document.getElementById("chart-car-usage");
-  if (!ctx || typeof Chart === "undefined") return;
-  chartCarUsage = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [
-        {
-          label: "จำนวนครั้งที่ใช้งาน",
-          data: values,
-          backgroundColor: "#00b09b",
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
-    },
-  });
+function renderAlert(k) {
+  const el = document.getElementById("rp-alert");
+  if (!el) return;
+  const msgs = [];
+  if (k.geo_flags) msgs.push(`<i class="fa-solid fa-location-crosshairs"></i> พิกัดผิดปกติ ${k.geo_flags} ครั้ง (เช็คอิน/คืนรถนอกจุดบริษัทหรือไม่มีพิกัด)`);
+  if (k.noshow) msgs.push(`<i class="fa-solid fa-user-clock"></i> จองแล้วไม่มาใช้งาน ${k.noshow} รายการ`);
+  el.hidden = msgs.length === 0;
+  el.innerHTML = msgs.map((m) => `<span>${m}</span>`).join("");
 }
 
-// ---------- 3) ค่าซ่อม ----------
-function renderRepairCostReport(list) {
-  const tbody = document.getElementById("report-repair-cost-tbody");
-  let sum = 0;
-  tbody.innerHTML =
-    (list || [])
-      .map((r) => {
-        const cost = Number(r.totalCost || 0);
-        sum += cost;
-        return `<tr><td>${escapeHtml(r.Plate) || "-"}</td><td>${r.jobs}</td><td>${cost.toLocaleString()}</td></tr>`;
-      })
-      .join("") ||
-    `<tr><td colspan="3" style="text-align:center;">ไม่มีข้อมูลในช่วงนี้</td></tr>`;
-
-  const totalEl = document.getElementById("report-repair-cost-total");
-  if (totalEl) totalEl.innerText = sum.toLocaleString() + " บาท";
-
-  const totalV2 = document.getElementById("report-repair-cost-total-v2");
-  if (totalV2) totalV2.innerText = sum.toLocaleString() + " บาท";
-  const jobsTotal = (list || []).reduce((s, r) => s + Number(r.jobs || 0), 0);
-  const jobsEl = document.getElementById("report-repair-jobs-total");
-  if (jobsEl) jobsEl.innerText = jobsTotal.toLocaleString() + " งานซ่อม";
-
-  const labels = (list || []).map((r) => r.Plate);
-  const values = (list || []).map((r) => Number(r.totalCost || 0));
-
-  if (chartRepairCost) chartRepairCost.destroy();
-  const ctx = document.getElementById("chart-repair-cost");
-  if (!ctx || typeof Chart === "undefined") return;
-  chartRepairCost = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [
-        { label: "ค่าซ่อม (บาท)", data: values, backgroundColor: "#f59e0b" },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true } },
-    },
-  });
+function kpiCard(icon, tone, value, label, sub) {
+  return `<div class="rp-kpi tone-${tone}"><div class="rp-kpi-ic"><i class="fa-solid ${icon}"></i></div>
+    <div class="rp-kpi-tx"><strong>${value}</strong><span>${label}</span>${sub ? `<em>${sub}</em>` : ""}</div></div>`;
+}
+function renderKpis(d, k) {
+  const repair = (d.repair_cost || []).reduce((s, r) => s + Number(r.totalCost || 0), 0);
+  const jobs = (d.repair_cost || []).reduce((s, r) => s + Number(r.jobs || 0), 0);
+  const el = document.getElementById("rp-kpis");
+  if (!el) return;
+  el.innerHTML = [
+    kpiCard("fa-clipboard-list", "blue", rpNum(k.total), "การจองทั้งหมด", `${rpNum(k.unique_drivers)} ผู้ใช้`),
+    kpiCard("fa-circle-check", "green", rpNum(k.returned), "คืนรถแล้ว", `ระหว่างดำเนินการ ${rpNum(k.active)}`),
+    kpiCard("fa-ban", "red", `${k.cancel_rate ?? 0}%`, "อัตราการยกเลิก", `${rpNum(k.cancelled)} รายการ`),
+    kpiCard("fa-route", "sky", rpNum(k.km_total), "ระยะทางรวม (กม.)", `เฉลี่ย ${rpNum(k.avg_km)} กม./ทริป`),
+    kpiCard("fa-clock", "amber", rpNum(k.hours_total), "ชั่วโมงใช้รถ", `เฉลี่ย ${k.avg_hours ?? 0} ชม./ทริป`),
+    kpiCard("fa-gauge-high", "violet", `${k.fleet_util ?? 0}%`, "การใช้งานรวมทั้งกอง", `${rpNum((d.per_car || []).length)} คัน`),
+    kpiCard("fa-thumbs-up", "green", k.satisfaction == null ? "-" : `${k.satisfaction}%`, "ความพอใจต่อระบบ", k.votes ? `${k.votes} โหวต` : "ยังไม่มีโหวต"),
+    kpiCard("fa-screwdriver-wrench", "amber", rpNum(repair), "ค่าซ่อม (บาท)", `${jobs} งานซ่อม`),
+  ].join("");
 }
 
-// ---------- 4) การยกเลิก ----------
-function renderCancellationReport(c) {
-  const tbody = document.getElementById("report-cancel-tbody");
-  tbody.innerHTML =
-    (c.list || [])
-      .map(
-        (r) =>
-          `<tr><td>${r.BookingDate || "-"}</td><td>${escapeHtml(r.CarPlate) || "-"}</td><td>${escapeHtml(r.DriverName) || "-"}</td><td>${r.BookingStatus || "-"}</td></tr>`,
-      )
-      .join("") ||
-    `<tr><td colspan="4" style="text-align:center;">ไม่มีการยกเลิกในช่วงนี้</td></tr>`;
-
-  const summaryEl = document.getElementById("report-cancel-summary");
-  if (summaryEl) {
-    summaryEl.innerText = `ยกเลิก ${c.cancelled_count} จากทั้งหมด ${c.total_count} รายการ (${c.rate}%)`;
-  }
-
-  const rateTextEl = document.getElementById("cancel-rate-text");
-  const rateSubEl = document.getElementById("cancel-rate-sub");
-  if (rateTextEl) rateTextEl.innerText = `${c.rate}%`;
-  if (rateSubEl)
-    rateSubEl.innerText = `${c.cancelled_count} / ${c.total_count} รายการ`;
-
-  const notCancelled = Math.max(
-    (c.total_count || 0) - (c.cancelled_count || 0),
-    0,
-  );
-  if (chartCancelRate) chartCancelRate.destroy();
-  const dctx = document.getElementById("chart-cancel-rate");
-  if (!dctx || typeof Chart === "undefined") return;
-  chartCancelRate = new Chart(dctx, {
-    type: "doughnut",
-    data: {
-      labels: ["ยกเลิก", "ไม่ยกเลิก"],
-      datasets: [
-        {
-          data: [c.cancelled_count || 0, notCancelled],
-          backgroundColor: ["#ef4444", "#10b981"],
-          borderWidth: 0,
-        },
-      ],
-    },
-    options: {
+function baseOpts(extra) {
+  return Object.assign(
+    {
       responsive: true,
       maintainAspectRatio: false,
-      cutout: "72%",
-      plugins: { legend: { display: false }, tooltip: { enabled: true } },
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "#eef0f4" } }, x: { grid: { display: false } } },
     },
+    extra || {},
+  );
+}
+function mkChart(id, cfg) {
+  const ctx = document.getElementById(id);
+  if (!ctx || typeof Chart === "undefined") return;
+  if (rpCharts[id]) rpCharts[id].destroy();
+  rpCharts[id] = new Chart(ctx, cfg);
+}
+function emptyState(id, on) {
+  const box = document.getElementById(id)?.parentElement;
+  if (!box) return;
+  let e = box.querySelector(".rp-empty");
+  if (on && !e) {
+    e = document.createElement("div");
+    e.className = "rp-empty";
+    e.innerHTML = '<i class="fa-solid fa-inbox"></i><span>ไม่มีข้อมูลในช่วงนี้</span>';
+    box.appendChild(e);
+  }
+  if (e) e.style.display = on ? "flex" : "none";
+}
+
+function renderTrend(byDay) {
+  emptyState("rp-c-trend", byDay.length === 0);
+  mkChart("rp-c-trend", {
+    type: "line",
+    data: {
+      labels: byDay.map((r) => rpThai(r.BookingDate)),
+      datasets: [{ label: "การจอง", data: byDay.map((r) => Number(r.cnt)), borderColor: RP_COLORS.blue, backgroundColor: "rgba(37,99,235,.12)", fill: true, tension: 0.35, pointRadius: 3, pointBackgroundColor: RP_COLORS.blue }],
+    },
+    options: baseOpts(),
   });
 }
 
-// ---------- Export Excel (ใช้ SheetJS อ่านตาราง HTML ตรงๆ) ----------
-function exportTableExcel(tableId, filename) {
-  const table = document.getElementById(tableId);
-  if (!table || typeof XLSX === "undefined") {
-    alert("โหลดตัว export ไม่สำเร็จ ลองรีเฟรชหน้าใหม่");
-    return;
+function renderStatus(list) {
+  const total = list.reduce((s, r) => s + Number(r.total), 0);
+  const n = document.getElementById("rp-donut-n");
+  if (n) n.textContent = rpNum(total);
+  const legend = document.getElementById("rp-legend");
+  if (legend) {
+    legend.innerHTML = list.length
+      ? list
+          .map((r) => `<li><i style="background:${RP_STATUS_COLOR[r.BookingStatus] || RP_COLORS.slate}"></i><span>${rpEsc(r.BookingStatus || "-")}</span><b>${rpNum(r.total)}</b><em>${total ? Math.round((r.total / total) * 100) : 0}%</em></li>`)
+          .join("")
+      : '<li class="rp-none">ไม่มีข้อมูลในช่วงนี้</li>';
   }
-  const wb = XLSX.utils.table_to_book(table, { sheet: "รายงาน" });
-  XLSX.writeFile(wb, `${filename}.xlsx`);
+  mkChart("rp-c-status", {
+    type: "doughnut",
+    data: { labels: list.map((r) => r.BookingStatus), datasets: [{ data: list.map((r) => Number(r.total)), backgroundColor: list.map((r) => RP_STATUS_COLOR[r.BookingStatus] || RP_COLORS.slate), borderWidth: 2, borderColor: "#fff" }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: "70%", plugins: { legend: { display: false } } },
+  });
 }
 
-// ---------- Export PDF (พิมพ์เฉพาะ panel ที่เลือก ผ่าน print dialog ของเบราว์เซอร์) ----------
-function printReportSection(sectionId) {
-  document
-    .querySelectorAll(".print-target")
-    .forEach((el) => el.classList.remove("print-target"));
-  const el = document.getElementById(sectionId);
-  if (el) el.classList.add("print-target");
-  window.print();
+function renderBar(id, labels, values, color, label, opt) {
+  opt = opt || {};
+  emptyState(id, !labels.length || values.every((v) => !v));
+  const scales = baseOpts().scales;
+  if (opt.max) scales.y.max = opt.max;
+  if (opt.suffix) scales.y.ticks.callback = (v) => v + opt.suffix;
+  const cfg = {
+    type: "bar",
+    data: { labels, datasets: [{ label, data: values, backgroundColor: color, borderRadius: 6, maxBarThickness: 38 }] },
+    options: baseOpts({ scales }),
+  };
+  if (opt.horizontal) {
+    cfg.options.indexAxis = "y";
+    cfg.options.scales = { x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "#eef0f4" } }, y: { grid: { display: false } } };
+  }
+  mkChart(id, cfg);
 }
 
-window.addEventListener("afterprint", () => {
-  document
-    .querySelectorAll(".print-target")
-    .forEach((el) => el.classList.remove("print-target"));
-});
+function renderCarTable(list) {
+  const tb = document.getElementById("rp-t-car");
+  if (!tb) return;
+  tb.innerHTML = list.length
+    ? list
+        .map(
+          (c) => `<tr><td><b>${rpEsc(c.CarPlate)}</b></td><td>${rpNum(c.trips)}</td><td>${c.hours}</td>
+        <td><div class="rp-bar"><i style="width:${Math.min(100, c.percent)}%"></i></div><small>${c.percent}%</small></td>
+        <td>${rpNum(c.km)}</td><td>${c.cancelled ? `<span class="rp-tag red">${c.cancelled}</span>` : "-"}</td>
+        <td>${c.repair_cost ? rpNum(c.repair_cost) : "-"}</td></tr>`,
+        )
+        .join("")
+    : '<tr><td colspan="7" class="rp-td-empty">ไม่มีข้อมูลในช่วงนี้</td></tr>';
+}
+
+function renderDrivers(list) {
+  const tb = document.getElementById("rp-t-drv");
+  if (!tb) return;
+  tb.innerHTML = list.length
+    ? list.map((r, i) => `<tr><td><span class="rp-rank r${i + 1}">${i + 1}</span></td><td>${rpEsc(r.name)}</td><td>${rpNum(r.trips)}</td><td>${rpNum(r.km)}</td></tr>`).join("")
+    : '<tr><td colspan="4" class="rp-td-empty">ไม่มีข้อมูลในช่วงนี้</td></tr>';
+}
+
+function renderFeed(id, list, emptyText, isComment) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = list.length
+    ? list
+        .map((r) => {
+          const txt = String(r.text || "").replace(/\[ความคิดเห็น\]/g, "").replace(/^\s*\|\s*/, "").trim();
+          return `<li><div class="rp-feed-ic ${isComment ? "c" : "p"}"><i class="fa-solid ${isComment ? "fa-comment" : "fa-triangle-exclamation"}"></i></div>
+            <div><p>${rpEsc(txt)}</p><small>${rpEsc(r.driver)} · ${rpEsc(r.car)} · ${rpThai(r.date)}</small></div></li>`;
+        })
+        .join("")
+    : `<li class="rp-none">${emptyText}</li>`;
+}
+
+function renderCancel(c) {
+  const tb = document.getElementById("rp-t-cancel");
+  if (!tb) return;
+  tb.innerHTML = (c.list || []).length
+    ? c.list
+        .map((r) => `<tr><td>${rpThai(r.BookingDate)}</td><td>${rpEsc(r.CarPlate) || "-"}</td><td>${rpEsc(r.DriverName) || "-"}</td><td><span class="rp-tag ${String(r.BookingStatus).includes("ไม่มา") ? "violet" : "red"}">${rpEsc(r.BookingStatus)}</span></td></tr>`)
+        .join("")
+    : '<tr><td colspan="4" class="rp-td-empty">ไม่มีการยกเลิกในช่วงนี้</td></tr>';
+  const s = document.getElementById("rp-cancel-sum");
+  if (s) s.textContent = c.total_count ? `${c.cancelled_count}/${c.total_count} รายการ (${c.rate}%)` : "";
+}
+
+// ---------- Export Excel: ทุกชุดข้อมูลในไฟล์เดียว (หลาย sheet) ----------
+function exportAllReports() {
+  if (typeof XLSX === "undefined") return AppDialog.alert("โหลดตัว export ไม่สำเร็จ ลองรีเฟรชหน้าใหม่", { type: "error" });
+  if (!rpData) return AppDialog.alert("ยังไม่มีข้อมูลรายงานให้ export", { type: "warning" });
+  const d = rpData;
+  const k = d.kpi || {};
+  const wb = XLSX.utils.book_new();
+  const add = (name, rows) => XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.length ? rows : [{ ข้อมูล: "ไม่มีข้อมูลในช่วงนี้" }]), name);
+
+  add("สรุป", [
+    { หัวข้อ: "การจองทั้งหมด", ค่า: k.total }, { หัวข้อ: "คืนรถแล้ว", ค่า: k.returned }, { หัวข้อ: "ระหว่างดำเนินการ", ค่า: k.active },
+    { หัวข้อ: "ยกเลิก", ค่า: k.cancelled }, { หัวข้อ: "อัตราการยกเลิก %", ค่า: k.cancel_rate }, { หัวข้อ: "ไม่มาใช้งาน", ค่า: k.noshow },
+    { หัวข้อ: "ระยะทางรวม (กม.)", ค่า: k.km_total }, { หัวข้อ: "ชั่วโมงใช้รถรวม", ค่า: k.hours_total }, { หัวข้อ: "การใช้งานรวมทั้งกอง %", ค่า: k.fleet_util },
+    { หัวข้อ: "ความพอใจ %", ค่า: k.satisfaction ?? "-" }, { หัวข้อ: "พิกัดผิดปกติ (ครั้ง)", ค่า: k.geo_flags },
+  ]);
+  add("สถานะการจอง", (d.bookings?.by_status || []).map((r) => ({ สถานะ: r.BookingStatus, จำนวน: Number(r.total) })));
+  add("แนวโน้มรายวัน", (d.bookings?.by_day || []).map((r) => ({ วันที่: String(r.BookingDate).slice(0, 10), จำนวน: Number(r.cnt) })));
+  add("สรุปรายคัน", (d.per_car || []).map((c) => ({ ทะเบียน: c.CarPlate, ครั้ง: c.trips, ชั่วโมง: c.hours, "% ใช้งาน": c.percent, "ระยะทาง (กม.)": c.km, ยกเลิก: c.cancelled, "ค่าซ่อม (บาท)": c.repair_cost })));
+  add("ผู้ใช้รถมากสุด", (d.top_drivers || []).map((r, i) => ({ อันดับ: i + 1, ชื่อ: r.name, ครั้ง: r.trips, ชั่วโมง: r.hours, "ระยะทาง (กม.)": r.km })));
+  add("ฝ่ายที่ใช้รถ", (d.insights?.top_divisions || []).map((r) => ({ ฝ่าย: r.name, ครั้ง: r.cnt })));
+  add("ค่าซ่อม", (d.repair_cost || []).map((r) => ({ ทะเบียน: r.Plate, งานซ่อม: r.jobs, "ค่าใช้จ่าย (บาท)": Number(r.totalCost || 0) })));
+  add("ความคิดเห็น", (d.comments || []).map((r) => ({ วันที่: r.date, รถ: r.car, ผู้ใช้: r.driver, ข้อความ: String(r.text).replace(/\[ความคิดเห็น\]/g, "").trim() })));
+  add("ปัญหาที่แจ้ง", (d.problems || []).map((r) => ({ วันที่: r.date, รถ: r.car, ผู้ใช้: r.driver, ข้อความ: r.text })));
+  add("การยกเลิก", (d.cancellations?.list || []).map((r) => ({ วันที่: String(r.BookingDate).slice(0, 10), รถ: r.CarPlate, ผู้จอง: r.DriverName, สถานะ: r.BookingStatus })));
+
+  const start = document.getElementById("report-start")?.value || "";
+  const end = document.getElementById("report-end")?.value || "";
+  XLSX.writeFile(wb, `รายงานระบบจองรถ_${start}_ถึง_${end}.xlsx`);
+}
+window.exportAllReports = exportAllReports;
+window.setReportRange = setReportRange;
+window.fetchReports = fetchReports;
+window.initReportDates = initReportDates;

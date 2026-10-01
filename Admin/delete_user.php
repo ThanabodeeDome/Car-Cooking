@@ -32,6 +32,11 @@ try {
         exit;
     }
 
+    try { // ตารางนี้อาจยังไม่มีบน DB ที่ยังไม่รัน migration
+        $conn->prepare("DELETE FROM RememberTokens WHERE user_id = :id")->execute([':id' => $id]);
+    } catch (PDOException $e) {
+        // ไม่มีตาราง = ไม่มี token ให้ลบ
+    }
     $stmt = $conn->prepare("DELETE FROM Users WHERE id = :id");
     $stmt->execute([':id' => $id]);
     echo json_encode(["success" => true]);

@@ -12,8 +12,9 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="toast.css" />
-    <!-- 🌟 Tesseract.js — ทำ OCR ฝั่ง browser ล้วนๆ ไม่ต้องส่งรูปออกไป API ภายนอกที่ไหน -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <link rel="stylesheet" href="scan.css?v=2" />
+    <!-- 🌟 เลิกใช้ Tesseract.js แล้ว เปลี่ยนเป็น seven-segment digit reader ที่เขียนเองใน return_scan.js
+         (แม่นกว่าสำหรับจอ LCD 7-segment + ทำงาน offline ไม่ต้องพึ่ง CDN ภายนอก) -->
   </head>
 
   <body class="booking-page">
@@ -23,129 +24,87 @@
       </div>
       <ul class="nav-links" id="nav-list">
         <li><a href="homepage.html" class="Home-btn">หน้าหลัก</a></li>
-        <li><a href="booking.html" class="book-btn">จองรอบขับ</a></li>
-        <li><a href="car-status.html" class="Check-btn">เช็กคิว</a></li>
-        <li><a href="profile.html" class="contact-btn">ข้อมูลผู้ใช้</a></li>
+        <li><a href="booking.html" class="book-btn">จองรอบขับ</a></li><li><a href="car-status.html" class="Check-btn">เช็กคิว</a></li>        <li><a href="profile.html" class="contact-btn">ข้อมูลผู้ใช้</a></li>
       </ul>
     </nav>
 
-    <div class="booking-card">
-      <h2 class="form-title" style="color: #27ae60">คืนรถ</h2>
+    <div class="booking-card sc-wrap">
+      <h2 class="sc-title">คืนรถ</h2>
+      <p class="sc-sub">ถ่ายรูป ตรวจเลขไมล์ แล้วยืนยัน</p>
 
-      <div
-        id="return-loading"
-        style="text-align: center; padding: 30px; color: #94a3b8"
-      >
+      <div id="return-loading" class="sc-state">
         กำลังตรวจสอบข้อมูลการจอง...
       </div>
 
-      <div
-        id="return-error"
-        class="hidden"
-        style="text-align: center; padding: 30px; color: #ff4d4d"
-      ></div>
+      <div id="return-error" class="sc-state err hidden"></div>
 
       <div id="return-content" class="hidden">
-        <div class="input-container">
-          <div class="field-group full-width">
-            <label>ทะเบียนรถ</label>
-            <input type="text" id="rt-plate" class="form-control" readonly />
+        <div class="sc-card">
+          <div class="sc-plate">
+            <div class="ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>
+            </div>
+            <div class="sc-f" style="flex: 1; min-width: 0">
+              <label for="rt-plate">ทะเบียนรถ</label>
+              <input type="text" id="rt-plate" class="sc-val big" readonly />
+            </div>
           </div>
-          <div class="field-group">
-            <label>ผู้ขับ</label>
-            <input type="text" id="rt-driver" class="form-control" readonly />
-          </div>
-          <div class="field-group">
-            <label>เลขไมล์ตอนออก</label>
-            <input
-              type="text"
-              id="rt-start-mile"
-              class="form-control"
-              readonly
-            />
-          </div>
-
-          <!-- 🌟 ขั้นที่ 1: ถ่ายรูปเลขไมล์ -> OCR อ่านอัตโนมัติ -->
-          <div class="field-group full-width">
-            <label>1) ถ่ายรูปหน้าปัดเลขไมล์ (บังคับ)</label>
-            <input
-              type="file"
-              id="rt-odometer-input"
-              accept="image/*"
-              capture="environment"
-            />
-            <img
-              id="rt-odometer-preview"
-              class="hidden"
-              style="max-width: 100%; margin-top: 10px; border-radius: 8px"
-            />
-            <p
-              id="rt-ocr-status"
-              style="color: #94a3b8; font-size: 13px; margin-top: 6px"
-            ></p>
-          </div>
-
-          <div class="field-group full-width">
-            <label>เลขไมล์ตอนคืน (ตรวจสอบ/แก้ไขให้ตรงก่อนยืนยัน)</label>
-            <input
-              type="number"
-              id="rt-end-mile"
-              class="form-control"
-              placeholder="รอถ่ายรูปเลขไมล์ก่อน..."
-            />
-          </div>
-
-          <!-- 🌟 ขั้นที่ 2: ถ่ายรูปสภาพรถยืนยัน -->
-          <div class="field-group full-width">
-            <label>2) ถ่ายรูปสภาพรถตอนคืน (บังคับ)</label>
-            <input
-              type="file"
-              id="rt-condition-input"
-              accept="image/*"
-              capture="environment"
-            />
-            <img
-              id="rt-condition-preview"
-              class="hidden"
-              style="max-width: 100%; margin-top: 10px; border-radius: 8px"
-            />
-          </div>
-
-          <div class="field-group full-width">
-            <label style="color: #27ae60"
-              >แจ้งปัญหาที่พบหลังการใช้งาน (ถ้ามี)</label
-            >
-            <textarea
-              id="rt-remark"
-              rows="3"
-              class="form-control"
-              placeholder="ระบุปัญหาที่พบหลังใช้งาน..."
-            ></textarea>
+          <div class="sc-grid">
+            <div class="sc-f">
+              <label for="rt-driver">ผู้ขับ</label>
+              <input type="text" id="rt-driver" class="sc-val" readonly />
+            </div>
+            <div class="sc-f">
+              <label for="rt-start-mile">เลขไมล์ตอนออก</label>
+              <input type="text" id="rt-start-mile" class="sc-val" readonly />
+            </div>
           </div>
         </div>
 
-        <button
-          type="button"
-          class="confirm-btn"
-          id="rt-confirm-btn"
-          onclick="confirmReturn()"
-          style="
-            width: 100%;
-            background: #27ae60;
-            color: white;
-            padding: 15px;
-            border-radius: 8px;
-            border: none;
-            margin-top: 20px;
-            cursor: pointer;
-          "
-        >
+        <div class="sc-card">
+          <h3 class="sc-card-t"><span class="n">1</span>ถ่ายรูปหน้าปัดเลขไมล์<small class="req">บังคับ</small></h3>
+          <label class="sc-photo" for="rt-odometer-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg>
+            แตะเพื่อถ่ายรูปเลขไมล์
+            <input type="file" id="rt-odometer-input" accept="image/*" capture="environment" />
+          </label>
+          <img id="rt-odometer-preview" class="sc-preview hidden" alt="รูปเลขไมล์" />
+          <p id="rt-ocr-status" class="sc-status"></p>
+
+          <label for="rt-end-mile" style="display: block; margin: 12px 0 6px; font-size: 12.5px; color: #9ea3b3">
+            เลขไมล์ตอนคืน (ระบบอ่านให้ แก้ไขได้ถ้าไม่ตรง)
+          </label>
+          <input type="number" id="rt-end-mile" class="sc-input sc-mile" inputmode="numeric" placeholder="0" />
+        </div>
+
+        <div class="sc-card">
+          <h3 class="sc-card-t"><span class="n">2</span>ถ่ายรูปสภาพรถตอนคืน<small class="req">บังคับ</small></h3>
+          <label class="sc-photo" for="rt-condition-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg>
+            แตะเพื่อถ่ายรูปสภาพรถ
+            <input type="file" id="rt-condition-input" accept="image/*" capture="environment" />
+          </label>
+          <img id="rt-condition-preview" class="sc-preview hidden" alt="รูปสภาพรถตอนคืน" />
+        </div>
+
+        <div class="sc-card">
+          <h3 class="sc-card-t"><span class="n">3</span>แจ้งปัญหาที่พบ<small>ถ้ามี</small></h3>
+          <textarea id="rt-remark" rows="3" class="sc-input" placeholder="ระบุปัญหาที่พบหลังใช้งาน เช่น ไฟเตือนติด เสียงดัง รอยขีดข่วน"></textarea>
+        </div>
+
+        <button type="button" class="sc-submit green" id="rt-confirm-btn" onclick="confirmReturn()">
           ยืนยันการคืนรถ
         </button>
       </div>
     </div>
 
-    <script src="toast.js"></script>
-    <script src="return_scan.js"></script>
+    <script src="toast.js?v=5"></script>
+    <script src="geo.js?v=1"></script>
+    <script src="return_scan.js?v=4"></script>
+    <script src="app-nav.js?v=4"></script>
+    <script src="notify-bell.js?v=5"></script>
+      <script src="ui-dialog.js?v=3"></script>
+      <script src="fx.js?v=1"></script>
+      <script src="pwa.js?v=2"></script>
   </body>
 </html>

@@ -26,7 +26,6 @@ try {
           WHERE cb.CarPlate = c.Plate 
             AND cb.BookingStatus = N'ขาไป'
             AND cb.CheckInTime IS NOT NULL
-            AND cb.BookingDate = CAST(GETDATE() AS DATE)
         ) THEN N'กำลังใช้งาน'
         WHEN EXISTS (
           SELECT 1 FROM CarBookings cb
@@ -52,7 +51,7 @@ try {
     $isoDow = (int) $today->format('N');
     $weekStart = (clone $today)->modify('-' . ($isoDow - 1) . ' days');
     $weekEnd   = (clone $weekStart)->modify('+6 days');
-    $sqlWeek = "SELECT CarPlate, DriverName, BookingDate, TimeSlot, BookingStatus
+    $sqlWeek = "SELECT CarPlate, DriverName, CONVERT(varchar(10), BookingDate, 23) AS BookingDate, TimeSlot, LEFT(OutTime, 5) AS OutTime, CONVERT(varchar(5), PlannedReturnTime, 108) AS PlannedReturnTime, BookingStatus
                 FROM CarBookings
                 WHERE BookingDate BETWEEN :start AND :end
                   AND BookingStatus NOT LIKE N'ยกเลิก%'
@@ -62,7 +61,7 @@ try {
     $weekBookings = $stmtWeek->fetchAll(PDO::FETCH_ASSOC);
 
     // ---------- 3) รายการจองล่าสุด ----------
-    $sqlRecent = "SELECT TOP 5 BookingNumber, DriverName, CarPlate, BookingDate, TimeSlot, BookingStatus
+    $sqlRecent = "SELECT TOP 5 BookingNumber, DriverName, CarPlate, CONVERT(varchar(10), BookingDate, 23) AS BookingDate, TimeSlot, LEFT(OutTime, 5) AS OutTime, CONVERT(varchar(5), PlannedReturnTime, 108) AS PlannedReturnTime, BookingStatus
                   FROM CarBookings ORDER BY BookingID DESC";
     $recent = $conn->query($sqlRecent)->fetchAll(PDO::FETCH_ASSOC);
 
@@ -93,6 +92,15 @@ try {
                        )";
     $maintDue = $conn->query($sqlMaintDue)->fetchAll(PDO::FETCH_ASSOC);
 
+    // ---------- 6) feedback "ระบบดีไหม" (thumbs up/down) — สรุปรวม ไม่ระบุตัวผู้ตอบ ----------
+    $sqlFeedback = "SELECT SystemFeedback, COUNT(*) as cnt FROM CarBookings
+                     WHERE SystemFeedback IS NOT NULL GROUP BY SystemFeedback";
+    $feedbackRows = $conn->query($sqlFeedback)->fetchAll(PDO::FETCH_ASSOC);
+    $feedback = ['good' => 0, 'bad' => 0];
+    foreach ($feedbackRows as $row) {
+        if (isset($feedback[$row['SystemFeedback']])) $feedback[$row['SystemFeedback']] = (int)$row['cnt'];
+    }
+
     echo json_encode([
         "success" => true,
         "counts" => [
@@ -108,6 +116,7 @@ try {
         "recent"        => $recent,
         "alerts"        => $alerts,
         "maint_due"     => $maintDue,
+        "feedback"      => $feedback,
     ], JSON_UNESCAPED_UNICODE);
 } catch (PDOException $e) {
     error_log('get_dashboard_stats DB error: ' . $e->getMessage());

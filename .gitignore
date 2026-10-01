@@ -1,2 +1,7 @@
 Car/db_connect.php
 Admin/db_connect.php
+# secrets: passwords / API keys / signing key — never commit
+/db_connect.php
+Car/mail_config.php
+Car/ocr_config.php
+Car/app_secret.php

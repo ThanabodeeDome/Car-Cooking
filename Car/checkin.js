@@ -5,6 +5,7 @@ window.addEventListener("pageshow", function (event) {
 });
 
 let currentPlate = "";
+if (window.prefetchGeo) window.prefetchGeo(); // ขอสิทธิ์ตำแหน่งตั้งแต่เปิดหน้า
 let selectedCheckinPhoto = null;
 let selectedReturnPhoto = null;
 
@@ -60,7 +61,9 @@ function renderCheckinMode(b) {
   document.getElementById("ci-dept").value = b.Department || "";
   document.getElementById("ci-passengers").value = b.Passengers || "-";
   document.getElementById("ci-datetime").value =
-    `${b.BookingDate || ""} (${b.TimeSlot || ""})`;
+    b.OutTime && b.PlannedReturnTime
+      ? `${b.BookingDate || ""} ${b.OutTime}-${b.PlannedReturnTime} น.`
+      : `${b.BookingDate || ""}${b.TimeSlot ? " (" + b.TimeSlot + ")" : ""}`;
   document.getElementById("ci-mileage").value = b.StartMileage || "0";
   document.getElementById("ci-destination").value = b.Destination || "-";
 
@@ -94,22 +97,40 @@ function confirmCheckin() {
   btn.innerText = "กำลังเช็คอิน...";
 
   const uploadPromise = selectedCheckinPhoto
-    ? uploadPhoto(selectedCheckinPhoto, "upload_checkin_photo.php")
+    ? uploadPhoto(selectedCheckinPhoto, "upload_checkin_photo.php").catch((err) => {
+        throw new Error("ขั้นตอนอัปโหลดรูป: " + err.message);
+      })
     : Promise.resolve(null);
 
   uploadPromise
     .then((photoPath) =>
-      fetch("confirm_checkin.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plate: currentPlate, photo_path: photoPath }),
+      (window.getGeo ? window.getGeo() : Promise.resolve(null)).then((geo) =>
+        fetch("confirm_checkin.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plate: currentPlate, photo_path: photoPath, geo }),
+        }).catch((err) => {
+          throw new Error("ขั้นตอนเชื่อมต่อ server: " + err.message);
+        }),
+      ),
+    )
+    .then((res) =>
+      res.text().then((text) => {
+        // 🩹 FIX: เดิม res.json() ตรงๆ — ถ้า confirm_checkin.php ตอบไม่ใช่ JSON ล้วนๆ (PHP warning/error
+        // หลุดปนมาก่อน JSON) Safari จะ throw "The string did not match the expected pattern"
+        // ซึ่งเป็นข้อความที่งงมาก ไม่บอกอะไรเลยว่าเกิดอะไรขึ้นจริง — จับไว้ตรงนี้ให้ชัดเจนแทน
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          console.error("confirm_checkin.php response ไม่ใช่ JSON:", text);
+          throw new Error("เซิร์ฟเวอร์ตอบกลับผิดปกติ (ไม่ใช่ JSON) — อาจมี error ฝั่ง server กรุณาแจ้งผู้ดูแลระบบพร้อม log");
+        }
       }),
     )
-    .then((res) => res.json())
     .then((result) => {
       if (result.success) {
         showToast("success", result.message || "เช็คอินสำเร็จ!");
-        setTimeout(() => (window.location.href = "car-status.html"), 1500);
+        setTimeout(() => (window.location.href = "booking-details.html?plate=" + encodeURIComponent(currentPlate)), 1800);
       } else {
         showToast("error", result.message || "เช็คอินไม่สำเร็จ");
         btn.disabled = false;
@@ -117,7 +138,8 @@ function confirmCheckin() {
       }
     })
     .catch((err) => {
-      showToast("error", "ติดต่อ Server ไม่ได้");
+      // 🌟 ใส่ tag ขั้นตอนไว้แล้วด้านบน ครั้งหน้าถ้าพังอีกจะรู้ทันทีว่าพังตรงไหน ไม่ใช่แค่ error ดิบสั้นๆ
+      showToast("error", err.message || "ติดต่อ Server ไม่ได้");
       btn.disabled = false;
       btn.innerText = "ยืนยันเช็คอิน / รับรถ";
       console.error("confirm checkin error:", err);
@@ -200,11 +222,20 @@ function confirmReturn() {
         }),
       });
     })
-    .then((res) => res.json())
+    .then((res) =>
+      res.text().then((text) => {
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          console.error("confirm_return.php response ไม่ใช่ JSON:", text);
+          throw new Error("เซิร์ฟเวอร์ตอบกลับผิดปกติ (ไม่ใช่ JSON) — อาจมี error ฝั่ง server กรุณาแจ้งผู้ดูแลระบบพร้อม log");
+        }
+      }),
+    )
     .then((result) => {
       if (result.success) {
         showToast("success", result.message || "คืนรถสำเร็จ!");
-        setTimeout(() => (window.location.href = "car-status.html"), 1500);
+        setTimeout(() => (window.location.href = "booking-details.html?plate=" + encodeURIComponent(currentPlate)), 1800);
       } else {
         showToast("error", result.message || "คืนรถไม่สำเร็จ");
         btn.disabled = false;
@@ -230,12 +261,73 @@ function previewPhoto(file, imgElId) {
   reader.readAsDataURL(file);
 }
 
-function uploadPhoto(file, endpoint) {
-  const formData = new FormData();
-  formData.append("photo", file);
+// 🌟 บีบรูปให้เล็กลงก่อนส่งเสมอ (มือถือถ่ายรูปได้ 3-8MB ง่ายๆ แต่ php.ini บาง server จำกัดแค่ ~2MB)
+// ย่อด้านยาวสุดไม่เกิน 1600px + re-encode เป็น JPEG คุณภาพ 0.75 ลดขนาดไฟล์ลงมาก โดยยังชัดพออ่าน OCR/เห็นสภาพรถ
+function compressImage(file, maxDim = 1600, quality = 0.75) {
+  return new Promise((resolve) => {
+    if (!file.type.startsWith("image/")) return resolve(file);
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const scale = maxDim / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return resolve(file); // เผื่อ toBlob พังในบางเบราว์เซอร์เก่า ใช้ไฟล์เดิมแทน
+            resolve(new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }));
+          },
+          "image/jpeg",
+          quality,
+        );
+      };
+      img.onerror = () => resolve(file); // อ่านรูปไม่ได้ ก็ส่งไฟล์เดิมไปแทนดีกว่าพังเงียบๆ
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve(file);
+    reader.readAsDataURL(file);
+  });
+}
 
-  return fetch(endpoint, { method: "POST", body: formData })
-    .then((res) => res.json())
-    .then((result) => (result.success ? result.photo_path : null))
-    .catch(() => null);
+function uploadPhoto(file, endpoint) {
+  return compressImage(file)
+    .catch((err) => {
+      throw new Error("ขั้นตอนบีบอัดรูป: " + err.message);
+    })
+    .then((compressed) => {
+    const formData = new FormData();
+    formData.append("photo", compressed);
+
+    return fetch(endpoint, { method: "POST", body: formData })
+      .then((res) =>
+        res.text().then((text) => {
+          let result;
+          try {
+            result = JSON.parse(text);
+          } catch (e) {
+            // 🩹 FIX: ถ้า server ตอบไม่ใช่ JSON ล้วนๆ (เช่น PHP warning หลุดปน) เดิม res.json() จะ throw
+            // เป็น error งงๆ ของเบราว์เซอร์ (Safari: "The string did not match the expected pattern")
+            // จับไว้ตรงนี้ ให้ error message อ่านรู้เรื่องแทน
+            console.error("Upload response ไม่ใช่ JSON:", text);
+            throw new Error("เซิร์ฟเวอร์ตอบกลับผิดปกติ กรุณาลองใหม่ หรือแจ้งผู้ดูแลระบบ");
+          }
+          // 🩹 FIX: เดิมถ้า server ตอบ success:false (เช่นไฟล์ถูกปฏิเสธ, mime เพี้ยน) จะ return null เงียบๆ
+          // เหมือน "อัปโหลดสำเร็จแต่ไม่มีรูป" ทั้งที่จริงคือ "อัปโหลดพัง" — โยน error ให้ผู้เรียกจัดการแทน
+          if (!result.success) {
+            throw new Error(result.message || "อัปโหลดรูปไม่สำเร็จ");
+          }
+          return result.photo_path;
+        }),
+      );
+  });
+  // 🩹 เอา .catch(() => null) เดิมออก — ปล่อยให้ error หลุดไปให้โค้ดที่เรียกจัดการ (แสดง toast + หยุดขั้นตอน)
+  // แทนที่จะกลืนเงียบแล้วเดินหน้าบันทึกข้อมูลต่อทั้งที่ไม่มีรูปจริง
 }

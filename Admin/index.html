@@ -1,4 +1,4 @@
-<?php require_once '../auth_check.php'; ?>
+<?php require_once 'guard_admin.php'; ?>
 <!doctype html>
 <html lang="th">
   <head>
@@ -13,7 +13,8 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=7" />
+    <link rel="stylesheet" href="admin-datepicker.css" />
   </head>
   <body>
     <aside class="sidebar">
@@ -45,6 +46,9 @@
         >
         <a href="#" class="menu-link" onclick="switchTab('users-tab')"
           ><i class="fa-solid fa-users"></i> <span>บัญชีผู้ใช้</span></a
+        >
+        <a href="geo-setup.php" class="menu-link"
+          ><i class="fa-solid fa-location-crosshairs"></i> <span>จุดตรวจพิกัด</span></a
         >
         <a href="#" class="menu-link" onclick="switchTab('reports-tab')"
           ><i class="fa-solid fa-chart-column"></i> <span>รายงาน</span></a
@@ -105,6 +109,13 @@
             <div>
               <h3 id="stat-maintenance">0</h3>
               <p>งดให้บริการ / ซ่อม</p>
+            </div>
+          </div>
+          <div class="stat-card-v2 c-available">
+            <i class="fa-solid fa-thumbs-up"></i>
+            <div>
+              <h3 id="stat-feedback">-</h3>
+              <p>พึงพอใจระบบ (<span id="stat-feedback-count">0</span> โหวต)</p>
             </div>
           </div>
         </div>
@@ -304,7 +315,7 @@
               </h2>
             </div>
             <div class="table-scroll-container">
-              <table class="car-data-table">
+              <table class="car-data-table tbl-fit">
                 <thead>
                   <tr>
                     <th style="width: 8%">รูปภาพ</th>
@@ -329,7 +340,10 @@
         <h1 class="page-title">ปฏิทิน <span>ตารางการจองรถ</span></h1>
         <div class="calendar-legend">
           <span class="legend-item"
-            ><i style="background: #3b82f6"></i> กำลังจอง/ใช้งาน</span
+            ><i style="background: #f59e0b"></i> จองแล้ว (ยังไม่เช็คอิน)</span
+          >
+          <span class="legend-item"
+            ><i style="background: #2563eb"></i> กำลังใช้งาน</span
           >
           <span class="legend-item"
             ><i style="background: #8b5cf6"></i> คืนแล้ว</span
@@ -341,7 +355,7 @@
       <div id="bookings-tab" class="tab-content">
         <h1 class="page-title">จัดการ <span>การจองรถทั้งหมด</span></h1>
         <div class="table-scroll-container">
-          <table class="car-data-table">
+          <table class="car-data-table tbl-fit">
             <thead>
               <tr>
                 <th>เลขที่จอง</th>
@@ -372,7 +386,7 @@
           />
         </div>
         <div class="table-scroll-container">
-          <table class="car-data-table">
+          <table class="car-data-table tbl-fit">
             <thead>
               <tr>
                 <th>รหัสพนักงาน</th>
@@ -388,275 +402,120 @@
       </div>
 
       <div id="reports-tab" class="tab-content">
-        <h1 class="page-title">
-          รายงาน <span>สรุปข้อมูลระบบ</span>
-          <span class="fx-live-dot" title="อัปเดตอัตโนมัติ"
-            ><i class="fa-solid fa-circle"></i> Live</span
-          >
-        </h1>
+        <div class="rp-head">
+          <h1 class="page-title" style="margin: 0">
+            รายงาน <span>สรุปข้อมูลระบบ</span>
+            <span class="fx-live-dot" title="อัปเดตอัตโนมัติ"><i class="fa-solid fa-circle"></i> Live</span>
+          </h1>
+          <button type="button" class="rp-export" onclick="exportAllReports()">
+            <i class="fa-solid fa-file-excel"></i> Export ทั้งหมด (Excel)
+          </button>
+        </div>
 
-        <div class="dash-panel" style="margin-bottom: 20px">
-          <div class="fx-preset-row">
-            <button class="fx-preset-btn" onclick="setReportRange('today')">
-              วันนี้
-            </button>
-            <button class="fx-preset-btn" onclick="setReportRange('7d')">
-              7 วัน
-            </button>
-            <button class="fx-preset-btn" onclick="setReportRange('30d')">
-              30 วัน
-            </button>
-            <button class="fx-preset-btn" onclick="setReportRange('month')">
-              เดือนนี้
-            </button>
+        <div class="dash-panel rp-filter">
+          <div class="rp-presets" role="group" aria-label="ช่วงเวลา">
+            <button type="button" class="rp-pill" data-preset="today" onclick="setReportRange('today')">วันนี้</button>
+            <button type="button" class="rp-pill" data-preset="7d" onclick="setReportRange('7d')">7 วัน</button>
+            <button type="button" class="rp-pill" data-preset="30d" onclick="setReportRange('30d')">30 วัน</button>
+            <button type="button" class="rp-pill" data-preset="90d" onclick="setReportRange('90d')">90 วัน</button>
+            <button type="button" class="rp-pill" data-preset="month" onclick="setReportRange('month')">เดือนนี้</button>
           </div>
-          <div
-            style="
-              display: flex;
-              gap: 15px;
-              align-items: flex-end;
-              flex-wrap: wrap;
-            "
-          >
-            <div class="field-box">
-              <label>จากวันที่</label>
-              <input type="date" id="report-start" class="ctrl-input" />
-            </div>
-            <div class="field-box">
-              <label>ถึงวันที่</label>
-              <input type="date" id="report-end" class="ctrl-input" />
-            </div>
-            <button class="btn btn-primary" onclick="fetchReports()">
-              <span>ค้นหา</span> <i class="fa-solid fa-magnifying-glass"></i>
+          <div class="rp-dates">
+            <label>จาก <input type="date" id="report-start" class="ctrl-input" /></label>
+            <label>ถึง <input type="date" id="report-end" class="ctrl-input" /></label>
+            <button type="button" class="btn btn-primary rp-go" onclick="fetchReports()">
+              <i class="fa-solid fa-magnifying-glass"></i> ดูรายงาน
             </button>
           </div>
+          <div class="rp-range" id="rp-range-label"></div>
         </div>
 
-        <!-- ===== Overview grid สไตล์ fleetx: สถานะการจอง / เทรนด์ / การใช้รถ / อัตรายกเลิก ===== -->
-        <div class="fx-grid-4">
-          <div class="fx-card">
-            <div class="fx-card-head">
-              <h3><i class="fa-solid fa-clipboard-list"></i> สถานะการจอง</h3>
-            </div>
-            <div id="booking-status-stats" class="fx-stat-grid">
-              <div class="empty-hint">ไม่มีข้อมูล</div>
-            </div>
-          </div>
+        <div id="rp-alert" class="rp-alert" hidden></div>
 
-          <div class="fx-card">
-            <div class="fx-card-head">
-              <h3><i class="fa-solid fa-chart-line"></i> แนวโน้มการจอง</h3>
-              <div class="fx-card-actions">
-                <button
-                  class="op-edit"
-                  onclick="
-                    exportTableExcel('report-booking-table', 'รายงานการจอง')
-                  "
-                >
-                  Excel
-                </button>
-                <button
-                  class="op-edit"
-                  onclick="printReportSection('report-booking-section')"
-                >
-                  PDF
-                </button>
-              </div>
-            </div>
-            <div class="chart-box"><canvas id="chart-bookings"></canvas></div>
-          </div>
+        <!-- KPI -->
+        <div class="rp-kpis" id="rp-kpis"></div>
 
-          <div class="fx-card">
-            <div class="fx-card-head">
-              <h3><i class="fa-solid fa-car"></i> การใช้รถ</h3>
-              <div class="fx-card-actions">
-                <button
-                  class="op-edit"
-                  onclick="
-                    exportTableExcel('report-car-usage-table', 'รายงานการใช้รถ')
-                  "
-                >
-                  Excel
-                </button>
-                <button
-                  class="op-edit"
-                  onclick="printReportSection('report-car-usage-section')"
-                >
-                  PDF
-                </button>
-              </div>
-            </div>
-            <div class="chart-box"><canvas id="chart-car-usage"></canvas></div>
-          </div>
-
-          <div class="fx-card">
-            <div class="fx-card-head">
-              <h3><i class="fa-solid fa-ban"></i> อัตราการยกเลิก</h3>
-            </div>
-            <div class="fx-donut-box">
-              <canvas id="chart-cancel-rate"></canvas>
-              <div class="fx-gauge-center">
-                <strong id="cancel-rate-text">0%</strong>
-                <span id="cancel-rate-sub">0 / 0 รายการ</span>
-              </div>
-            </div>
-          </div>
+        <!-- แนวโน้ม + สัดส่วนสถานะ -->
+        <div class="rp-grid rp-g-21">
+          <section class="rp-card">
+            <header><h3><i class="fa-solid fa-chart-line"></i> แนวโน้มการจองรายวัน</h3></header>
+            <div class="rp-chart"><canvas id="rp-c-trend"></canvas></div>
+          </section>
+          <section class="rp-card">
+            <header><h3><i class="fa-solid fa-chart-pie"></i> สัดส่วนสถานะการจอง</h3></header>
+            <div class="rp-donut"><canvas id="rp-c-status"></canvas><div class="rp-donut-c"><strong id="rp-donut-n">0</strong><span>รายการ</span></div></div>
+            <ul class="rp-legend" id="rp-legend"></ul>
+          </section>
         </div>
 
-        <!-- ===== ค่าซ่อม: ตัวเลขรวม + กราฟต่อคัน ===== -->
-        <div class="fx-grid-4" style="margin-bottom: 20px">
-          <div class="fx-card">
-            <div class="fx-card-head">
-              <h3><i class="fa-solid fa-sack-dollar"></i> ค่าซ่อมรวม</h3>
-            </div>
-            <div class="fx-big-number" id="report-repair-cost-total-v2">
-              0 บาท
-            </div>
-            <div class="fx-number-sub" id="report-repair-jobs-total">
-              0 งานซ่อม
-            </div>
-          </div>
-
-          <div class="fx-card fx-span-3">
-            <div class="fx-card-head">
-              <h3>
-                <i class="fa-solid fa-screwdriver-wrench"></i> ค่าซ่อมต่อคัน
-              </h3>
-              <div class="fx-card-actions">
-                <button
-                  class="op-edit"
-                  onclick="
-                    exportTableExcel(
-                      'report-repair-cost-table',
-                      'รายงานค่าซ่อม',
-                    )
-                  "
-                >
-                  Excel
-                </button>
-                <button
-                  class="op-edit"
-                  onclick="printReportSection('report-repair-cost-section')"
-                >
-                  PDF
-                </button>
-              </div>
-            </div>
-            <div class="chart-box">
-              <canvas id="chart-repair-cost"></canvas>
-            </div>
-          </div>
+        <!-- การใช้งานรถ / ชั่วโมงเร่งด่วน / ฝ่าย -->
+        <div class="rp-grid rp-g-3">
+          <section class="rp-card">
+            <header><h3><i class="fa-solid fa-gauge-high"></i> % การใช้งานต่อคัน</h3></header>
+            <div class="rp-chart"><canvas id="rp-c-util"></canvas></div>
+          </section>
+          <section class="rp-card">
+            <header><h3><i class="fa-solid fa-clock"></i> ชั่วโมงเร่งด่วน</h3></header>
+            <div class="rp-chart"><canvas id="rp-c-peak"></canvas></div>
+          </section>
+          <section class="rp-card">
+            <header><h3><i class="fa-solid fa-building"></i> ฝ่ายที่ใช้รถมากสุด</h3></header>
+            <div class="rp-chart"><canvas id="rp-c-div"></canvas></div>
+          </section>
         </div>
 
-        <!-- 1. การจอง (รายละเอียด) -->
-        <div class="dash-panel" id="report-booking-section">
-          <h2 class="panel-title">
-            <i class="fa-solid fa-clipboard-list"></i> รายละเอียดการจอง
-          </h2>
-          <div class="table-scroll-container">
-            <table class="car-data-table" id="report-booking-table">
-              <thead>
-                <tr>
-                  <th>สถานะ</th>
-                  <th>จำนวน</th>
-                </tr>
-              </thead>
-              <tbody id="report-booking-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- 2. การใช้รถ (รายละเอียด) -->
-        <div class="dash-panel" id="report-car-usage-section">
-          <h2 class="panel-title">
-            <i class="fa-solid fa-car"></i> รายละเอียดการใช้รถ
-          </h2>
-          <div class="table-scroll-container">
-            <table class="car-data-table" id="report-car-usage-table">
-              <thead>
-                <tr>
-                  <th>ทะเบียนรถ</th>
-                  <th>จำนวนครั้งที่ใช้</th>
-                </tr>
-              </thead>
-              <tbody id="report-car-usage-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- 3. ค่าซ่อม (รายละเอียด) -->
-        <div class="dash-panel" id="report-repair-cost-section">
-          <h2 class="panel-title">
-            <i class="fa-solid fa-screwdriver-wrench"></i> รายละเอียดค่าซ่อม
-          </h2>
-          <p style="margin: 0 0 10px; font-weight: 600">
-            รวมค่าซ่อมทั้งหมด:
-            <span id="report-repair-cost-total">0 บาท</span>
-          </p>
-          <div class="table-scroll-container">
-            <table class="car-data-table" id="report-repair-cost-table">
-              <thead>
-                <tr>
-                  <th>ทะเบียนรถ</th>
-                  <th>จำนวนครั้งซ่อม</th>
-                  <th>ค่าใช้จ่ายรวม (บาท)</th>
-                </tr>
-              </thead>
-              <tbody id="report-repair-cost-tbody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- 4. การยกเลิก -->
-        <div class="dash-panel" id="report-cancel-section">
-          <div
-            style="
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              flex-wrap: wrap;
-              gap: 8px;
-            "
-          >
-            <h2 class="panel-title">
-              <i class="fa-solid fa-ban"></i> รายงานการยกเลิก
-            </h2>
-            <div class="action-buttons-group" style="width: auto">
-              <button
-                class="op-edit"
-                onclick="
-                  exportTableExcel('report-cancel-table', 'รายงานการยกเลิก')
-                "
-              >
-                Excel
-              </button>
-              <button
-                class="op-edit"
-                onclick="printReportSection('report-cancel-section')"
-              >
-                PDF
-              </button>
+        <!-- ตารางต่อคัน + ผู้ขับ -->
+        <div class="rp-grid rp-g-21">
+          <section class="rp-card">
+            <header><h3><i class="fa-solid fa-car"></i> สรุปรายคัน</h3></header>
+            <div class="table-scroll-container">
+              <table class="car-data-table rp-table">
+                <thead><tr><th>ทะเบียน</th><th>ครั้ง</th><th>ชั่วโมง</th><th>% ใช้งาน</th><th>ระยะทาง (กม.)</th><th>ยกเลิก</th><th>ค่าซ่อม (บาท)</th></tr></thead>
+                <tbody id="rp-t-car"></tbody>
+              </table>
             </div>
-          </div>
-          <p
-            id="report-cancel-summary"
-            style="margin: 10px 0; font-weight: 600"
-          ></p>
-          <div class="table-scroll-container">
-            <table class="car-data-table" id="report-cancel-table">
-              <thead>
-                <tr>
-                  <th>วันที่</th>
-                  <th>ทะเบียนรถ</th>
-                  <th>ผู้จอง</th>
-                  <th>สถานะ</th>
-                </tr>
-              </thead>
-              <tbody id="report-cancel-tbody"></tbody>
-            </table>
-          </div>
+          </section>
+          <section class="rp-card">
+            <header><h3><i class="fa-solid fa-ranking-star"></i> ผู้ใช้รถมากสุด</h3></header>
+            <div class="table-scroll-container">
+              <table class="car-data-table rp-table">
+                <thead><tr><th>#</th><th>ชื่อ</th><th>ครั้ง</th><th>กม.</th></tr></thead>
+                <tbody id="rp-t-drv"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+        <!-- ความคิดเห็น + ปัญหา -->
+        <div class="rp-grid rp-g-2">
+          <section class="rp-card">
+            <header><h3><i class="fa-solid fa-comment-dots"></i> ความคิดเห็นจากผู้ใช้ <small id="rp-fb-sum"></small></h3></header>
+            <ul class="rp-feed" id="rp-comments"></ul>
+          </section>
+          <section class="rp-card">
+            <header><h3><i class="fa-solid fa-triangle-exclamation"></i> ปัญหาที่ผู้ใช้แจ้งตอนคืนรถ</h3></header>
+            <ul class="rp-feed" id="rp-problems"></ul>
+          </section>
+        </div>
+
+        <!-- ค่าซ่อม + ยกเลิก -->
+        <div class="rp-grid rp-g-2">
+          <section class="rp-card">
+            <header><h3><i class="fa-solid fa-screwdriver-wrench"></i> ค่าซ่อมต่อคัน <small id="rp-repair-sum"></small></h3></header>
+            <div class="rp-chart"><canvas id="rp-c-repair"></canvas></div>
+          </section>
+          <section class="rp-card">
+            <header><h3><i class="fa-solid fa-ban"></i> รายการที่ยกเลิก <small id="rp-cancel-sum"></small></h3></header>
+            <div class="table-scroll-container">
+              <table class="car-data-table rp-table">
+                <thead><tr><th>วันที่</th><th>รถ</th><th>ผู้จอง</th><th>สถานะ</th></tr></thead>
+                <tbody id="rp-t-cancel"></tbody>
+              </table>
+            </div>
+          </section>
         </div>
       </div>
+
     </div>
 
     <script>
@@ -667,8 +526,24 @@
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="dashboard.js"></script>
-    <script src="reports.js"></script>
-    <script src="app.js"></script>
+    <script src="../Car/ui-dialog.js?v=3"></script>
+    <script src="dashboard.js?v=2"></script>
+    <script src="reports.js?v=3"></script>
+    <script src="admin-datepicker.js"></script>
+    <script src="app.js?v=5"></script>
+    <script>
+      // เปิดแท็บตามลิงก์ #ชื่อแท็บ (ใช้จากหน้า "จุดตรวจพิกัด" และปุ่มย้อนกลับของเบราว์เซอร์)
+      function openTabFromHash() {
+        const h = decodeURIComponent(location.hash.slice(1));
+        if (!h || !document.getElementById(h) || typeof switchTab !== "function") return;
+        // ต้องเรียกนอก event handler: switchTab() อ่าน window.event (ตอน load เป็น event ของ window ทำให้พัง)
+        setTimeout(() => {
+          switchTab(h);
+          document.querySelectorAll(".menu-link").forEach((l) => l.classList.toggle("active", (l.getAttribute("onclick") || "").includes("'" + h + "'")));
+        }, 0);
+      }
+      window.addEventListener("load", openTabFromHash);
+      window.addEventListener("hashchange", openTabFromHash);
+    </script>
   </body>
 </html>

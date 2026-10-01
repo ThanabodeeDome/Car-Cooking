@@ -16,8 +16,8 @@ if (empty($plate)) {
 try {
     $stmt = $conn->prepare(
         "SELECT TOP 1 BookingStatus FROM CarBookings
-         WHERE REPLACE(CarPlate, ' ', '') = REPLACE(:plate, ' ', '') AND BookingStatus IN ('จองแล้ว', 'ขาไป')
-         ORDER BY BookingID DESC"
+         WHERE REPLACE(CarPlate, ' ', '') = REPLACE(:plate, ' ', '') AND BookingStatus IN (N'จองแล้ว', N'ขาไป')
+         ORDER BY CASE WHEN BookingStatus = N'ขาไป' THEN 0 ELSE 1 END, ABS(DATEDIFF(MINUTE, GETDATE(), CAST(BookingDate AS DATETIME) + CASE WHEN ISDATE(OutTime) = 1 THEN CAST(OutTime AS DATETIME) ELSE CAST('00:00' AS DATETIME) END)), BookingID ASC"
     );
     $stmt->execute([':plate' => $plate]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
