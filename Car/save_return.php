@@ -15,6 +15,7 @@ $sessionRole = $_SESSION['role'] ?? '';
 
 require_once __DIR__ . '/../same_origin.php';
 require_same_origin();
+require_once __DIR__ . '/text_util.php'; // fit_nvarchar(): ตัดหมายเหตุให้พอดีคอลัมน์ ReturnRemark (emoji กิน 2 หน่วย)
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
@@ -54,11 +55,12 @@ if ($returnAt > new DateTime('+10 minutes')) {
     echo json_encode(["success" => false, "message" => "วันเวลาคืนรถต้องไม่เกินเวลาปัจจุบัน"]);
     exit;
 }
-$remark = isset($data['return_remark']) && is_string($data['return_remark']) ? mb_substr(trim($data['return_remark']), 0, 500) : '';
+$remark = isset($data['return_remark']) && is_string($data['return_remark']) ? fit_nvarchar(trim($data['return_remark']), 500) : '';
 
 try {
     $bookingCheck = $conn->prepare(
-        "SELECT BookingID, EmployeeID, CarPlate, StartMileage, BookingStatus
+        "SELECT BookingID, EmployeeID, CarPlate, StartMileage, BookingStatus,
+                CONVERT(varchar(16), CheckInTime, 120) AS CheckInAt
          FROM CarBookings WHERE BookingID = :id"
     );
     $bookingCheck->execute([':id' => $bookingId]);
@@ -77,6 +79,12 @@ try {
     // 🌟 กันคนอื่นคืนรถแทนผู้ขับตัวจริง — ต้องเป็นเจ้าของ booking เท่านั้น (หรือ admin)
     if (strtolower($sessionRole) !== 'admin' && $sessionEmployeeId !== $booking['EmployeeID']) {
         echo json_encode(["success" => false, "message" => "คุณไม่ใช่ผู้ขับที่ระบุไว้ในรายการจองนี้"]);
+        exit;
+    }
+
+    // 🔒 วันเวลาคืนต้องไม่ก่อนเวลาเช็คอินรับรถ (ฟอร์มคืนมือเลือกวันย้อนหลังได้ — เดิมเลือกก่อนรับรถก็ผ่าน)
+    if (!empty($booking['CheckInAt']) && $returnAt->format('Y-m-d H:i') < $booking['CheckInAt']) {
+        echo json_encode(["success" => false, "message" => "วันเวลาคืนรถต้องไม่ก่อนเวลารับรถ (" . date('d/m/Y H:i', strtotime($booking['CheckInAt'])) . " น.)"]);
         exit;
     }
 

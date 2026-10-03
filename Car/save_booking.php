@@ -16,9 +16,10 @@ $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 if (!is_array($data)) $data = [];
 
-// 🔒 รับเฉพาะค่า string (กันส่ง array/object มาทำ trim() พังเป็น error 500)
+// 🔒 รับเฉพาะค่า string (กันส่ง array/object มาทำ trim() พังเป็น error 500) และตัดให้พอดีคอลัมน์ใน DB
+require_once __DIR__ . '/text_util.php';
 $str = function ($key, $max) use ($data) {
-    return isset($data[$key]) && is_scalar($data[$key]) ? mb_substr(trim((string)$data[$key]), 0, $max) : '';
+    return isset($data[$key]) && is_scalar($data[$key]) ? fit_nvarchar(trim((string)$data[$key]), $max) : '';
 };
 $carPlate = $str('car_plate', 50);
 $driverEmployeeId = $str('employee_id', 20);
@@ -46,7 +47,12 @@ if (!$newStart || !$newEnd
     echo json_encode(["success" => false, "message" => "รูปแบบเวลาไม่ถูกต้อง"]);
     exit;
 }
-if ($plannedReturnTime <= $outTime) {
+// 🔒 เวลาไป = เวลากลับ เดิมถูกตีความเป็นจอง 24 ชม. (ข้ามคืน) — มักเกิดจากเลือกผิด แล้วล็อกรถทั้งวัน
+if ($plannedReturnTime === $outTime) {
+    echo json_encode(["success" => false, "message" => "เวลาไปและเวลากลับต้องไม่ใช่เวลาเดียวกัน"]);
+    exit;
+}
+if ($plannedReturnTime < $outTime) {
     $newEnd->modify('+1 day'); // ข้ามคืน
 }
 
@@ -155,6 +161,12 @@ try {
     }
 
     $passengerIdsRaw = $str('passenger_ids', 1000);
+    // คอลัมน์ PassengerIDs เก็บได้ 255 ตัวอักษร (ประมาณ 40 คน) เกินแล้ว DB error -> แจ้งให้เข้าใจแทน (ไม่ตัดทิ้งเงียบๆ)
+    if (mb_strlen($passengerIdsRaw) > 255) {
+        $conn->rollBack();
+        echo json_encode(["success" => false, "message" => "ผู้ร่วมเดินทางมากเกินไป (สูงสุดประมาณ 40 คนต่อการจอง)"]);
+        exit;
+    }
     $passengerNamesRaw = $str('passengers', 1000);
 
     $bookingNumber = 'BK-' . date('ymdHis') . '-' . random_int(10, 99); // suffix กันเลขซ้ำเมื่อจองซ้ำหลายสัปดาห์ในวินาทีเดียวกัน

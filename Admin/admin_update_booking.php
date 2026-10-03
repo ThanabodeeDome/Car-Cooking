@@ -59,13 +59,16 @@ try {
 
     // ตรวจรูปแบบวันที่/เวลา (กันค่าเพี้ยนลง DB)
     $bookingDateStr = substr((string)$bookingDate, 0, 10);
-    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $bookingDateStr) || !strtotime($bookingDateStr)) {
+    // 🔒 วันที่ต้องมีจริง (เดิม strtotime ยอม 2026-02-31 แล้วไปพังตอนบันทึก DB เป็นข้อความ error กว้างๆ)
+    $dObj = DateTime::createFromFormat('!Y-m-d', $bookingDateStr);
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $bookingDateStr) || !$dObj || $dObj->format('Y-m-d') !== $bookingDateStr) {
         echo json_encode(["success" => false, "message" => "รูปแบบวันที่ไม่ถูกต้อง"]);
         exit;
     }
     $bookingDate = $bookingDateStr;
     foreach ([$outTime, $plannedReturnTime] as $t) {
-        if ($t !== null && $t !== '' && !preg_match('/^\d{2}:\d{2}(:\d{2})?/', (string)$t)) {
+        // 🔒 เวลาต้องมีจริง 00:00-23:59 (เดิมรับ 25:00 / 08:99 ได้)
+        if ($t !== null && $t !== '' && !preg_match('/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?$/', (string)$t)) {
             echo json_encode(["success" => false, "message" => "รูปแบบเวลาไม่ถูกต้อง"]);
             exit;
         }

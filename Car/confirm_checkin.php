@@ -39,7 +39,9 @@ try {
     // เลือกรายการที่ "ใกล้เวลาปัจจุบันที่สุด" (เดิมเลือกรายการที่จองล่าสุด ซึ่งอาจเป็นคิวของวันอื่น)
     // 🩹 ให้รายการของคนที่สแกนเองมาก่อน — เดิมถ้ามีคิวคนอื่นใกล้เวลากว่า เจ้าของคิวตัวจริงจะเช็คอินไม่ได้เลย
     // (ลำดับเดียวกับ get_booking_by_plate.php หน้าจอจะได้โชว์รายการเดียวกับที่เช็คอินจริง)
-    $sql = "SELECT TOP 1 BookingID, EmployeeID FROM CarBookings
+    $sql = "SELECT TOP 1 BookingID, EmployeeID,
+                   CASE WHEN ISDATE(OutTime) = 1 THEN CONVERT(varchar(16), CAST(BookingDate AS DATETIME) + CAST(OutTime AS DATETIME), 120) END AS StartAt
+            FROM CarBookings
             WHERE REPLACE(CarPlate, ' ', '') = REPLACE(:plate, ' ', '') AND BookingStatus = N'จองแล้ว'
             ORDER BY CASE WHEN EmployeeID = :emp THEN 0 ELSE 1 END,
                      ABS(DATEDIFF(MINUTE, GETDATE(), CAST(BookingDate AS DATETIME) + CASE WHEN ISDATE(OutTime) = 1 THEN CAST(OutTime AS DATETIME) ELSE CAST('00:00' AS DATETIME) END)), BookingID ASC";
@@ -55,6 +57,16 @@ try {
     // 🌟 กันคนอื่นสแกนแล้วกดเช็คอินแทนผู้ขับตัวจริง — ต้องเป็นเจ้าของ booking เท่านั้น (หรือ admin)
     if (strtolower($sessionRole) !== 'admin' && $sessionEmployeeId !== $booking['EmployeeID']) {
         echo json_encode(['success' => false, 'message' => 'คุณไม่ใช่ผู้ขับที่ระบุไว้ในรายการจองนี้']);
+        exit;
+    }
+
+    // 🔒 เช็คอินล่วงหน้าได้ไม่เกิน 2 ชม. ก่อนเวลาออก — เดิมสแกนวันนี้เช็คอินคิวของสัปดาห์หน้าได้
+    // รถจะขึ้น "กำลังใช้งาน" ทันทีและคิวคนอื่นระหว่างนั้นเช็คอินไม่ได้ (แอดมินยังเช็คอินแทนได้เสมอ)
+    $earlyMinutes = 120;
+    if (strtolower($sessionRole) !== 'admin' && !empty($booking['StartAt'])
+        && time() < strtotime($booking['StartAt']) - $earlyMinutes * 60) {
+        $openAt = strtotime($booking['StartAt']) - $earlyMinutes * 60;
+        echo json_encode(['success' => false, 'message' => 'ยังไม่ถึงเวลารับรถ (คิวของคุณออก ' . date('d/m/Y H:i', strtotime($booking['StartAt'])) . ' น. เช็คอินได้ตั้งแต่ ' . date('d/m H:i', $openAt) . ' น.)']);
         exit;
     }
 

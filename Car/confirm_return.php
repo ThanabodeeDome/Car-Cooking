@@ -8,6 +8,7 @@ require_once 'db_connect.php';
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../same_origin.php';
 require_same_origin();
+require_once __DIR__ . '/text_util.php'; // fit_nvarchar(): ตัดหมายเหตุให้พอดีคอลัมน์ ReturnRemark (emoji กิน 2 หน่วย)
 
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
@@ -15,7 +16,7 @@ $data = json_decode($json, true);
 $plate = isset($data['plate']) && is_string($data['plate']) ? trim($data['plate']) : '';
 $endMile = isset($data['end_mile']) ? (int) $data['end_mile'] : 0;
 $photoPath = isset($data['photo_path']) && is_string($data['photo_path']) ? trim($data['photo_path']) : null; // รูปเลขไมล์ตอนคืน
-$remark = isset($data['return_remark']) && is_string($data['return_remark']) ? mb_substr(trim($data['return_remark']), 0, 500) : '-';
+$remark = isset($data['return_remark']) && is_string($data['return_remark']) ? fit_nvarchar(trim($data['return_remark']), 500) : '-';
 
 // 🔒 รับเฉพาะ path ที่ upload_return_photo.php ออกให้
 if ($photoPath === '') $photoPath = null;
