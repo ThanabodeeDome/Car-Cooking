@@ -47,6 +47,7 @@ try {
     }
 
     // 🌟 ฟิลด์อื่นๆ แก้ได้อิสระ ไม่บังคับกรอกครบ (เผื่อแก้แค่บางช่อง)
+    $originalCarPlate = $booking['CarPlate']; // 🔒 ทะเบียนรถที่ขับจริง ใช้ตอน sync ไมล์ (กันพลาดถ้าแอดมินเปลี่ยนทะเบียนพร้อมปิดงานในคำขอเดียวกัน)
     $carPlate    = $data['car_plate']    ?? $booking['CarPlate'];
     $bookingDate = $data['booking_date'] ?? $booking['BookingDate'];
     // 🩹 FIX: ระบบจองเปลี่ยนมาใช้เวลาอิสระ (OutTime/PlannedReturnTime) แทน TimeSlot คงที่แล้ว
@@ -195,8 +196,9 @@ try {
                  WHERE BookingID = :id"
             )->execute([':rd' => date('Y-m-d'), ':rt' => date('H:i:s'), ':id' => $bookingId]);
             // sync ไมล์ล่าสุดเข้าตาราง Cars (ไม่ลดค่าลง ถ้ารถคันนี้มีทริปหลังจากนี้ไปแล้ว)
+            // 🔒 ใช้ $originalCarPlate (รถที่ขับจริง) ไม่ใช่ $carPlate ที่อาจถูกแอดมินเปลี่ยนทะเบียนไปแล้วในคำขอเดียวกัน
             $conn->prepare("UPDATE Cars SET Mileage = :m WHERE Plate = :p AND (Mileage IS NULL OR Mileage < :m2)")
-                 ->execute([':m' => (int)$endMile, ':p' => $carPlate, ':m2' => (int)$endMile]);
+                 ->execute([':m' => (int)$endMile, ':p' => $originalCarPlate, ':m2' => (int)$endMile]);
         }
 
         $conn->commit();
