@@ -80,6 +80,14 @@ try {
         $status = $booking['BookingStatus'];
     }
 
+    // 🩹 แอดมินปิดงาน "คืนแล้ว" แทนผู้ใช้ (เช่น ผู้ขับลืมสแกนคืน) — เดิมเปลี่ยนแค่สถานะ
+    // ไม่บันทึกวันเวลาคืน ไม่ตรวจเลขไมล์ และไม่อัปเดตไมล์ล่าสุดของรถ -> คนต่อไปได้ไมล์เริ่มต้นผิด
+    $closingReturn = $status === 'คืนแล้ว' && $booking['BookingStatus'] !== 'คืนแล้ว';
+    if ($closingReturn && ((int)$endMile <= 0 || (int)$endMile <= (int)$startMile)) {
+        echo json_encode(["success" => false, "message" => "ปิดงานเป็น \"คืนแล้ว\" ต้องกรอกเลขไมล์ตอนคืน ให้มากกว่าเลขไมล์ตอนออก (" . (int)$startMile . ")"]);
+        exit;
+    }
+
     // 🩹 FIX: endpoint นี้เดิมไม่เช็คชนเวลาเลย แอดมินแก้ทะเบียน/วันที่/เวลาตรงๆ
     // สร้างการจองซ้อนกันเงียบๆ ได้ (ต่างจาก save_booking.php ฝั่งผู้ใช้ปกติที่ล็อก+เช็คไว้แล้ว)
     // เช็คเฉพาะตอนสถานะใหม่ยังนับเป็น "ใช้งานอยู่" เท่านั้น ถ้าแอดมินกำลังยกเลิกไม่ต้องเช็ค (คืนคิวให้คันนี้)
@@ -175,6 +183,18 @@ try {
             ':status'        => $status,
             ':id'            => $bookingId,
         ]);
+
+        if ($closingReturn) {
+            // วันเวลาคืน = ตอนที่แอดมินปิดงาน (ถ้ายังไม่เคยบันทึก) + หมายเหตุว่าแอดมินเป็นคนปิด
+            $conn->prepare(
+                "UPDATE CarBookings SET ReturnDate = ISNULL(ReturnDate, :rd), ReturnTime = ISNULL(ReturnTime, :rt),
+                        ReturnRemark = CASE WHEN ReturnRemark IS NULL OR LTRIM(RTRIM(ReturnRemark)) IN (N'', N'-') THEN N'[แอดมินบันทึกคืนรถแทน]' ELSE ReturnRemark END
+                 WHERE BookingID = :id"
+            )->execute([':rd' => date('Y-m-d'), ':rt' => date('H:i:s'), ':id' => $bookingId]);
+            // sync ไมล์ล่าสุดเข้าตาราง Cars (ไม่ลดค่าลง ถ้ารถคันนี้มีทริปหลังจากนี้ไปแล้ว)
+            $conn->prepare("UPDATE Cars SET Mileage = :m WHERE Plate = :p AND (Mileage IS NULL OR Mileage < :m2)")
+                 ->execute([':m' => (int)$endMile, ':p' => $carPlate, ':m2' => (int)$endMile]);
+        }
 
         $conn->commit();
         echo json_encode(["success" => true]);
