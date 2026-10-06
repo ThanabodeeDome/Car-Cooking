@@ -91,12 +91,39 @@ function ocrSpace(string $image, string $engine): array {
     return [(string)($result['ParsedResults'][0]['ParsedText'] ?? ''), null];
 }
 
+// 🩹 FIX: จอ LCD ช่องห่างมาก (เช่นมีกรอบแบ่งแต่ละหลักชัดเจน) ทำให้ OCR.space บางครั้งตัดหลักเลข
+// ไปคนละบรรทัดกัน (เช่น "5507" บรรทัดหนึ่ง แล้ว "5 0" อีกบรรทัด จากเลขไมล์จริง 550750)
+// -> เดิมโค้ดรวมเฉพาะกรณีถูกเว้นช่องในบรรทัดเดียวกัน (ดู regex merge ด้านล่าง) พอโดนตัดคนละบรรทัด
+// "5507" เลยหลุดรอดมาเป็น candidate เดี่ยวที่ "ดูเหมือนถูกต้อง" (ผ่านเกณฑ์ 3-7 หลัก) ทั้งที่เป็นเลขผิด/เลขตัดทอน
+// แก้โดยรวมบรรทัดที่ "เป็นตัวเลขล้วน" (ไม่มีตัวอักษร/เครื่องหมายอื่นปน) ที่อยู่ติดกันหลายบรรทัดเข้าเป็นชุดเดียวก่อน
+// ตัวเลขสั้นเกิน (<3 หลัก) ที่ไม่ได้ถูกรวมก็ถูกคัดทิ้งอยู่แล้วโดยเกณฑ์เดิมด้านล่าง จึงไม่กระทบเคสอื่น
+function mergeDigitOnlyLines(array $lines): array {
+    $merged = [];
+    $buffer = [];
+    $flush = function () use (&$buffer, &$merged) {
+        if (!$buffer) return;
+        $merged[] = count($buffer) === 1 ? $buffer[0] : preg_replace('/[ \t]+/', '', implode('', $buffer));
+        $buffer = [];
+    };
+    foreach ($lines as $line) {
+        $trimmed = trim($line);
+        if ($trimmed !== '' && preg_match('/^\d+(?:[ \t]+\d+)*$/', $trimmed)) {
+            $buffer[] = $trimmed;
+        } else {
+            $flush();
+            $merged[] = $line;
+        }
+    }
+    $flush();
+    return $merged;
+}
+
 // 🩹 FIX หลัก: เดิมเอาตัวเลข "ทุกชุด" ในรูปมาต่อกัน (เช่น ไมล์ 185318 + trip 123.4 = 1853181234,
 // หรือมีนาฬิกา 10:45 ติดมาด้วย = 1045185318) -> ตอนนี้แยกเป็นตัวเลือกทีละชุด ตัดของที่ไม่ใช่เลขไมล์ทิ้ง
 // แล้วเลือกชุดที่ใช่ที่สุด — คืน list เรียงจากน่าจะใช่มากสุด: [['value' => '185318', 'score' => ...], ...]
 function odometerCandidates(string $text, ?int $start): array {
     $cands = [];
-    foreach (preg_split('/\R/u', $text) as $line) {
+    foreach (mergeDigitOnlyLines(preg_split('/\R/u', $text)) as $line) {
         $isOdoLine = (bool)preg_match('/\b(ODO|ODOMETER|TOTAL)\b|ไมล์|ระยะทางรวม/iu', $line);
         $isTripLine = (bool)preg_match('/\b(TRIP|AVG|RANGE|FUEL)\b|km\/h|km\/l|l\/100/iu', $line);
         // ตัวเลขที่ OCR แยกเป็นหลักๆ "1 8 5 3 1 8" (จอ LCD ช่องห่าง) -> รวมกลับเป็นชุดเดียว
