@@ -591,7 +591,8 @@ function runOcrAuto(dataUrl) {
     .then((res) => res.json())
     .then((result) => {
       if (result.success && result.digits && result.digits.length >= 3) {
-        showOcrResult(statusEl, endMileInput, Number(result.digits), result.candidates || []);
+        // needs_confirm = ตัวอ่าน 2 ตัวของ OCR ให้เลขไม่ตรงกัน -> ให้ผู้ใช้ยืนยันเอง ไม่เติมอัตโนมัติ
+        showOcrResult(statusEl, endMileInput, Number(result.digits), result.candidates || [], result.needs_confirm === true);
       } else {
         console.warn(
           "OCR.space อ่านไม่สำเร็จ กำลัง fallback ไปตัวอ่านในเครื่อง:",
@@ -616,27 +617,40 @@ function isPlausibleMile(v) {
 }
 
 // แสดงผล OCR: ใส่เลขที่ดีที่สุด + ตัวเลือกอื่นที่เจอในรูป (กดเลือกได้) + เตือนถ้าไม่อยู่ในช่วงที่เป็นไปได้
-function showOcrResult(statusEl, endMileInput, value, candidates) {
+// ปุ่มตัวเลขให้กดเลือก (กดแล้วค่อยเติมลงช่องไมล์) ใช้ทั้งตอนอ่านได้ชัดและตอนที่ต้องให้ผู้ใช้ยืนยัน
+function appendCandidateButtons(statusEl, endMileInput, label, values) {
+  const list = values.map(Number).filter((c, i, a) => c > 0 && a.indexOf(c) === i);
+  if (!list.length) return;
+  const wrap = document.createElement("div");
+  wrap.style.marginTop = "6px";
+  wrap.append(label);
+  list.forEach((c) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = String(c);
+    b.style.cssText = "margin:2px 4px;padding:2px 10px;border-radius:999px;border:1px solid #64748b;background:transparent;color:inherit;cursor:pointer";
+    b.addEventListener("click", () => showOcrResult(statusEl, endMileInput, c, list.filter((x) => x !== c), false));
+    wrap.appendChild(b);
+  });
+  statusEl.appendChild(wrap);
+}
+
+function showOcrResult(statusEl, endMileInput, value, candidates, needsConfirm) {
+  // 🩹 ตัวอ่าน 2 ตัวของ OCR ให้เลขไม่ตรงกัน = ไม่ชัวร์ -> ไม่เติมให้อัตโนมัติ กันเลขที่ผิดแบบเนียนหลุดเข้าระบบ
+  // (เคสที่เจอจากการวัดจริง: OCR อ่าน 88639 เป็น 88539 ซึ่งอยู่ในช่วงที่สมเหตุสมผล ผู้ใช้กดผ่านได้โดยไม่ทันสังเกต)
+  if (needsConfirm) {
+    endMileInput.value = "";
+    statusEl.textContent = "⚠️ อ่านได้ไม่ชัดเจน (ตัวอ่าน 2 ตัวให้เลขไม่ตรงกัน) กรุณากดเลือกเลขที่ตรงกับหน้าปัด หรือกรอกเอง";
+    statusEl.style.color = "#f59e0b";
+    appendCandidateButtons(statusEl, endMileInput, "เลขที่อ่านได้: ", [value, ...candidates]);
+    return;
+  }
   endMileInput.value = String(value); // ตัด 0 นำหน้า เช่น 0185318 -> 185318
   const ok = isPlausibleMile(value);
   statusEl.textContent =
     "อ่านได้: " + value + (ok ? " กรุณาตรวจสอบตัวเลขให้ตรงก่อนกดยืนยัน" : " ⚠️ ไม่อยู่ในช่วงที่เป็นไปได้ (ไมล์ตอนออก " + startMileage + ") กรุณาตรวจ/แก้ให้ถูกต้อง");
   statusEl.style.color = ok ? "#4ade80" : "#f59e0b";
-  const others = candidates.map(Number).filter((c) => c !== value && c > 0);
-  if (others.length) {
-    const wrap = document.createElement("div");
-    wrap.style.marginTop = "6px";
-    wrap.append("ตัวเลขอื่นในรูป: ");
-    others.forEach((c) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.textContent = String(c);
-      b.style.cssText = "margin:2px 4px;padding:2px 10px;border-radius:999px;border:1px solid #64748b;background:transparent;color:inherit;cursor:pointer";
-      b.addEventListener("click", () => showOcrResult(statusEl, endMileInput, c, [value, ...others.filter((x) => x !== c)]));
-      wrap.appendChild(b);
-    });
-    statusEl.appendChild(wrap);
-  }
+  appendCandidateButtons(statusEl, endMileInput, "ตัวเลขอื่นในรูป: ", candidates.map(Number).filter((c) => c !== value));
 }
 
 // 🌟 ตัวอ่านสำรอง (seven-segment reader เขียนเอง, อ่านทั้งภาพผ่าน findBrightRegion เดาโซนเอง)
