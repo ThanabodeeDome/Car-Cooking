@@ -1,0 +1,34 @@
+/* ========================================================
+   📱 กัน iOS Safari ซูมหน้าจอเองตอนแตะช่องกรอก
+   ========================================================
+   อาการ: เปิดเว็บบน iPhone/iPad แล้วแตะ input / select / textarea
+   Safari จะซูมเข้าให้อัตโนมัติ ทำให้ layout เลื่อนเพี้ยน และซูมกลับเองไม่ได้
+
+   สาเหตุ: Safari ซูมให้เสมอเมื่อช่องนั้นมี font-size < 16px
+   ซึ่งหน้านี้หลายหน้าตั้งไว้ 13-15.2px (ดูได้จาก booking.css, index.css, profile.css,
+   scan.css, Admin/style.css)
+
+   ทางแก้ที่เห็นบ่อยแต่ "ใช้ไม่ได้แล้ว": ใส่ user-scalable=no หรือ maximum-scale=1
+   ใน meta viewport — iOS ตั้งแต่เวอร์ชัน 10 จงใจไม่สนใจค่าพวกนี้ (เพราะมันทำให้
+   คนสายตาไม่ดีซูมอ่านเองไม่ได้) ของเราจึงคง meta viewport ไว้แบบเดิมถูกต้องแล้ว
+   = width=device-width, initial-scale=1.0
+
+   วิธีที่ใช้จริง: บังคับช่องกรอกให้ไม่ต่ำกว่า 16px เฉพาะจอเล็ก/แท็บเล็ต
+   จอใหญ่ยังใช้ขนาดเดิมของแต่ละหน้า ไม่กระทบดีไซน์เดสก์ท็อป
+
+   ทำไมต้อง !important: กฎ font-size เดิมกระจายอยู่ใน CSS หลายไฟล์ บางอันมี
+   id selector (เช่น #booking-modal-overlay .bm input) ซึ่ง specificity สูงกว่า
+   selector กลางแบบนี้เสมอ ถ้าไม่ใส่จะไม่มีผล
+
+   ไม่รวม input[type="date"]: หน้า booking/admin เปลี่ยนไปใช้ custom datepicker แล้ว
+   (custom-datepicker.js เซ็ต input เดิมเป็น type="hidden") ผู้ใช้ไม่ได้แตะตัวมันตรงๆ
+   และ CSS เดิมจงใจย่อขนาดไว้ให้ข้อความวันที่ภาษาไทยไม่ล้นกรอบ
+   ======================================================== */
+
+@media (max-width: 1024px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="color"]):not([type="date"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
