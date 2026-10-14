@@ -15,7 +15,7 @@
     />
     <link rel="stylesheet" href="style.css?v=5" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-    <link rel="stylesheet" href="../Car/form-ios-zoom.css?v=1" />
+    <link rel="stylesheet" href="../Car/form-ios-zoom.css?v=2" />
     <style>
       .geo-wrap { max-width: 980px; margin: 0 auto; }
       .geo-map { height: 460px; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; background: #f1f5f9; z-index: 0; }

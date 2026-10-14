@@ -25,10 +25,14 @@
    และ CSS เดิมจงใจย่อขนาดไว้ให้ข้อความวันที่ภาษาไทยไม่ล้นกรอบ
    ======================================================== */
 
+/* หมายเหตุเรื่อง :not() ยาวๆ ท้าย select/textarea — ทั้งสองแท็กไม่มี attribute type อยู่แล้ว
+   เงื่อนไขพวกนี้จึงเป็นจริงเสมอ (ไม่ได้กรองอะไรออก) แต่ใส่ไว้เพื่อดัน specificity ให้สูงพอ
+   จะได้ชนะกฎเดิมที่เป็น !important + มี class นำหน้า เช่น
+   Admin/style.css: .custom-input-group .form-control { font-size: 0.82rem !important } */
 @media (max-width: 1024px) {
   input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="color"]):not([type="date"]),
-  select,
-  textarea {
+  select:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="color"]):not([type="date"]),
+  textarea:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="color"]):not([type="date"]) {
     font-size: 16px !important;
   }
 }
