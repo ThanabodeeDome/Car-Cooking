@@ -1922,3 +1922,68 @@ input[type="file"].ctrl-input::file-selector-button:hover {
 .search-input { width: 100%; padding: 11px 14px 11px 38px; border: 1px solid #cbd5e1; border-radius: 10px; background: #fff; font: inherit; font-size: 14px; color: var(--text-primary); outline: none; transition: border-color .15s, box-shadow .15s; }
 .search-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }.car-data-table.tbl-fit td .action-buttons-group { justify-content: center; }
 .car-data-table.tbl-fit td img { max-width: 64px; height: auto; }
+
+/* ========================================================
+    🔔 9. กระดิ่งแจ้งเตือน (Car/notify-bell.js)
+    สคริปต์ตัวเดียวกับฝั่งผู้ใช้ซึ่งออกแบบมาสำหรับ navbar พื้นเข้ม
+    หน้า Admin เป็นธีมสว่าง -> override สีที่นี่ (ตัวแผงถูก append ไว้ที่ body
+    จึง scope ด้วย .admin-app ไม่ใช่ .admin-bell-host)
+    ======================================================== */
+.admin-bell-host {
+  position: fixed;
+  top: 14px;
+  right: 22px;
+  z-index: 300;
+}
+.admin-bell-host .nb-btn {
+  color: #475569;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+}
+.admin-bell-host .nb-btn:hover,
+.admin-bell-host .nb-btn[aria-expanded="true"] {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+.admin-bell-host .nb-badge {
+  box-shadow: 0 0 0 2px #ffffff;
+}
+.admin-app #nb-panel {
+  background: #ffffff;
+  border-color: #e2e8f0;
+  box-shadow: 0 20px 45px -14px rgba(15, 23, 42, 0.3);
+  font-family: "Urbanist", "Noto Sans Thai", sans-serif;
+}
+.admin-app #nb-panel .nb-head {
+  background: #ffffff;
+  color: var(--text-primary);
+  border-bottom-color: #e2e8f0;
+}
+.admin-app #nb-panel .nb-item {
+  border-bottom-color: #eef2f7;
+}
+.admin-app #nb-panel .nb-item:hover {
+  background: #f8fafc;
+}
+.admin-app #nb-panel .nb-title {
+  color: var(--text-primary);
+}
+.admin-app #nb-panel .nb-text,
+.admin-app #nb-panel .nb-empty,
+.admin-app #nb-panel .nb-clear {
+  color: var(--text-secondary);
+}
+.admin-app #nb-panel .nb-foot button {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  color: var(--text-primary);
+}
+
+/* จอเล็ก: sidebar ยุบ -> ขยับกระดิ่งไม่ให้ทับหัวข้อหน้า */
+@media (max-width: 768px) {
+  .admin-bell-host {
+    top: 8px;
+    right: 10px;
+  }
+}

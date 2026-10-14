@@ -165,7 +165,7 @@ function nt_collect_admin(PDO $conn): array {
                     "รถ {$b['CarPlate']} " . ($stale ? 'ค้างยังไม่ปิดงานคืน ' : 'เลยเวลาคืน ') . nt_fmt_duration($minLate),
                     "ผู้ใช้: {$b['DriverName']} (กำหนดคืน {$range[1]->format('d/m H:i')} น.)"
                         . ($stale ? ' — รถยังถูกล็อกไม่ให้จอง ตรวจสอบแล้วปิดงานให้ด้วย' : ''),
-                    '../Admin/index.html', $range[1]);
+                    '../Admin/index.html#bookings-tab', $range[1]);
             }
         }
     } catch (Throwable $e) { error_log('nt admin overdue: ' . $e->getMessage()); }

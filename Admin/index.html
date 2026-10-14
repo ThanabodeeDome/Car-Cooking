@@ -13,10 +13,10 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
-    <link rel="stylesheet" href="style.css?v=7" />
+    <link rel="stylesheet" href="style.css?v=8" />
     <link rel="stylesheet" href="admin-datepicker.css" />
   </head>
-  <body>
+  <body class="admin-app">
     <aside class="sidebar">
       <div class="sidebar-menu-group">
         <div
@@ -77,6 +77,9 @@
         >
       </div>
     </aside>
+
+    <!-- 🔔 กระดิ่งแจ้งเตือน: ใช้ตัวเดียวกับฝั่งผู้ใช้ (Car/notify-bell.js ติดตั้งตัวเองลงใน #an-bell-slot) -->
+    <div id="an-top" class="admin-bell-host"><span id="an-bell-slot"></span></div>
 
     <div class="main-content">
       <div id="dashboard" class="tab-content active">
@@ -531,6 +534,7 @@
     <script src="reports.js?v=3"></script>
     <script src="admin-datepicker.js"></script>
     <script src="app.js?v=6"></script>
+    <script src="../Car/notify-bell.js?v=6"></script>
     <script>
       // เปิดแท็บตามลิงก์ #ชื่อแท็บ (ใช้จากหน้า "จุดตรวจพิกัด" และปุ่มย้อนกลับของเบราว์เซอร์)
       function openTabFromHash() {

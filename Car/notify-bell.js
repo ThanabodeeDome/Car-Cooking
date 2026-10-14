@@ -8,8 +8,22 @@
   const DISMISS_KEY = "nb_dismissed_v1";
   const NOTIFIED_KEY = "nb_notified_v1";
 
-  const nav = document.querySelector(".nav-bar") || document.getElementById("an-top");
+  // หน้า Admin ไม่มี .nav-bar แบบฝั่งผู้ใช้ -> ให้ติดตั้งผ่าน #an-bell-slot ได้ด้วย
+  const slot = document.getElementById("an-bell-slot");
+  const nav = slot || document.querySelector(".nav-bar") || document.getElementById("an-top");
   if (!nav || document.getElementById("nb-wrap")) return;
+
+  // ไฟล์นี้ถูกเรียกจากทั้ง Car/*.html และ Admin/index.html (ผ่าน ../Car/notify-bell.js)
+  // -> endpoint และลิงก์ในแจ้งเตือนต้องอ้างเทียบกับโฟลเดอร์ Car/ ที่ตัวสคริปต์อยู่ ไม่ใช่หน้าที่เรียกใช้
+  const me = document.currentScript || document.querySelector('script[src*="notify-bell.js"]');
+  const BASE = new URL(".", (me && me.src) || location.href);
+  const abs = (link) => {
+    try {
+      return new URL(link, BASE).href;
+    } catch (e) {
+      return link;
+    }
+  };
 
   const css = `
   .nb-wrap{position:relative;margin:0;display:flex;align-items:center}
@@ -59,7 +73,6 @@
       <div id="nb-list"></div>
       <div class="nb-foot" id="nb-foot" hidden><button type="button" id="nb-perm">เปิดแจ้งเตือนบนเครื่องนี้</button></div>
     </div>`;
-  const slot = document.getElementById("an-bell-slot");
   if (slot) {
     slot.appendChild(wrap);
   } else {
@@ -130,7 +143,7 @@
     } else {
       list.innerHTML = vis
         .map(
-          (i) => `<div class="nb-item ${esc(i.level)}" data-link="${esc(i.link)}">
+          (i) => `<div class="nb-item ${esc(i.level)}" data-link="${esc(abs(i.link))}">
             <div class="nb-body"><div class="nb-title">${esc(i.title)}</div><div class="nb-text">${esc(i.body)}</div></div>
             <button type="button" class="nb-x" data-id="${esc(i.id)}" aria-label="ซ่อน">&times;</button>
           </div>`
@@ -157,7 +170,7 @@
   }
 
   function load() {
-    fetch("get_notifications.php", { cache: "no-store" })
+    fetch(abs("get_notifications.php"), { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
         if (!data || !data.success) {
