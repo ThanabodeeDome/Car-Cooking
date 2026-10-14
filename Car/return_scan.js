@@ -598,7 +598,7 @@ function runOcrAuto(dataUrl) {
           "OCR.space อ่านไม่สำเร็จ กำลัง fallback ไปตัวอ่านในเครื่อง:",
           result.message,
         );
-        runLocalFallbackOcr(dataUrl, statusEl, endMileInput);
+        runLocalFallbackOcr(dataUrl, statusEl, endMileInput, result.message);
       }
     })
     .catch((err) => {
@@ -655,7 +655,9 @@ function showOcrResult(statusEl, endMileInput, value, candidates, needsConfirm) 
 
 // 🌟 ตัวอ่านสำรอง (seven-segment reader เขียนเอง, อ่านทั้งภาพผ่าน findBrightRegion เดาโซนเอง)
 // ใช้เมื่อ OCR.space ตอบไม่สำเร็จหรือเน็ตหลุด — ทำงาน offline ได้เสมอ กันผู้ใช้ติดค้าง
-function runLocalFallbackOcr(dataUrl, statusEl, endMileInput) {
+// serverMessage = เหตุผลจากฝั่งเซิร์ฟเวอร์ (เช่น เต็มโควตา OCR) เอาไว้บอกผู้ใช้ถ้าตัวอ่านสำรองก็อ่านไม่ได้
+// ไม่งั้นผู้ใช้จะเห็นแค่ "อ่านไม่ได้" แล้วไปนั่งถ่ายรูปใหม่ซ้ำๆ ทั้งที่ปัญหาไม่ได้อยู่ที่รูป
+function runLocalFallbackOcr(dataUrl, statusEl, endMileInput, serverMessage) {
   statusEl.innerText = "ลองอ่านด้วยตัวอ่านสำรอง (offline)...";
   const img = new Image();
   img.onload = () => {
@@ -671,7 +673,7 @@ function runLocalFallbackOcr(dataUrl, statusEl, endMileInput) {
           " กรุณาตรวจสอบตัวเลขให้ตรงก่อนกดยืนยัน";
         statusEl.style.color = "#f59e0b";
       } else {
-        statusEl.innerText = "อ่านเลขไมล์จากรูปไม่ได้ กรุณากรอกเองด้านล่าง";
+        statusEl.innerText = serverMessage || "อ่านเลขไมล์จากรูปไม่ได้ กรุณากรอกเองด้านล่าง";
         statusEl.style.color = "#ff4d4d";
       }
     } catch (err) {

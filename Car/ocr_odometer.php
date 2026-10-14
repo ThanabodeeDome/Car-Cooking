@@ -80,12 +80,28 @@ function ocrSpaceHandle(string $image, string $engine)
 }
 
 // แปลง response ของ OCR.space เป็น [ข้อความ|null, ข้อความ error|null]
-function ocrSpaceParse($response, string $curlErr): array {
+function ocrSpaceParse($response, string $curlErr, int $httpCode = 200): array {
     if ($response === false || $response === null) {
         error_log('ocr_odometer curl error: ' . $curlErr);
         return [null, 'เชื่อมต่อ OCR.space ไม่สำเร็จ'];
     }
     $result = json_decode((string)$response, true);
+
+    // 🩹 FIX: ตอนโดนจำกัดโควตา (HTTP 429 E553: free plan ยิงได้ 180 ครั้ง/ชม.) OCR.space ตอบ
+    // {"error": "...", "retryAfter": n} ซึ่งไม่มีทั้ง IsErroredOnProcessing และ ParsedResults
+    // โค้ดเดิมจึงอ่านเป็น "ข้อความว่าง" แล้วไปบอกผู้ใช้ว่า "อ่านตัวเลขจากรูปไม่ได้ชัดเจน"
+    // ทั้งที่จริงคือระบบเต็มโควตา -> แยกออกมาให้ชัด ผู้ใช้จะได้รู้ว่าให้กรอกเองไปเลย ไม่ต้องถ่ายใหม่ซ้ำๆ
+    if ($httpCode >= 400 || (is_array($result) && isset($result['error']))) {
+        $raw = is_array($result) ? ($result['error'] ?? '') : '';
+        $raw = is_array($raw) ? implode(', ', $raw) : (string)$raw;
+        error_log("ocr_odometer http $httpCode: $raw");
+        if (stripos($raw, 'rate limit') !== false || $httpCode === 429) {
+            $wait = isset($result['retryAfter']) ? ' (ลองใหม่ได้ในอีก ' . ceil((int)$result['retryAfter'] / 60) . ' นาที)' : '';
+            return [null, 'ระบบอ่านเลขไมล์อัตโนมัติใช้งานเต็มโควตาชั่วคราว' . $wait . ' กรุณากรอกเลขไมล์เอง'];
+        }
+        return [null, 'อ่านรูปไม่สำเร็จ'];
+    }
+
     if (!$result || !empty($result['IsErroredOnProcessing'])) {
         $errMsgRaw = $result['ErrorMessage'] ?? 'อ่านรูปไม่สำเร็จ';
         return [null, is_array($errMsgRaw) ? implode(', ', $errMsgRaw) : (string)$errMsgRaw];
@@ -111,7 +127,7 @@ function ocrSpaceBoth(string $image): array {
     $texts = [];
     $errors = [];
     foreach ($handles as $engine => $ch) {
-        [$text, $err] = ocrSpaceParse(curl_multi_getcontent($ch), curl_error($ch));
+        [$text, $err] = ocrSpaceParse(curl_multi_getcontent($ch), curl_error($ch), (int)curl_getinfo($ch, CURLINFO_HTTP_CODE));
         if ($text !== null) $texts[$engine] = $text; else $errors[$engine] = $err;
         curl_multi_remove_handle($mh, $ch);
         curl_close($ch);
