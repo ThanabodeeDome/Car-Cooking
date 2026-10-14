@@ -1,17 +1,21 @@
 # ไฟล์,เลขไมล์จริง(อ่านด้วยตา),ไมล์ตอนออก
-Car/uploads/return/2-768x510.jpg,29623,-
-Car/uploads/return/images (1).jpg,29623,-
-Car/uploads/return/buying-secondhand-car-1.jpg,530195,-
-Car/uploads/return/car-fuel-range.jpg,14494,-
-Car/uploads/return/how-to-check-mileage-car-01.jpg,39463,-
-Car/uploads/return/images.jpg,285000,-
-Car/uploads/return/milestone-in-my-2007-lx-v0-03d06w6n9cqf1.webp,285000,-
-Car/uploads/return/images (2).jpg,7458,-
-Car/uploads/return/images (3).jpg,88639,-
-Car/uploads/return/o1e1im1z45K3MrvaRE5-o.jpg,20906,-
-Car/uploads/return/puiigp8tc9Q01ermj1E9-o.jpg,123073,-
-Car/uploads/return/1z1pthuteqvf1.png,266,-
-Car/uploads/return/return_odometer_02086_1791356485_be1a3747.jpg,559222,-
-Car/uploads/return/s76vlghr54TWP0IW5rG0-o.jpg,-,-
-Car/uploads/return/images (4).jpg,102148,-
-Car/uploads/return/images (5).jpg,125130,-
+tools/ocr/fixtures/lcd-blue-night.jpg,29623,-
+tools/ocr/fixtures/lcd-blue-blur.jpg,29623,-
+tools/ocr/fixtures/segment-odo-label.jpg,530195,-
+tools/ocr/fixtures/lcd-cyan-range.jpg,14494,-
+tools/ocr/fixtures/drum-mechanical.jpg,39463,-
+tools/ocr/fixtures/segment-trip-tpms.jpg,285000,-
+tools/ocr/fixtures/segment-trip-tpms.webp,285000,-
+tools/ocr/fixtures/lcd-clock-trip-temp.jpg,7458,-
+tools/ocr/fixtures/lcd-orange-range-clock.jpg,88639,-
+tools/ocr/fixtures/segment-small-lcd.jpg,20906,-
+tools/ocr/fixtures/drum-odo-label.jpg,123073,-
+tools/ocr/fixtures/digital-cluster-busy.png,266,-
+tools/ocr/fixtures/screen-photo-of-form.jpg,559222,-
+tools/ocr/fixtures/moto-trip-mode-no-odo.jpg,-,-
+tools/ocr/fixtures/digital-honda-hrv.jpg,102148,-
+tools/ocr/fixtures/analog-small-lcd-odo.jpg,125130,-
+tools/ocr/fixtures/analog-lcd-odo-mazda.jpg,71790,-
+tools/ocr/fixtures/segment-odo-truck.jpeg,234688,-
+tools/ocr/fixtures/digital-miles-busy.webp,9635,-
+tools/ocr/fixtures/digital-no-odo-trip-only.webp,-,-

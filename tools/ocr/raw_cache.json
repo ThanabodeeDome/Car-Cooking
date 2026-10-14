@@ -134,5 +134,37 @@
     "dd739b5e7ae91728ee4d35b6bdc1b59f|e1": {
         "text": "60\n40\n20\ne0 100\n120\nkm\/h\n140\n160*\n180\nห๊ะ!! รถคันนี้ไมล์เยอะจริงหรอ!?\nอย่าเพิ่งตกใจคำนวนเองได้ง่ายๆ",
         "err": null
+    },
+    "9d370d38ed7f1514e7eb3c74bb38105b|e2": {
+        "text": "3\n2\n678\n000t\/min\n60\n40\n20\n80 100 120 140\n140 ~\naadendoln\n160\n180\n200」\n220 g\/\n000g 1 790",
+        "err": null
+    },
+    "9d370d38ed7f1514e7eb3c74bb38105b|e1": {
+        "text": "3\n2\n678\n000t\/min\n60\n40\n20\n80 100 120 140\n140 ~\naadendoln\n160\n180\n200」\n220 g\/\n000g 1 790",
+        "err": null
+    },
+    "36dfdebca4485dca39ecc83609ee4504|e2": {
+        "text": "BOOSTER\n60\n80\nkm\/h\n100\nx1000r\/min\n40\n20\n120\n140\n160\nODO\n234688",
+        "err": null
+    },
+    "36dfdebca4485dca39ecc83609ee4504|e1": {
+        "text": "BOOSTER\n60\n80\nkm\/h\n100\nx1000r\/min\n40\n20\n120\n140\n160\nODO\n234688",
+        "err": null
+    },
+    "7bb1321d272011c10c56c3ad87a7e6d9|e2": {
+        "text": "1000г\/min\n214 miles\n40.2 mpg\n45\n90\n9635.6 miles\n: Reset\n2:51\n87°F\nJE\n52\nmph\n50\nECON\n009635 miles\nD\n60\n40\n-20",
+        "err": null
+    },
+    "7bb1321d272011c10c56c3ad87a7e6d9|e1": {
+        "text": "1000г\/min\n214 miles\n40.2 mpg\n45\n90\n9635.6 miles\n: Reset\n2:51\n87°F\nJE\n52\nmph\n50\nECON\n009635 miles\nD\n60\n40\n-20",
+        "err": null
+    },
+    "ef5c7a73aadb61ea7add1f5c6560cd6d|e2": {
+        "text": "IMA\n91F\nAVG.FUEL A\n34.2\nmpg\nA 7877.4miles\nMIST PULL\n←OFF",
+        "err": null
+    },
+    "ef5c7a73aadb61ea7add1f5c6560cd6d|e1": {
+        "text": "IMA\n91F\nAVG.FUEL A\n34.2\nmpg\nA 7877.4miles\nMIST PULL\n←OFF",
+        "err": null
     }
 }
