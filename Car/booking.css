@@ -234,7 +234,7 @@ textarea,
   color: var(--text-main) !important;
   border-radius: var(--radius-sm) !important;
   box-sizing: border-box;
-  font-size: 0.95rem;
+  font-size: 16px; /* 📱 ห้ามต่ำกว่า 16px ไม่งั้น iOS Safari ซูมหน้าจอเองตอนแตะช่อง */
   transition: 0.25s ease;
 }
 
@@ -1438,7 +1438,7 @@ input[type="date"] {
   background: #1b1c25 !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   color: #f1f2f6 !important;
-  font-size: 15px;
+  font-size: 16px; /* 📱 ห้ามต่ำกว่า 16px ไม่งั้น iOS Safari ซูมหน้าจอเองตอนแตะช่อง */
 }
 #booking-modal-overlay .bm input[readonly] {
   background: #17181f !important;

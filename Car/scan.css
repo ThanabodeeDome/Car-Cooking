@@ -204,7 +204,7 @@
   color: #f1f2f6 !important;
   font-family: inherit;
   padding: 12px 14px !important;
-  font-size: 15px;
+  font-size: 16px; /* 📱 ห้ามต่ำกว่า 16px ไม่งั้น iOS Safari ซูมหน้าจอเองตอนแตะช่อง */
 }
 .sc-wrap .sc-input:focus {
   border-color: #ff6b6b !important;
