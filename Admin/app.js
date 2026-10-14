@@ -398,6 +398,29 @@ function formatBookingTimeRange(bk) {
   return bk.TimeSlot || "-";
 }
 
+// รอบที่เช็คอินแล้ว (ขาไป) แต่เลยกำหนดคืนไปแล้ว — ระบบไม่ยกเลิกให้เอง ต้องให้แอดมินเห็นว่าค้าง
+// คืนค่าเป็นข้อความสั้นๆ เช่น "เลยกำหนด 2 วัน 3 ชม." หรือ "" ถ้ายังไม่เลย
+function bookingOverdueText(bk) {
+  if (bk.BookingStatus !== "ขาไป") return "";
+  const date = (bk.BookingDate || "").slice(0, 10);
+  const out = (bk.OutTime || "").slice(0, 5);
+  const ret = (bk.PlannedReturnTime || "").slice(0, 5);
+  if (!date || !out || !ret) return "";
+  const end = new Date(`${date}T${ret}:00`);
+  if (isNaN(end)) return "";
+  if (ret <= out) end.setDate(end.getDate() + 1); // จองข้ามคืน: กำหนดคืนอยู่วันถัดไป
+  const minLate = Math.floor((Date.now() - end.getTime()) / 60000);
+  if (minLate <= 15) return "";
+  if (minLate >= 1440) {
+    const d = Math.floor(minLate / 1440);
+    const h = Math.floor((minLate % 1440) / 60);
+    return `เลยกำหนด ${d} วัน${h > 0 ? ` ${h} ชม.` : ""}`;
+  }
+  const h = Math.floor(minLate / 60);
+  const m = minLate % 60;
+  return `เลยกำหนด ${h > 0 ? `${h} ชม. ` : ""}${m} นาที`;
+}
+
 function loadAdminBookings() {
   const tbody = document.getElementById("admin-bookings-tbody");
   if (!tbody) return;
@@ -427,6 +450,8 @@ function loadAdminBookings() {
           if (bk.BookingStatus === "คืนแล้ว" || bk.BookingStatus === "ขากลับ") statusClass = "status-returned";
           else if (bk.BookingStatus && bk.BookingStatus.includes("ยกเลิก")) statusClass = "status-cancelled";
           else if (bk.BookingStatus === "ขาไป") statusClass = "status-inuse";
+
+          const overdueText = bookingOverdueText(bk);
 
           const passengerNames = (bk.Passengers || "")
             .split(",")
@@ -458,7 +483,11 @@ function loadAdminBookings() {
               <td>${escapeHtml(bk.CarPlate)}</td>
               <td>${bk.BookingDate || "-"}</td>
               <td>${formatBookingTimeRange(bk)}</td>
-              <td class="status-cell"><span class="status-badge no-glow ${statusClass}">${bk.BookingStatus || "-"}</span></td>
+              <td class="status-cell"><span class="status-badge no-glow ${statusClass}">${bk.BookingStatus || "-"}</span>${
+                overdueText
+                  ? `<div style="margin-top:4px; color:#ef4444; font-size:11px; font-weight:600;">⚠️ ${escapeHtml(overdueText)}</div>`
+                  : ""
+              }</td>
               <td onclick="event.stopPropagation()">
                 <button class="op-edit" onclick='openBookingEditModal(${bkJson})'>แก้ไข</button>
               </td>

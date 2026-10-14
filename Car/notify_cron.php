@@ -51,11 +51,19 @@ foreach ($rows as $b) {
 
     if ($b['BookingStatus'] === 'ขาไป' && $minLate > 0) {
         $dur = nt_fmt_duration($minLate);
-        $body = "<p>รถ <b>{$e($plate)}</b> เลยกำหนดคืน ({$end->format('H:i')} น.) มา $dur แล้ว</p><p>กรุณาคืนรถและสแกน QR บันทึกไมล์</p>";
-        $send("mail_overdue:{$b['BookingID']}", $driverMail, "เลยเวลาคืนรถ $plate", mail_layout("เลยเวลาคืนรถ $plate", $body, "$base/return_scan.html?plate=" . rawurlencode($plate), 'คืนรถ'));
+        // ค้างข้ามวัน = ลืมปิดงานคืนรถ ไม่ใช่แค่เลยเวลาเล็กน้อย -> เตือนซ้ำวันละครั้ง (ใส่วันที่ใน key)
+        // จนกว่าจะปิดงาน ไม่ปล่อยให้เงียบหายไปเองเหมือนก่อน (รถยังถูกล็อกไม่ให้คนอื่นจองอยู่)
+        $stale = $minLate >= NT_STALE_RETURN_MINUTES;
+        $daily = $stale ? ':' . $now->format('Y-m-d') : '';
+        $lock  = $stale ? "<p>รถคันนี้ยังถูกล็อกไม่ให้คนอื่นจอง ถ้าคืนรถแล้วแต่ไม่ได้สแกน กรุณาแจ้งแอดมินปิดงานให้</p>" : '';
+        $subj  = $stale ? "ยังไม่ได้ปิดงานคืนรถ $plate (ค้าง $dur)" : "เลยเวลาคืนรถ $plate";
+        $body = "<p>รถ <b>{$e($plate)}</b> เลยกำหนดคืน ({$end->format('d/m H:i')} น.) มา $dur แล้ว</p><p>กรุณาคืนรถและสแกน QR บันทึกไมล์</p>$lock";
+        $send("mail_overdue:{$b['BookingID']}$daily", $driverMail, $subj, mail_layout($subj, $body, "$base/return_scan.html?plate=" . rawurlencode($plate), 'คืนรถ'));
         if ($minLate > 15 && !empty($cfg['admin_emails'])) {
-            $abody = "<p>รถ <b>{$e($plate)}</b> เลยเวลาคืน $dur<br>ผู้ใช้: {$e($b['DriverName'])}</p>";
-            $send("mail_a_overdue:{$b['BookingID']}", $cfg['admin_emails'], "รถ $plate เลยเวลาคืน", mail_layout("รถ $plate เลยเวลาคืน", $abody));
+            $asubj = $stale ? "รถ $plate ค้างยังไม่ปิดงานคืน ($dur)" : "รถ $plate เลยเวลาคืน";
+            $abody = "<p>รถ <b>{$e($plate)}</b> " . ($stale ? 'ค้างยังไม่ปิดงานคืน' : 'เลยเวลาคืน') . " $dur<br>ผู้ใช้: {$e($b['DriverName'])}<br>กำหนดคืน {$end->format('d/m H:i')} น.</p>"
+                . ($stale ? "<p>ตรวจสอบกับผู้ใช้แล้วปิดงานให้ด้วย — รถยังถูกล็อกไม่ให้คนอื่นจอง</p>" : '');
+            $send("mail_a_overdue:{$b['BookingID']}$daily", $cfg['admin_emails'], $asubj, mail_layout($asubj, $abody));
         }
     }
 }

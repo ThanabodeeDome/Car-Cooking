@@ -2,6 +2,11 @@
 // Notification core — used by the bell (get_notifications.php) and the email cron (notify_cron.php).
 // 100% derived from existing tables (CarBookings / Cars / Users). Never writes to the DB.
 
+// ย้อนหลังได้ไกลสุดกี่วันสำหรับรอบที่ "เช็คอินแล้วยังไม่คืน" (กันดึงข้อมูลเก่าเกินจำเป็น)
+const NT_UNRETURNED_LOOKBACK_DAYS = 90;
+// ค้างคืนเกินกี่นาทีถือว่าไม่ใช่ "เลยเวลาเล็กน้อย" แต่เป็น "ลืมคืน/ค้างข้ามวัน"
+const NT_STALE_RETURN_MINUTES = 1440;
+
 function nt_now(): DateTime {
     return new DateTime('now', new DateTimeZone('Asia/Bangkok'));
 }
@@ -22,6 +27,12 @@ function nt_range(array $b): ?array {
 
 function nt_fmt_duration(int $minutes): string {
     $minutes = max(0, $minutes);
+    // เกิน 1 วันให้บอกเป็น "X วัน Y ชม." — เคสลืมคืนรถข้ามวัน ถ้าโชว์ "168 ชม." อ่านไม่รู้เรื่อง
+    if ($minutes >= 1440) {
+        $d  = intdiv($minutes, 1440);
+        $hh = intdiv($minutes % 1440, 60);
+        return $hh > 0 ? "$d วัน $hh ชม." : "$d วัน";
+    }
     $h = intdiv($minutes, 60);
     $m = $minutes % 60;
     if ($h > 0 && $m > 0) return "$h ชม. $m นาที";
@@ -36,13 +47,18 @@ function nt_fetch_window_bookings(PDO $conn, ?string $employeeId = null): array 
     $d1 = (clone $today)->modify('-1 day')->format('Y-m-d');
     $d2 = (clone $today)->modify('+1 day')->format('Y-m-d');
 
+    // รอบที่เช็คอินแล้วแต่ยังไม่คืน (ค้างสถานะ 'ขาไป') ต้องตามเตือนต่อเนื่องแม้เลยหน้าต่าง ±1 วันไปแล้ว
+    // เดิมดึงแค่ ±1 วัน -> รายการที่ลืมคืนเงียบหายไปเองหลัง 2 วัน ทั้งที่รถยังถูกล็อกไม่ให้คนอื่นจอง
+    $d0 = (clone $today)->modify('-' . NT_UNRETURNED_LOOKBACK_DAYS . ' days')->format('Y-m-d');
+
     $sql = "SELECT BookingID, BookingNumber, CarPlate, DriverName, EmployeeID, Destination, BookingStatus,
                    CONVERT(varchar(10), BookingDate, 23) AS BookingDate, OutTime,
                    CONVERT(varchar(5), PlannedReturnTime, 108) AS PlannedReturnTime,
                    CheckInTime, PassengerIDs
             FROM CarBookings
-            WHERE BookingDate BETWEEN :d1 AND :d2";
-    $params = [':d1' => $d1, ':d2' => $d2];
+            WHERE (BookingDate BETWEEN :d1 AND :d2
+                   OR (BookingStatus = 'ขาไป' AND BookingDate >= :d0))";
+    $params = [':d1' => $d1, ':d2' => $d2, ':d0' => $d0];
     if ($employeeId !== null) {
         $sql .= " AND (EmployeeID = :emp OR ',' + REPLACE(ISNULL(PassengerIDs, ''), ' ', '') + ',' LIKE :pass)";
         $params[':emp']  = $employeeId;
@@ -105,8 +121,12 @@ function nt_build_user_items(array $rows, string $employeeId, DateTime $now): ar
             }
         } elseif ($status === 'ขาไป') {
             if ($minLate > 0) {
-                $items[] = nt_item("overdue:{$b['BookingID']}", 'danger', "เลยเวลาคืนรถ $plate " . nt_fmt_duration($minLate),
-                    "กำหนดคืน {$end->format('H:i')} น. — คืนรถแล้วสแกน QR บันทึกไมล์", 'return_scan.html?plate=' . rawurlencode($plate), $end);
+                $items[] = $minLate >= NT_STALE_RETURN_MINUTES
+                    ? nt_item("overdue:{$b['BookingID']}", 'danger', "ยังไม่ได้ปิดงานคืนรถ $plate (ค้าง " . nt_fmt_duration($minLate) . ')',
+                        "กำหนดคืน {$end->format('d/m H:i')} น. — รถคันนี้ยังถูกล็อกไม่ให้คนอื่นจอง ถ้าคืนรถแล้วแต่ไม่ได้สแกน กรุณาแจ้งแอดมินปิดงานให้",
+                        'return_scan.html?plate=' . rawurlencode($plate), $end)
+                    : nt_item("overdue:{$b['BookingID']}", 'danger', "เลยเวลาคืนรถ $plate " . nt_fmt_duration($minLate),
+                        "กำหนดคืน {$end->format('H:i')} น. — คืนรถแล้วสแกน QR บันทึกไมล์", 'return_scan.html?plate=' . rawurlencode($plate), $end);
             } elseif ($minLate > -60) {
                 $items[] = nt_item("dueback:{$b['BookingID']}", 'warn', "ใกล้ถึงเวลาคืนรถ $plate (อีก " . nt_fmt_duration(-$minLate) . ')',
                     'เตรียมคืนรถและสแกน QR บันทึกไมล์', 'return_scan.html?plate=' . rawurlencode($plate), $end);
@@ -140,8 +160,12 @@ function nt_collect_admin(PDO $conn): array {
             if (!$range) continue;
             $minLate = (int)floor(($now->getTimestamp() - $range[1]->getTimestamp()) / 60);
             if ($minLate > 15) {
-                $items[] = nt_item("a_overdue:{$b['BookingID']}", 'danger', "รถ {$b['CarPlate']} เลยเวลาคืน " . nt_fmt_duration($minLate),
-                    "ผู้ใช้: {$b['DriverName']} (กำหนดคืน {$range[1]->format('H:i')} น.)", '../Admin/index.html', $range[1]);
+                $stale = $minLate >= NT_STALE_RETURN_MINUTES;
+                $items[] = nt_item("a_overdue:{$b['BookingID']}", 'danger',
+                    "รถ {$b['CarPlate']} " . ($stale ? 'ค้างยังไม่ปิดงานคืน ' : 'เลยเวลาคืน ') . nt_fmt_duration($minLate),
+                    "ผู้ใช้: {$b['DriverName']} (กำหนดคืน {$range[1]->format('d/m H:i')} น.)"
+                        . ($stale ? ' — รถยังถูกล็อกไม่ให้จอง ตรวจสอบแล้วปิดงานให้ด้วย' : ''),
+                    '../Admin/index.html', $range[1]);
             }
         }
     } catch (Throwable $e) { error_log('nt admin overdue: ' . $e->getMessage()); }

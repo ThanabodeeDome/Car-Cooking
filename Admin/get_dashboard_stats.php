@@ -92,6 +92,42 @@ try {
                        )";
     $maintDue = $conn->query($sqlMaintDue)->fetchAll(PDO::FETCH_ASSOC);
 
+    // ---------- 5.2) แจ้งเตือน: เช็คอินแล้วแต่ยังไม่ปิดงานคืนรถ (รถถูกล็อกไม่ให้คนอื่นจอง) ----------
+    // ระบบไม่ยกเลิก/ปิดงานให้เองโดยเจตนา (รถอาจยังอยู่นอกสถานที่จริง) -> ขึ้นค้างให้แอดมินตามเก็บ
+    $overdueReturns = [];
+    try {
+        require_once __DIR__ . '/../Car/notify_lib.php';
+        $nowTh = nt_now();
+        $stmtOverdue = $conn->prepare(
+            "SELECT BookingID, BookingNumber, CarPlate, DriverName, EmployeeID,
+                    CONVERT(varchar(10), BookingDate, 23) AS BookingDate, OutTime,
+                    CONVERT(varchar(5), PlannedReturnTime, 108) AS PlannedReturnTime
+             FROM CarBookings
+             WHERE BookingStatus = N'ขาไป' AND BookingDate >= :d0"
+        );
+        $stmtOverdue->execute([':d0' => (clone $nowTh)->modify('-' . NT_UNRETURNED_LOOKBACK_DAYS . ' days')->format('Y-m-d')]);
+        foreach ($stmtOverdue->fetchAll(PDO::FETCH_ASSOC) as $b) {
+            $range = nt_range($b);
+            if (!$range) continue;
+            $minLate = (int)floor(($nowTh->getTimestamp() - $range[1]->getTimestamp()) / 60);
+            if ($minLate <= 15) continue; // ยังไม่ถือว่าเลยกำหนด (เผื่อเวลาเดินทาง/นาฬิกาคลาดกัน)
+            $overdueReturns[] = [
+                'booking_id'     => (int)$b['BookingID'],
+                'booking_number' => $b['BookingNumber'],
+                'plate'          => $b['CarPlate'],
+                'driver_name'    => $b['DriverName'],
+                'employee_id'    => $b['EmployeeID'],
+                'due_at'         => $range[1]->format('d/m/Y H:i'),
+                'late_text'      => nt_fmt_duration($minLate),
+                'minutes_late'   => $minLate,
+                'stale'          => $minLate >= NT_STALE_RETURN_MINUTES,
+            ];
+        }
+        usort($overdueReturns, fn($x, $y) => $y['minutes_late'] <=> $x['minutes_late']);
+    } catch (Throwable $e) {
+        error_log('get_dashboard_stats overdue returns: ' . $e->getMessage());
+    }
+
     // ---------- 6) feedback "ระบบดีไหม" (thumbs up/down) — สรุปรวม ไม่ระบุตัวผู้ตอบ ----------
     $sqlFeedback = "SELECT SystemFeedback, COUNT(*) as cnt FROM CarBookings
                      WHERE SystemFeedback IS NOT NULL GROUP BY SystemFeedback";
@@ -116,6 +152,7 @@ try {
         "recent"        => $recent,
         "alerts"        => $alerts,
         "maint_due"     => $maintDue,
+        "overdue_returns" => $overdueReturns,
         "feedback"      => $feedback,
     ], JSON_UNESCAPED_UNICODE);
 } catch (PDOException $e) {

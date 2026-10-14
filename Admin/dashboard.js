@@ -39,7 +39,7 @@ function fetchDashboardStats() {
       renderFleetStatusList(data.cars);
       renderWeekTimeline(data.cars, data.week_start, data.week_bookings);
       renderRecentBookings(data.recent);
-      renderAlerts(data.alerts, data.maint_due);
+      renderAlerts(data.alerts, data.maint_due, data.overdue_returns);
     })
     .catch((err) => {
       console.error("Error Dashboard:", err);
@@ -201,12 +201,28 @@ function renderRecentBookings(list) {
     .join("");
 }
 
-// ---------- 4) แจ้งเตือนสำคัญ (ประกัน/พ.ร.บ./เช็คระยะ ใกล้หมด) ----------
-function renderAlerts(alerts, maintDue) {
+// ---------- 4) แจ้งเตือนสำคัญ (ค้างคืนรถ / ประกัน / พ.ร.บ. / เช็คระยะ ใกล้หมด) ----------
+function renderAlerts(alerts, maintDue, overdueReturns) {
   const wrap = document.getElementById("alerts-list");
   if (!wrap) return;
 
+  // รอบที่เช็คอินแล้วยังไม่ปิดงานคืนรถ — ระบบไม่ยกเลิกให้เอง แอดมินต้องตามปิดงาน
+  const overdueHtml = (overdueReturns || [])
+    .map(
+      (o) => `
+        <div class="alert-row alert-expired">
+          <i class="fa-solid fa-car-burst"></i>
+          <div>
+            <strong>${escapeHtml(o.plate)} — ยังไม่ปิดงานคืนรถ (${escapeHtml(o.late_text)})</strong>
+            <span>${escapeHtml(o.driver_name) || "-"}${o.employee_id ? ` #${escapeHtml(o.employee_id)}` : ""} • กำหนดคืน ${escapeHtml(o.due_at)} น. • ${escapeHtml(o.booking_number)}</span>
+            ${o.stale ? `<span>รถยังถูกล็อกไม่ให้คนอื่นจอง — ตรวจสอบกับผู้ใช้แล้วปิดงานในแท็บจัดการการจอง</span>` : ""}
+          </div>
+        </div>`,
+    )
+    .join("");
+
   if (
+    !overdueHtml &&
     (!alerts || alerts.length === 0) &&
     (!maintDue || maintDue.length === 0)
   ) {
@@ -248,12 +264,12 @@ function renderAlerts(alerts, maintDue) {
     });
   });
 
-  if (rows.length === 0) {
+  if (rows.length === 0 && !overdueHtml) {
     wrap.innerHTML = `<p class="empty-hint">ไม่มีการแจ้งเตือนตอนนี้</p>`;
     return;
   }
 
-  wrap.innerHTML = rows
+  wrap.innerHTML = overdueHtml + rows
     .map((r) => {
       const expired = r.diffDays < 0;
       return `
