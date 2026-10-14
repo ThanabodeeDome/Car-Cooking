@@ -5,3 +5,7 @@ Admin/db_connect.php
 Car/mail_config.php
 Car/ocr_config.php
 Car/app_secret.php
+
+# ขยะจาก Windows Explorer (เกิดเองเวลาเปิดดูโฟลเดอร์รูป)
+Thumbs.db
+desktop.ini
