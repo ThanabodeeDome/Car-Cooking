@@ -586,7 +586,8 @@ function runOcrAuto(dataUrl) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     // ส่งไมล์ตอนออกไปด้วย ให้ server เลือกชุดตัวเลขที่เป็นไปได้ เมื่อในรูปมีตัวเลขหลายชุด (trip, นาฬิกา ฯลฯ)
-    body: JSON.stringify({ image: dataUrl, start_mileage: startMileage || null }),
+    // booking_id ส่งไปเพื่อให้ log ฝั่งเซิร์ฟเวอร์จับคู่กับเลขไมล์ที่ยืนยันจริงได้ (ไม่ได้ใช้ตัดสินใจอะไร)
+    body: JSON.stringify({ image: dataUrl, start_mileage: startMileage || null, booking_id: currentBookingId }),
   })
     .then((res) => res.json())
     .then((result) => {

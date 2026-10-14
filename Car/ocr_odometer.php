@@ -18,6 +18,7 @@ if (!file_exists(__DIR__ . '/ocr_config.php')) {
     exit;
 }
 require_once __DIR__ . '/ocr_config.php';
+require_once __DIR__ . '/ocr_log.php';
 
 if (!defined('OCR_SPACE_API_KEY') || OCR_SPACE_API_KEY === '' || strpos(OCR_SPACE_API_KEY, 'ใส่_API_KEY') !== false) {
     echo json_encode(["success" => false, "message" => "ยังไม่ได้ใส่ OCR API key จริงใน ocr_config.php"]);
@@ -29,6 +30,8 @@ $data = json_decode($json, true);
 $base64Image = $data['image'] ?? '';
 // เลขไมล์ตอนออกของรายการนี้ (ถ้าส่งมา) ใช้เลือกตัวเลขที่ "เป็นไปได้" เมื่อในรูปมีตัวเลขหลายชุด
 $startMileage = isset($data['start_mileage']) && is_numeric($data['start_mileage']) ? (int)$data['start_mileage'] : null;
+// ใช้เฉพาะใน log เพื่อจับคู่กับเลขไมล์ที่ผู้ใช้ยืนยันจริง (อ่านจาก CarBookings.EndMileage ทีหลัง)
+$logBookingId = isset($data['booking_id']) && is_numeric($data['booking_id']) ? (int)$data['booking_id'] : null;
 
 // ต้องเป็น data URL รูปแบบ data:image/...;base64,xxxx (มาจาก canvas.toDataURL() ฝั่ง JS)
 if (!is_string($base64Image) || !$base64Image || strpos($base64Image, 'data:image') !== 0 || strlen($base64Image) > 8 * 1024 * 1024) {
@@ -349,6 +352,19 @@ try {
     foreach ($rawTexts as $engine => $t) $parsedText .= ($parsedText === '' ? '' : "\n---\n") . "[engine $engine]\n" . $t;
 
     $decision = odometerDecide($rawTexts, $startMileage);
+
+    ocr_log([
+        'type' => 'read',
+        'booking_id' => $logBookingId,
+        'emp' => $_SESSION['employee_id'] ?? null,
+        'start_mileage' => $startMileage,
+        'digits' => $decision['digits'],
+        'candidates' => $decision['candidates'],
+        'agree' => $decision['agree'],
+        'reason' => $decision['reason'],
+        'errors' => $ocr['errors'] ?: null,
+        'engines' => $rawTexts, // ข้อความดิบ เอาไว้รันซ้ำกับ parser ใหม่ได้โดยไม่ต้องยิง API อีก
+    ]);
 
     if ($decision['digits'] === null) {
         $msg = $rawTexts ? "อ่านตัวเลขจากรูปไม่ได้ชัดเจน" : ($lastErr ?: "อ่านรูปไม่สำเร็จ");
