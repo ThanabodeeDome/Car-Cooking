@@ -137,6 +137,24 @@ try {
 
     $conn->commit();
 
+    // 📏 บันทึก "เลขที่ผู้ใช้กดบันทึกจริง" ไว้วัดความแม่นของ OCR
+    // เดิม log_report.php เทียบค่าที่ OCR อ่าน กับ CarBookings.EndMileage ซึ่งเป็น "ค่าสุดท้าย"
+    // ของการจองนั้น ถ้าคนขับสแกนดูเล่นตอนบ่าย แล้วมากดคืนจริงเช้าวันรุ่งขึ้น (ขับต่ออีกหลายสิบ กม.)
+    // หรือแอดมินมาแก้เลขทีหลัง ค่าจะไม่ตรงกันทั้งที่ OCR อ่านรูปถูกเป๊ะ -> วัดได้ตัวเลขที่หลอก
+    // เก็บคู่ (เวลา, booking, เลขที่บันทึก) ตรงนี้แทน จะจับคู่กับการอ่านครั้งที่ใกล้ที่สุดได้ตรงจริง
+    try {
+        require_once __DIR__ . '/ocr_log.php';
+        ocr_log([
+            'type'       => 'save',
+            'booking_id' => (int)$bookingId,
+            'emp'        => $_SESSION['employee_id'] ?? null,
+            'saved_mile' => $endMile,
+            'start_mileage' => (int)$startMileage,
+        ]);
+    } catch (Throwable $e) {
+        // log ไม่ได้ก็ช่างมัน ห้ามทำให้การคืนรถพัง
+    }
+
     // แท็บคืนรถมือใน booking.js ไม่ส่ง geo มา (ไม่ใช่การสแกนที่รถ) = ไม่ติดธง
     $ev = array_key_exists('geo', $data) ? geo_evaluate($data['geo']) : ['geo' => 'nosite', 'dist' => null, 'lat' => null, 'lng' => null, 'acc' => null];
     if (array_key_exists('geo', $data)) geo_store($conn, (int)$booking['BookingID'], 'Return', $ev);
