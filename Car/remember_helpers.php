@@ -5,7 +5,8 @@
 // ใช้เฉพาะฝั่งผู้ใช้ทั่วไป (Car/) เท่านั้น ฝั่ง Admin ไม่ใช้ pattern นี้ (session สั้นเหมือนเดิมตามที่ตกลงไว้)
 
 const REMEMBER_COOKIE_NAME = 'remember_me';
-const REMEMBER_DAYS = 90;
+// 30 วัน (เดิม 90) — ยังพอลดการ login บ่อยของพนักงาน แต่ไม่ค้างสิทธิ์อยู่ในเครื่องนานเกินไป
+const REMEMBER_DAYS = 30;
 
 function issueRememberToken(PDO $conn, int $userId, bool $isHttps): void {
     $selector = bin2hex(random_bytes(9));
@@ -13,14 +14,19 @@ function issueRememberToken(PDO $conn, int $userId, bool $isHttps): void {
     $validatorHash = hash('sha256', $validator);
     $expiresAt = (new DateTime())->modify('+' . REMEMBER_DAYS . ' days');
 
+    // 🔒 ผูก token กับเครื่องที่ขอ (sha256 ของ User-Agent) — cookie ที่ถูกคัดลอกไปเครื่องอื่นใช้ไม่ได้
+    require_once __DIR__ . '/../session_policy.php';
+
     $stmt = $conn->prepare(
-        "INSERT INTO RememberTokens (user_id, selector, token_hash, expires_at) VALUES (:uid, :sel, :hash, :exp)"
+        "INSERT INTO RememberTokens (user_id, selector, token_hash, expires_at, device_hash)
+         VALUES (:uid, :sel, :hash, :exp, :dev)"
     );
     $stmt->execute([
         ':uid'  => $userId,
         ':sel'  => $selector,
         ':hash' => $validatorHash,
         ':exp'  => $expiresAt->format('Y-m-d H:i:s'),
+        ':dev'  => cb_device_hash(),
     ]);
 
     setcookie(REMEMBER_COOKIE_NAME, $selector . ':' . $validator, [
@@ -53,7 +59,8 @@ function tryRememberLogin(PDO $conn, bool $isHttps): bool {
     if (!$selector || !$validator) return false;
 
     $stmt = $conn->prepare(
-        "SELECT rt.id, rt.token_hash, rt.expires_at, u.id AS user_id, u.username, u.first_name, u.employee_id, u.role
+        "SELECT rt.id, rt.token_hash, rt.expires_at, rt.device_hash,
+                u.id AS user_id, u.username, u.first_name, u.employee_id, u.role
          FROM RememberTokens rt JOIN Users u ON u.id = rt.user_id
          WHERE rt.selector = :sel"
     );
@@ -61,8 +68,13 @@ function tryRememberLogin(PDO $conn, bool $isHttps): bool {
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$row) return false;
 
-    // token หมดอายุ หรือ validator ไม่ตรง -> ลบทิ้ง กันใช้ซ้ำ (คนละคนพยายามเดา selector/validator)
-    if (strtotime($row['expires_at']) < time() || !hash_equals($row['token_hash'], hash('sha256', $validator))) {
+    // 🔒 token นี้ออกให้เครื่องไหน ก็ใช้ได้แค่เครื่องนั้น — cookie ที่ถูกคัดลอกไปเครื่องอื่นใช้ไม่ได้
+    require_once __DIR__ . '/../session_policy.php';
+    $deviceOk = empty($row['device_hash']) // token เก่าที่ยังไม่มีการผูกเครื่อง (ตอนนี้ล้างทิ้งหมดแล้ว)
+        || hash_equals((string)$row['device_hash'], cb_device_hash());
+
+    // token หมดอายุ / validator ไม่ตรง / มาจากเครื่องอื่น -> ลบทิ้ง กันใช้ซ้ำ
+    if (!$deviceOk || strtotime($row['expires_at']) < time() || !hash_equals($row['token_hash'], hash('sha256', $validator))) {
         $del = $conn->prepare("DELETE FROM RememberTokens WHERE id = :id");
         $del->execute([':id' => $row['id']]);
         setcookie(REMEMBER_COOKIE_NAME, '', ['expires' => time() - 3600, 'path' => '/']);

@@ -72,7 +72,9 @@
 
           <div class="login-options">
             <label class="check">
-              <input type="checkbox" name="remember" value="1" checked />
+              <!-- 🔒 ไม่ติ๊กให้เองแล้ว: เดิมเป็น checked ทุกคนจึงได้ cookie จดจำฉันไปโดยไม่ได้ตั้งใจเลือก
+                   ทำให้กดลิงก์เข้าเว็บแล้วเข้าใช้งานได้เลยไม่ต้องกรอกรหัส -->
+              <input type="checkbox" name="remember" value="1" />
               <span class="box"><i class="fa-solid fa-check"></i></span>
               <span class="txt">จดจำฉันไว้ในเครื่องนี้</span>
             </label>
@@ -88,7 +90,7 @@
           <a href="#" onclick="switchForm('register-form'); return false;">สร้างบัญชีใหม่</a>
         </p>
         <p class="hint-line">
-          <i class="fa-solid fa-circle-info"></i> ติ๊ก "จดจำฉัน" เฉพาะเครื่องส่วนตัว — ผู้ดูแลระบบจะไม่ถูกจดจำ
+          <i class="fa-solid fa-circle-info"></i> ติ๊ก "จดจำฉัน" เฉพาะเครื่องส่วนตัว (จำไว้ 30 วัน เครื่องนี้เท่านั้น) — ผู้ดูแลระบบจะไม่ถูกจดจำ
         </p>
       </div>
 
