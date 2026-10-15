@@ -1094,7 +1094,9 @@ function renderWeekGrid() {
   gutter.className = "cal-gutter";
   for (let h = 0; h <= 24; h++) {
     const lab = document.createElement("span");
-    lab.className = "cal-hlabel";
+    // ป้ายปกติวางคร่อมเส้น (translateY(-50%)) แต่ตัวแรก (00:00) กับตัวสุดท้าย (24:00)
+    // ถ้าคร่อมด้วยจะล้นออกนอกตาราง ไปโดนหัวคอลัมน์วันทับ -> เลื่อนให้อยู่ในกรอบแทน
+    lab.className = "cal-hlabel" + (h === 0 ? " is-first" : h === 24 ? " is-last" : "");
     lab.style.top = h * CAL_HOUR_PX + "px";
     lab.textContent = String(h === 24 ? 0 : h).padStart(2, "0") + ":00";
     gutter.appendChild(lab);

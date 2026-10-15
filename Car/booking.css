@@ -683,7 +683,9 @@ input::-webkit-calendar-picker-indicator {
   display: flex;
   position: sticky;
   top: 0;
-  z-index: 2;
+  /* ต้องสูงกว่าบล็อกการจอง (z-index 2) และเส้นเวลาปัจจุบัน (3)
+     ไม่งั้นเวลาเลื่อนตาราง บล็อกจะลอยทับหัวคอลัมน์วัน และป้าย 00:00 จะโดนทับ */
+  z-index: 10;
   background: var(--bg-card-2);
   border-bottom: 1px solid var(--border-color);
   min-width: 560px;
@@ -1761,4 +1763,11 @@ input[type="date"] {
 .gantt-legend .lg-busy,
 .tl24-legend .lg-busy {
   background: linear-gradient(135deg, hsl(210, 72%, 58%) 0 33%, hsl(330, 72%, 58%) 33% 66%, hsl(95, 72%, 48%) 66% 100%);
+}
+/* ป้ายชั่วโมงตัวแรก/ตัวสุดท้าย ไม่คร่อมเส้น กันล้นออกนอกตารางแล้วโดนหัวตารางทับ */
+.cal-hlabel.is-first {
+  transform: translateY(2px);
+}
+.cal-hlabel.is-last {
+  transform: translateY(-100%);
 }
