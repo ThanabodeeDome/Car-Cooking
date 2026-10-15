@@ -4,9 +4,9 @@
 // รวม logic เช็คสิทธิ์ admin/superioradmin ไว้ที่เดียว — แก้ role logic ต่อไปแก้ที่นี่ที่เดียวพอ
 // ไม่ต้องไล่แก้ทุกไฟล์ Admin/*.php ทีละไฟล์อีกแล้ว
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+// เปิด session ด้วยค่า cookie ที่ปลอดภัยชุดเดียวกันทุกไฟล์ + โหลดนโยบายอายุ session
+require_once __DIR__ . '/session_policy.php';
+cb_session_start();
 
 /**
  * เช็คว่า session ปัจจุบันเป็น admin ที่ผ่าน whitelist จริง
@@ -14,6 +14,10 @@ if (session_status() === PHP_SESSION_NONE) {
  */
 function currentAdminRole(): string|false
 {
+    // 🔒 ตัด session ที่หมดอายุ / ถูกกด logout จากเครื่องอื่น / cookie ถูกเอาไปเปิดในเครื่องอื่น
+    //    ออกก่อนเช็คสิทธิ์ — ทำที่นี่ที่เดียว คุมทั้งหน้า Admin และ API ฝั่ง Admin ทุกไฟล์
+    cb_enforce_session_policy();
+
     if (!isset($_SESSION['user_id']) || !isset($_SESSION['role'])) {
         return false;
     }

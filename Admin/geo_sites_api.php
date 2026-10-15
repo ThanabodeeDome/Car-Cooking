@@ -1,6 +1,7 @@
 <?php
 // จัดการจุดบริษัทที่ใช้ตรวจพิกัด (เก็บเป็น Car/geo_sites.json ไม่ใช้ DB) — เฉพาะแอดมิน
-session_start();
+require_once __DIR__ . '/../session_policy.php';
+cb_session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../require_admin.php';
 requireAdminAccess();

@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/../session_policy.php';
+cb_session_start();
 header("Content-Type: application/json; charset=utf-8");
 include_once "../db_connect.php";
 

@@ -1,7 +1,9 @@
 <?php
 // 🌟 feedback "ระบบดีไหม" (ปุ่มเดียว good/bad) ถามหลังคืนรถเสร็จ — ข้ามได้อิสระ ไม่บังคับ
 // เก็บผูกกับ booking (BookingID) ให้สืบย้อนได้ (กันสแปม) แต่หน้าแอดมินโชว์แบบสรุปรวม ไม่ระบุตัวคนตอบ
-session_start();
+require_once __DIR__ . '/../session_policy.php';
+cb_session_start();
+cb_enforce_session_policy(); // ตัด session ที่หมดอายุ/ถูก logout จากเครื่องอื่น ก่อนเช็ค $_SESSION['user_id']
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/../same_origin.php';
 require_same_origin();

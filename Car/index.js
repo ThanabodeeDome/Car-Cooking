@@ -72,6 +72,33 @@ const AppModal =
       };
 
 /**
+ * 🔔 2.5 แจ้งเหตุผลที่ถูกเด้งมาหน้านี้ (จาก guard_admin.php / logout.php)
+ * ?expired=1 = session หมดอายุ หรือถูกตัดเพราะ logout จากอีกเครื่อง / cookie ถูกเอาไปเปิดในเครื่องอื่น
+ * ?logout=1  = เพิ่งกดออกจากระบบเอง
+ * ลบ param ออกจาก URL ด้วย กันข้อความเด้งซ้ำตอนกด refresh (cb-session-notice)
+ */
+(function cbSessionNotice() {
+  const q = new URLSearchParams(window.location.search);
+  const expired = q.get("expired") === "1";
+  const loggedOut = q.get("logout") === "1";
+  if (!expired && !loggedOut) return;
+
+  q.delete("expired");
+  q.delete("logout");
+  const rest = q.toString();
+  window.history.replaceState({}, "", window.location.pathname + (rest ? "?" + rest : ""));
+
+  AppModal.fire({
+    icon: expired ? "warning" : "success",
+    title: expired ? "เซสชันหมดอายุ" : "ออกจากระบบแล้ว",
+    text: expired
+      ? "กรุณาเข้าสู่ระบบอีกครั้งครับ (ระบบตัดการใช้งานค้างอัตโนมัติเพื่อความปลอดภัย)"
+      : "ออกจากระบบเรียบร้อย ทุกเครื่องที่ค้างอยู่ถูกตัดสิทธิ์ด้วยแล้วครับ",
+    timer: 4000,
+    timerProgressBar: true,
+  });
+})();
+/**
  * 🚀 3. ระบบดักจับการสมัครสมาชิก (Register Form)
  */
 const registerFormEl = document.querySelector("#register-form form");

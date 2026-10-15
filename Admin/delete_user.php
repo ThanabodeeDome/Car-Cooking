@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/../session_policy.php';
+cb_session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once '../Car/db_connect.php';
 require_once __DIR__ . '/../require_admin.php';

@@ -1,8 +1,7 @@
 <?php
 // 1. เปิดระบบ Session เผื่อไว้ถ้ายังไม่ได้เปิด
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+require_once __DIR__ . '/session_policy.php';
+cb_session_start();
 
 require_once __DIR__ . '/require_admin.php';
 

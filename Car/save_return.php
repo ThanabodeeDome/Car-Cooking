@@ -1,7 +1,9 @@
 <?php
 // save_return.php
 // ใช้ร่วมกัน 2 ทาง: (1) return_scan.js หลังสแกน QR (มีรูป OCR) (2) booking.js แท็บคืนรถสำรอง (ไม่มีรูป กรอกเอง)
-session_start();
+require_once __DIR__ . '/../session_policy.php';
+cb_session_start();
+cb_enforce_session_policy(); // ตัด session ที่หมดอายุ/ถูก logout จากเครื่องอื่น ก่อนเช็ค $_SESSION['user_id']
 header('Content-Type: application/json; charset=utf-8');
 require_once 'db_connect.php';
 require_once __DIR__ . '/geo_lib.php';

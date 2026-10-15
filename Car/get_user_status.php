@@ -2,7 +2,9 @@
 // get_user_status.php
 // 🌟 เขียนใหม่ทั้งไฟล์ — ของเดิมใช้ sqlsrv_* function แต่ $conn ที่ include มาเป็น PDO object
 // เรียก sqlsrv_query($conn, ...) กับ PDO object รันจริง fatal error ทันที ใช้งานไม่ได้อยู่แล้ว
-session_start();
+require_once __DIR__ . '/../session_policy.php';
+cb_session_start();
+cb_enforce_session_policy(); // ตัด session ที่หมดอายุ/ถูก logout จากเครื่องอื่น ก่อนเช็ค $_SESSION['user_id']
 header('Content-Type: application/json; charset=utf-8');
 require_once 'db_connect.php';
 

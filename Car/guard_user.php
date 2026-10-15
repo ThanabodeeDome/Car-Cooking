@@ -1,7 +1,13 @@
 <?php
-session_start();
+// เปิด session ด้วยค่า cookie ที่ปลอดภัยชุดเดียวกันทุกไฟล์ (secure/httponly/samesite + strict mode)
+require_once __DIR__ . '/../session_policy.php';
+cb_session_start();
 header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
 header("Pragma: no-cache");
+
+// 🔒 ตัด session ที่หมดอายุ / ถูกกด logout จากเครื่องอื่น / cookie ถูกเอาไปเปิดในเครื่องอื่น
+//    ทำก่อนบล็อก remember-me ข้างล่าง เพื่อให้คนที่ติ๊ก "จดจำฉัน" ไว้ login กลับได้เองเงียบๆ
+cb_enforce_session_policy();
 
 // 🌟 ถ้า session หมด (เช่นปิดเบราว์เซอร์มา) ลองใช้ remember-me cookie login เงียบๆ ก่อนเด้งไปหน้า login
 if (!isset($_SESSION['user_id']) && !empty($_COOKIE['remember_me'])) {

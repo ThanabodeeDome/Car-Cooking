@@ -2,17 +2,11 @@
 // 🌟 Session Hardening — ต้องตั้งก่อน session_start() เท่านั้น
 // 🩹 secure=true บังคับ cookie ส่งผ่าน HTTPS เท่านั้น — ถ้า deploy ผ่าน HTTP ตรงๆ (ยังไม่มี Tunnel/SSL)
 // จะทำให้ session หายทันทีทุก request เช็คจาก request จริงแทน hardcode true ตายตัว
-$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-    || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https'); // เผื่อผ่าน Cloudflare Tunnel/proxy
-
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path'     => '/',
-    'secure'   => $isHttps,  // true อัตโนมัติเมื่อเข้าผ่าน HTTPS จริง (เช่นหลัง Cloudflare Tunnel)
-    'httponly' => true,     // JS อ่าน cookie นี้ไม่ได้ กัน XSS ขโมย session
-    'samesite' => 'Strict', // กัน CSRF แบบพื้นฐาน
-]);
-session_start();
+// ย้ายค่า cookie params ทั้งก้อนไปไว้ที่ cb_session_start() (session_boot.php) แล้ว
+// เพื่อให้ทุกไฟล์ในระบบเปิด session ด้วยค่าชุดเดียวกันจริงๆ ไม่ใช่แค่ไฟล์นี้
+require_once __DIR__ . '/session_policy.php';
+cb_session_start();
+$isHttps = cb_is_https();
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/same_origin.php';
 require_same_origin();
@@ -107,6 +101,10 @@ try {
         $_SESSION['first_name'] = $user['first_name'];
         $_SESSION['employee_id'] = $user['employee_id'];
         $_SESSION['role']       = $user['role'];
+
+        // 🔒 ประทับเวลา login + ลายนิ้วมือเครื่อง ไว้ให้ cb_enforce_session_policy() ใช้คุมอายุ
+        //    และผูก session นี้กับเบราว์เซอร์ที่กรอกรหัสผ่านจริงๆ เท่านั้น
+        cb_session_mark_login();
 
         // 🌟 Remember-me 90 วัน เฉพาะผู้ใช้ทั่วไป (ไม่ใช่ admin) — ตามที่ตกลงกันไว้
         // แก้ปัญหา login บ่อยของพนักงาน โดยไม่ยืด session ฝั่ง admin ที่คุมข้อมูลทั้งระบบ

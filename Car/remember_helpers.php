@@ -80,6 +80,10 @@ function tryRememberLogin(PDO $conn, bool $isHttps): bool {
     $_SESSION['employee_id'] = $row['employee_id'];
     $_SESSION['role']        = $row['role'];
 
+    // 🔒 นับว่าเป็นการ login ครั้งใหม่ (ประทับเวลา + ผูกกับเครื่องนี้) ให้ตรงกับที่ login_process.php ทำ
+    require_once __DIR__ . '/../session_policy.php';
+    cb_session_mark_login();
+
     issueRememberToken($conn, (int)$row['user_id'], $isHttps);
     return true;
 }

@@ -1,7 +1,8 @@
 <?php
 // admin_delete_booking.php
 // ลบรายการจองถาวรออกจาก CarBookings ต่างจาก admin_cancel_booking.php ที่แค่เปลี่ยนสถานะ
-session_start();
+require_once __DIR__ . '/../session_policy.php';
+cb_session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once '../Car/db_connect.php';
 
