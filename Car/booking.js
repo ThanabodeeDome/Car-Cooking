@@ -1009,6 +1009,43 @@ function weekDatesList() {
   return dates;
 }
 
+// ---------- ตารางสัปดาห์แบบ "ปฏิทิน" (คอม) ----------
+// 🩹 FIX จากเคสผู้ใช้จริง: ของเดิมเป็นตารางช่องละ 1 ชั่วโมง ป้ายข้างแถวเขียนแค่ "เวลาเริ่ม"
+// จอง 15:00-17:00 จึงเห็นแดงแค่ช่อง 15:00 กับ 16:00 แล้วช่อง 17:00 เป็นเขียว
+// ผู้ใช้อ่านแล้วเข้าใจว่าระบบบันทึกถึงแค่ 16:00 (ทั้งที่ข้อมูลใน DB ถูกต้องคือ 15:00-17:00)
+// เปลี่ยนมาวาดเป็นบล็อกต่อเนื่องแบบปฏิทิน: บล็อกเริ่มที่เส้น 15:00 และจบที่เส้น 17:00 พอดี
+// เส้นชั่วโมงกลายเป็น "เส้นแบ่งเวลา" ไม่ใช่ "ช่อง" จึงไม่มีทางอ่านผิดอีก
+// ยังเป็น 24 ชั่วโมงเต็มเหมือนเดิม (เลื่อนดูได้ เปิดมาเด้งไปชั่วโมงปัจจุบันให้)
+const CAL_HOUR_PX = 48; // ความสูงของ 1 ชั่วโมงบนปฏิทิน
+
+// รายการจองของวันที่ดูอยู่ พร้อมตำแหน่งบนปฏิทิน (หน่วยเป็นชั่วโมงทศนิยม)
+function eventsForDate(dateStr) {
+  const now = new Date();
+  const today = formatDateYMD(now);
+  return carBookingsCache
+    .map((b) => {
+      const range = bookingRangeForViewedDay(b, dateStr);
+      if (!range) return null;
+      const overdue = isBookingOverdue(b, now);
+      let end = range[1];
+      // เลยกำหนดคืนแล้วยังไม่คืน -> ยืดบล็อกถึงเวลาปัจจุบัน ให้เห็นว่ารถยังไม่ว่างจริง
+      if (overdue && dateStr === today) end = Math.max(end, now.getHours() + now.getMinutes() / 60);
+      return {
+        start: Math.max(0, range[0]),
+        end: Math.min(24, Math.max(end, range[0] + 0.5)), // จองสั้นกว่าครึ่ง ชม. ก็ยังต้องเห็นบล็อก
+        out: String(b.OutTime || "").slice(0, 5),
+        ret: String(b.PlannedReturnTime || "").slice(0, 5),
+        driver: b.DriverName || "",
+        dest: b.Destination || "",
+        inUse: b.BookingStatus === "ขาไป",
+        overdue,
+        fromPrevDay: String(b.BookingDate).slice(0, 10) !== dateStr,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.start - b.start);
+}
+
 function renderWeekGrid() {
   const rowsWrap = document.getElementById("gantt-rows");
   const scroller = document.getElementById("gantt-scroll-wrap");
@@ -1022,54 +1059,105 @@ function renderWeekGrid() {
   }
 
   const now = new Date();
+  const todayStr = formatDateYMD(now);
+  const nowTop = (now.getHours() + now.getMinutes() / 60) * CAL_HOUR_PX;
   const dates = weekDatesList();
-  const rangesByDate = {};
-  dates.forEach((d) => (rangesByDate[d] = rangesForDate(d)));
 
-  for (let h = 0; h < 24; h++) {
-    const row = document.createElement("div");
-    row.className = "week-hour-row";
+  const grid = document.createElement("div");
+  grid.className = "cal-grid";
+  grid.style.setProperty("--cal-hour", CAL_HOUR_PX + "px");
+  grid.style.height = 24 * CAL_HOUR_PX + "px";
 
-    const hourLabel = document.createElement("div");
-    hourLabel.className = "whr-hourcol";
-    hourLabel.textContent = String(h).padStart(2, "0") + ":00";
-    row.appendChild(hourLabel);
+  // แถบเวลาด้านซ้าย: ป้ายวางคร่อม "เส้น" ชั่วโมง (ไม่ใช่กลางช่อง) ตั้งแต่ 00:00 ถึง 24:00
+  const gutter = document.createElement("div");
+  gutter.className = "cal-gutter";
+  for (let h = 0; h <= 24; h++) {
+    const lab = document.createElement("span");
+    lab.className = "cal-hlabel";
+    lab.style.top = h * CAL_HOUR_PX + "px";
+    lab.textContent = String(h === 24 ? 0 : h).padStart(2, "0") + ":00";
+    gutter.appendChild(lab);
+  }
+  grid.appendChild(gutter);
 
-    dates.forEach((dateStr) => {
-      const s = slotState(rangesByDate[dateStr], dateStr, h, now);
-      const hh = String(h).padStart(2, "0");
-      const cell = document.createElement("div");
-      if (s.state === "busy") {
-        cell.className = "week-cell is-busy" + (s.overdue ? " is-overdue" : "");
-        cell.textContent = s.overdue ? "เกินเวลา · " + (s.driver || "") : s.driver || "จองแล้ว";
-        cell.title = `${busyLabel(s)} (${dateStr} ${hh}:00)`;
-      } else if (s.state === "past") {
-        cell.className = "week-cell is-past";
-      } else {
-        cell.className = "week-cell is-free";
-        cell.title = `ว่าง — แตะเพื่อจอง ${dateStr} ${hh}:00`;
-        cell.addEventListener("click", () => openBookingModal(ganttSelectedCar, dateStr, h));
-      }
-      row.appendChild(cell);
+  const daysWrap = document.createElement("div");
+  daysWrap.className = "cal-days";
+
+  dates.forEach((dateStr) => {
+    const col = document.createElement("div");
+    col.className = "cal-day" + (dateStr === todayStr ? " is-today" : "");
+    col.dataset.date = dateStr;
+
+    // ช่วงที่ผ่านไปแล้ว ทำพื้นเทาและจองไม่ได้
+    const pastPx = dateStr < todayStr ? 24 * CAL_HOUR_PX : dateStr === todayStr ? nowTop : 0;
+    if (pastPx > 0) {
+      const past = document.createElement("div");
+      past.className = "cal-past";
+      past.style.height = Math.min(24 * CAL_HOUR_PX, pastPx) + "px";
+      col.appendChild(past);
+    }
+
+    eventsForDate(dateStr).forEach((ev) => {
+      const state = ev.overdue ? "เกินเวลาคืน" : ev.inUse ? "ใช้งานอยู่" : "จองแล้ว";
+      const el = document.createElement("div");
+      el.className = "cal-event" + (ev.overdue ? " is-overdue" : ev.inUse ? " is-inuse" : "");
+      el.style.top = ev.start * CAL_HOUR_PX + "px";
+      el.style.height = Math.max(26, (ev.end - ev.start) * CAL_HOUR_PX - 3) + "px";
+      el.innerHTML =
+        `<span class="ce-title"><i class="ce-dot"></i>${escHtml(ev.dest || state)}</span>` +
+        `<span class="ce-time">${ev.out} – ${ev.ret}${ev.fromPrevDay ? " (ข้ามคืน)" : ""}</span>` +
+        `<span class="ce-who">${escHtml(ev.driver)}</span>`;
+      el.title = `${state} ${ev.out}-${ev.ret}${ev.driver ? " · " + ev.driver : ""}`;
+      col.appendChild(el);
     });
 
-    rowsWrap.appendChild(row);
-  }
+    if (dateStr === todayStr) {
+      const line = document.createElement("div");
+      line.className = "cal-now";
+      line.style.top = nowTop + "px";
+      line.title = "ตอนนี้";
+      col.appendChild(line);
+    }
 
-  if (scroller) {
+    daysWrap.appendChild(col);
+  });
+
+  // แตะพื้นที่ว่าง = จองชั่วโมงนั้น (คำนวณชั่วโมงจากตำแหน่งที่แตะ)
+  daysWrap.addEventListener("click", (e) => {
+    if (e.target.closest(".cal-event")) return;
+    const col = e.target.closest(".cal-day");
+    if (!col) return;
+    const dateStr = col.dataset.date;
+    const h = Math.floor((e.clientY - col.getBoundingClientRect().top) / CAL_HOUR_PX);
+    if (h < 0 || h > 23) return;
+    const hourEnd = new Date(`${dateStr}T${String(h).padStart(2, "0")}:00:00`);
+    hourEnd.setHours(hourEnd.getHours() + 1);
+    if (hourEnd <= new Date()) {
+      showToast("warning", "ช่วงเวลานี้ผ่านไปแล้ว");
+      return;
+    }
+    if (eventsForDate(dateStr).some((ev) => h < ev.end && h + 1 > ev.start)) {
+      showToast("warning", "ช่วงนี้มีคนจองไว้แล้ว");
+      return;
+    }
+    openBookingModal(ganttSelectedCar, dateStr, h);
+  });
+
+  grid.appendChild(daysWrap);
+  rowsWrap.appendChild(grid);
+
+  // เลื่อนไปช่วงเวลาที่ใช้จริงตอนเปิดใหม่ (เฉพาะกรณีกล่องนี้เลื่อนเองได้ = จอแคบ)
+  if (scroller && scroller.scrollHeight > scroller.clientHeight) {
     if (weekGridNeedsScroll) {
-      // เปิดสัปดาห์/เลือกรถใหม่ -> เลื่อนไปช่วงที่ใช้จริง (สัปดาห์นี้ = ชั่วโมงปัจจุบัน, อื่นๆ = 07:00) ไม่ให้เห็นแต่เที่ยงคืนตอนเปิด
-      const containsToday = dates.includes(formatDateYMD(now));
-      const startHour = containsToday ? Math.max(0, now.getHours() - 1) : 7;
-      const targetRow = rowsWrap.children[startHour];
-      scroller.scrollTop = targetRow ? targetRow.getBoundingClientRect().top - rowsWrap.getBoundingClientRect().top : 0;
+      const startHour = dates.includes(todayStr) ? Math.max(0, now.getHours() - 1) : 7;
+      const gridOffset = grid.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+      scroller.scrollTop = gridOffset + startHour * CAL_HOUR_PX;
       weekGridNeedsScroll = false;
     } else {
       scroller.scrollTop = prevTop; // polling วาดใหม่ทุก 8 วิ กันตารางเด้งกลับบน
     }
   }
 }
-
 function renderDayStrip() {
   const wrap = document.getElementById("day-strip-m");
   if (!wrap) return;
@@ -1113,15 +1201,28 @@ function renderDayList() {
     html += `<div class="day-row is-past is-collapsed"><span class="dr-hour">00:00</span><div class="dr-cell">ผ่านไปแล้ว (ถึง ${endLabel})</div></div>`;
     start = lead;
   }
+  // 🩹 ป้ายเวลาเขียนเป็น "ช่วง" (15:00-16:00) ไม่ใช่จุดเริ่ม (15:00)
+  // เดิมจอง 15:00-17:00 จะเห็นแดงแค่แถว 15:00 กับ 16:00 คนอ่านนึกว่าระบบเก็บถึงแค่ 16:00
+  const hourRange = (h) => `${String(h).padStart(2, "0")}:00-${String((h + 1) % 24).padStart(2, "0")}:00`;
+
+  // ชั่วโมงไหนมีรถกลับมาคืนพอดี ติดป้ายบอกไว้ จะได้ไม่งงว่าทำไมช่องนี้ว่างทั้งที่ติดกับคิวที่จองไว้
+  const returnsAt = {};
+  ranges.forEach(({ range }) => {
+    const e = range[1];
+    if (Number.isInteger(e) && e > 0 && e < 24) returnsAt[e] = `${String(e).padStart(2, "0")}:00`;
+  });
+
   for (let h = start; h < 24; h++) {
     const s = states[h];
-    const hh = String(h).padStart(2, "0") + ":00";
+    const hh = hourRange(h);
     if (s.state === "busy") {
       html += `<div class="day-row is-busy${s.overdue ? " is-overdue" : ""}"><span class="dr-hour">${hh}</span><div class="dr-cell">${escHtml(busyLabel(s))}</div></div>`;
     } else if (s.state === "past") {
       html += `<div class="day-row is-past"><span class="dr-hour">${hh}</span><div class="dr-cell">ผ่านไปแล้ว</div></div>`;
     } else {
-      html += `<div class="day-row is-free" data-h="${h}"><span class="dr-hour">${hh}</span><div class="dr-cell">+ ว่างสำหรับจอง</div></div>`;
+      const back = returnsAt[h];
+      const note = back ? `<span class="dr-note">รถคืน ${back} · จองต่อได้</span>` : "";
+      html += `<div class="day-row is-free${back ? " is-handover" : ""}" data-h="${h}"><span class="dr-hour">${hh}</span><div class="dr-cell">+ ว่างสำหรับจอง${note}</div></div>`;
     }
   }
   wrap.innerHTML = html;

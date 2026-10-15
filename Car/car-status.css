@@ -1119,7 +1119,8 @@ body {
 .tl24-legend .lg-past { background: #4b5563; }
 .tl24-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  /* กว้างขึ้นเพราะป้ายเวลาเปลี่ยนเป็นช่วง "15:00-16:00" */
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
   gap: 8px;
 }
 .tl24-cell {
@@ -1170,4 +1171,14 @@ body {
   .tl24-grid {
     grid-template-columns: repeat(3, 1fr);
   }
+}
+
+/* ชั่วโมงที่มีรถกลับมาคืนพอดี: ว่างจองต่อได้ แต่ติดป้ายไว้ไม่ให้งงว่าทำไมไม่แดง */
+.tl24-cell.is-handover {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.55);
+}
+.tl24-cell.is-handover:hover {
+  background: rgba(245, 158, 11, 0.24);
 }

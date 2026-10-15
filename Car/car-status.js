@@ -453,14 +453,33 @@ function hourStatesForDate(dateStr) {
   return states;
 }
 
+// ชั่วโมงไหนของวันนั้นมี "รถกลับมาคืนพอดี" บ้าง (คืนตรงชั่วโมง) ใช้ติดป้ายในไทม์ไลน์
+function returnHoursForDate(dateStr) {
+  const out = {};
+  allCarBookings.forEach((bk) => {
+    if (String(bk.BookingDate).slice(0, 10) !== dateStr) return;
+    const ret = String(bk.PlannedReturnTime || "").slice(0, 5);
+    const outT = String(bk.OutTime || "").slice(0, 5);
+    if (!ret || !outT || ret <= outT) return; // ข้ามคืน ไม่ใช่เคสคืนในวันเดียวกัน
+    const [hh, mm] = ret.split(":").map(Number);
+    if (mm === 0 && hh > 0 && hh < 24) out[hh] = ret;
+  });
+  return out;
+}
+
 function buildTimeline24(dateStr) {
   const states = hourStatesForDate(dateStr);
   const now = new Date();
 
+  // 🩹 ป้ายเวลาเขียนเป็น "ช่วง" (15:00-16:00) ไม่ใช่จุดเริ่ม (15:00)
+  // เดิมจอง 15:00-17:00 จะเห็นแดงแค่ช่อง 15:00 กับ 16:00 แล้วช่อง 17:00 เขียว -> อ่านแล้วนึกว่าจองถึงแค่ 16:00
+  const hourRange = (h) => `${String(h).padStart(2, "0")}:00-${String((h + 1) % 24).padStart(2, "0")}:00`;
+  const returnsAt = returnHoursForDate(dateStr);
+
   const cells = states
     .map((s, h) => {
-      const hh = String(h).padStart(2, "0") + ":00";
-      const hourEnd = new Date(`${dateStr}T${hh}:00`);
+      const hh = hourRange(h);
+      const hourEnd = new Date(`${dateStr}T${String(h).padStart(2, "0")}:00:00`);
       hourEnd.setHours(hourEnd.getHours() + 1);
 
       if (s.busy) {
@@ -471,6 +490,11 @@ function buildTimeline24(dateStr) {
       }
       if (hourEnd <= now) {
         return `<div class="tl24-cell is-past"><span class="tl-h">${hh}</span><span class="tl-s">ผ่านไปแล้ว</span></div>`;
+      }
+      if (returnsAt[h]) {
+        return `<a class="tl24-cell is-free is-handover" href="booking.html" title="รถคืนเวลา ${returnsAt[h]} น. — ช่วงนี้จองต่อได้">
+          <span class="tl-h">${hh}</span><span class="tl-s">ว่าง</span>
+          <span class="tl-who">รถคืน ${returnsAt[h]}</span></a>`;
       }
       return `<a class="tl24-cell is-free" href="booking.html" title="ว่าง — แตะเพื่อไปหน้าจอง">
         <span class="tl-h">${hh}</span><span class="tl-s">ว่าง</span></a>`;

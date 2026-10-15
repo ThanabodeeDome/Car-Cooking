@@ -1592,3 +1592,148 @@ input[type="date"] {
 @media (prefers-reduced-motion: reduce) {
   #booking-modal-overlay .modal-box.bm { animation: none; }
 }
+
+/* =========================================================
+   📅 ตารางสัปดาห์แบบปฏิทิน (แทนตารางช่องละ 1 ชม. แบบเดิม)
+   =========================================================
+   ของเดิมเป็นช่องรายชั่วโมง ป้ายเขียนแค่เวลาเริ่ม -> จอง 15:00-17:00 เห็นแดงแค่ 15:00/16:00
+   ผู้ใช้อ่านแล้วนึกว่าระบบเก็บถึงแค่ 16:00 แบบใหม่วาดเป็นบล็อกต่อเนื่องที่ "จบตรงเส้น 17:00"
+   เส้นชั่วโมงทำด้วย repeating-linear-gradient (ไม่ต้องสร้าง div 24 ตัวต่อคอลัมน์)
+   ความสูง 1 ชั่วโมงส่งมาจาก JS เป็นตัวแปร --cal-hour ให้ตรงกับตำแหน่งบล็อกเสมอ */
+.cal-grid {
+  display: flex;
+  position: relative;
+  min-width: 560px;
+}
+.cal-gutter {
+  width: 52px;
+  flex-shrink: 0;
+  position: relative;
+}
+.cal-hlabel {
+  position: absolute;
+  right: 6px;
+  transform: translateY(-50%);
+  font-size: 11px;
+  font-family: ui-monospace, Consolas, monospace;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.cal-days {
+  flex: 1;
+  display: flex;
+  position: relative;
+}
+.cal-day {
+  flex: 1;
+  min-width: 68px;
+  position: relative;
+  border-left: 1px solid var(--border-color);
+  cursor: pointer;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--border-color) 0 1px,
+    transparent 1px var(--cal-hour, 48px)
+  );
+}
+.cal-day.is-today {
+  background-color: rgba(99, 102, 241, 0.07);
+}
+.cal-past {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  background: rgba(255, 255, 255, 0.05);
+  pointer-events: none;
+}
+.cal-event {
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  z-index: 2;
+  padding: 5px 7px;
+  border-radius: 9px;
+  border: 1.5px solid #ef4444;
+  background: rgba(239, 68, 68, 0.22);
+  color: #fecaca;
+  font-size: 11px;
+  line-height: 1.35;
+  overflow: hidden;
+  cursor: default;
+}
+.cal-event span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cal-event .ce-title {
+  font-weight: 700;
+  color: #fff;
+}
+.cal-event .ce-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: 1px;
+}
+.cal-event .ce-time {
+  font-family: ui-monospace, Consolas, monospace;
+  opacity: 0.95;
+}
+.cal-event .ce-who {
+  opacity: 0.8;
+}
+.cal-event.is-inuse {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.24);
+  color: #fde68a;
+}
+.cal-event.is-overdue {
+  border-color: #fca5a5;
+  background: rgba(185, 28, 28, 0.6);
+  color: #fff;
+  animation: overduePulse 1.6s ease-in-out infinite;
+}
+/* เส้นบอกเวลาปัจจุบัน (จุดแดง + เส้นแดงพาดคอลัมน์ของวันนี้) */
+.cal-now {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  border-top: 2px solid #ef4444;
+  pointer-events: none;
+}
+.cal-now::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: -5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ef4444;
+}
+
+/* ลิสต์รายวัน (มือถือ): ป้ายเวลาเป็นช่วง "15:00-16:00" จึงต้องกว้างขึ้นกว่าเดิม */
+.dr-hour {
+  width: 92px;
+}
+.day-row.is-handover .dr-cell {
+  flex-direction: column;
+  gap: 2px;
+  border: 1.5px dashed rgba(245, 158, 11, 0.6);
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+}
+.dr-note {
+  font-size: 11px;
+  opacity: 0.9;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cal-event.is-overdue { animation: none; }
+}
