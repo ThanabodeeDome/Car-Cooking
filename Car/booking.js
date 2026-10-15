@@ -952,14 +952,14 @@ function rangesForDate(dateStr) {
       let range = bookingRangeForViewedDay(b, dateStr);
       const overdue = isBookingOverdue(b, now);
       if (range && overdue && dateStr === today) range = [range[0], Math.min(24, Math.max(range[1], now.getHours() + 1))];
-      return { range, driver: b.DriverName, inUse: b.BookingStatus === "ขาไป", overdue };
+      return { range, driver: b.DriverName, inUse: b.BookingStatus === "ขาไป", overdue, id: b.BookingID };
     })
     .filter((r) => r.range !== null);
 }
 
 function slotState(ranges, dateStr, h, now) {
   const busy = ranges.find(({ range }) => h < range[1] && h + 1 > range[0]);
-  if (busy) return { state: "busy", driver: busy.driver, inUse: busy.inUse, overdue: busy.overdue };
+  if (busy) return { state: "busy", driver: busy.driver, inUse: busy.inUse, overdue: busy.overdue, id: busy.id };
   // ชั่วโมงปัจจุบันยังจองได้ (server ตรวจแค่เวลาจบต้องไม่ผ่านไปแล้ว) นับ "ผ่านไปแล้ว" เมื่อจบชั่วโมงนั้นแล้วเท่านั้น
   const hourEnd = new Date(`${dateStr}T${String(h).padStart(2, "0")}:00:00`);
   hourEnd.setHours(hourEnd.getHours() + 1);
@@ -1018,6 +1018,26 @@ function weekDatesList() {
 // ยังเป็น 24 ชั่วโมงเต็มเหมือนเดิม (เลื่อนดูได้ เปิดมาเด้งไปชั่วโมงปัจจุบันให้)
 const CAL_HOUR_PX = 48; // ความสูงของ 1 ชั่วโมงบนปฏิทิน
 
+// 🎨 สีประจำการจองแต่ละรอบ — เดิมทุกบล็อกเป็นสีแดงเหมือนกันหมด พอมีหลายรอบในวันเดียว
+// จะแยกไม่ออกว่าอันไหนของใคร เลือกสีจาก BookingID (เลขรันต่อเนื่อง) ให้รอบที่อยู่ติดกัน
+// ได้คนละสีเสมอ และรอบเดิมได้สีเดิมทุกครั้งที่โหลดใหม่ (ไม่สุ่มใหม่ไปมาจนสับสน)
+const CAL_HUES = [210, 265, 330, 160, 35, 95, 300, 15, 185, 55];
+function calHue(key) {
+  const n = Number(key);
+  if (Number.isFinite(n) && n > 0) return CAL_HUES[Math.floor(n) % CAL_HUES.length];
+  const s = String(key || "");
+  let acc = 0;
+  for (let i = 0; i < s.length; i++) acc = (acc * 31 + s.charCodeAt(i)) % 100000;
+  return CAL_HUES[acc % CAL_HUES.length];
+}
+// สีพื้น/ขอบของบล็อกหนึ่งอัน (เกินกำหนดคืนไม่ใช้สีประจำรอบ ต้องเป็นแดงเตือนเสมอ)
+function calTint(el, key) {
+  const h = calHue(key);
+  el.style.borderColor = `hsl(${h}, 72%, 62%)`;
+  el.style.background = `hsla(${h}, 72%, 48%, 0.3)`;
+  el.style.color = "#fff";
+}
+
 // รายการจองของวันที่ดูอยู่ พร้อมตำแหน่งบนปฏิทิน (หน่วยเป็นชั่วโมงทศนิยม)
 function eventsForDate(dateStr) {
   const now = new Date();
@@ -1039,6 +1059,7 @@ function eventsForDate(dateStr) {
         dest: b.Destination || "",
         inUse: b.BookingStatus === "ขาไป",
         overdue,
+        id: b.BookingID,
         fromPrevDay: String(b.BookingDate).slice(0, 10) !== dateStr,
       };
     })
@@ -1103,10 +1124,11 @@ function renderWeekGrid() {
       el.className = "cal-event" + (ev.overdue ? " is-overdue" : ev.inUse ? " is-inuse" : "");
       el.style.top = ev.start * CAL_HOUR_PX + "px";
       el.style.height = Math.max(26, (ev.end - ev.start) * CAL_HOUR_PX - 3) + "px";
+      if (!ev.overdue) calTint(el, ev.id);
       el.innerHTML =
         `<span class="ce-title"><i class="ce-dot"></i>${escHtml(ev.dest || state)}</span>` +
         `<span class="ce-time">${ev.out} – ${ev.ret}${ev.fromPrevDay ? " (ข้ามคืน)" : ""}</span>` +
-        `<span class="ce-who">${escHtml(ev.driver)}</span>`;
+        `<span class="ce-who">${escHtml(ev.driver)}${ev.inUse ? " · ใช้งานอยู่" : ""}</span>`;
       el.title = `${state} ${ev.out}-${ev.ret}${ev.driver ? " · " + ev.driver : ""}`;
       col.appendChild(el);
     });
@@ -1216,7 +1238,12 @@ function renderDayList() {
     const s = states[h];
     const hh = hourRange(h);
     if (s.state === "busy") {
-      html += `<div class="day-row is-busy${s.overdue ? " is-overdue" : ""}"><span class="dr-hour">${hh}</span><div class="dr-cell">${escHtml(busyLabel(s))}</div></div>`;
+      // สีประจำรอบจองเดียวกับบล็อกในปฏิทิน (เกินกำหนดคืน = ปล่อยให้ class แดงเตือนทำงาน)
+      const hue = calHue(s.id);
+      const tint = s.overdue
+        ? ""
+        : ` style="border-color:hsl(${hue},72%,62%);background:hsla(${hue},72%,48%,0.3);color:#fff"`;
+      html += `<div class="day-row is-busy${s.overdue ? " is-overdue" : ""}"><span class="dr-hour">${hh}</span><div class="dr-cell"${tint}>${escHtml(busyLabel(s))}</div></div>`;
     } else if (s.state === "past") {
       html += `<div class="day-row is-past"><span class="dr-hour">${hh}</span><div class="dr-cell">ผ่านไปแล้ว</div></div>`;
     } else {

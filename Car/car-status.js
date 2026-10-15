@@ -446,11 +446,22 @@ function hourStatesForDate(dateStr) {
     if (!range) return;
     for (let h = 0; h < 24; h++) {
       if (h < range[1] && h + 1 > range[0]) {
-        states[h] = { busy: true, inUse: bk.BookingStatus === "ขาไป", driver: bk.DriverName || "" };
+        states[h] = { busy: true, inUse: bk.BookingStatus === "ขาไป", driver: bk.DriverName || "", id: bk.BookingID };
       }
     }
   });
   return states;
+}
+
+// 🎨 สีประจำการจองแต่ละรอบ (ชุดเดียวกับหน้าจองรถ) — หลายรอบในวันเดียวจะได้แยกออกว่าคนละคัน/คนละคน
+const CAL_HUES = [210, 265, 330, 160, 35, 95, 300, 15, 185, 55];
+function calHue(key) {
+  const n = Number(key);
+  if (Number.isFinite(n) && n > 0) return CAL_HUES[Math.floor(n) % CAL_HUES.length];
+  const s = String(key || "");
+  let acc = 0;
+  for (let i = 0; i < s.length; i++) acc = (acc * 31 + s.charCodeAt(i)) % 100000;
+  return CAL_HUES[acc % CAL_HUES.length];
 }
 
 // ชั่วโมงไหนของวันนั้นมี "รถกลับมาคืนพอดี" บ้าง (คืนตรงชั่วโมง) ใช้ติดป้ายในไทม์ไลน์
@@ -484,7 +495,9 @@ function buildTimeline24(dateStr) {
 
       if (s.busy) {
         const label = s.inUse ? "ใช้งานอยู่" : "จองแล้ว";
-        return `<div class="tl24-cell is-busy" title="${escapeHtml(label + (s.driver ? " · " + s.driver : ""))}">
+        const hue = calHue(s.id);
+        const tint = ` style="border-color:hsl(${hue},72%,62%);background:hsla(${hue},72%,48%,0.3);color:#fff"`;
+        return `<div class="tl24-cell is-busy"${tint} title="${escapeHtml(label + (s.driver ? " · " + s.driver : ""))}">
           <span class="tl-h">${hh}</span><span class="tl-s">${label}</span>
           <span class="tl-who">${escapeHtml(s.driver)}</span></div>`;
       }
@@ -507,7 +520,7 @@ function buildTimeline24(dateStr) {
         <h4><i class="fa-regular fa-clock"></i> ตารางรถ 24 ชั่วโมง</h4>
         <div class="tl24-legend">
           <span><i class="lg-free"></i>ว่าง</span>
-          <span><i class="lg-busy"></i>ไม่ว่าง (จอง / ใช้งานอยู่)</span>
+          <span><i class="lg-busy"></i>ไม่ว่าง — แต่ละสีคือคนละรอบจอง</span>
           <span><i class="lg-past"></i>ผ่านไปแล้ว</span>
         </div>
       </div>

@@ -1737,3 +1737,28 @@ input[type="date"] {
 @media (prefers-reduced-motion: reduce) {
   .cal-event.is-overdue { animation: none; }
 }
+/* 🎨 แต่ละรอบจองมีสีของตัวเอง (กำหนดเป็น inline style จาก JS ตาม BookingID)
+   สถานะจึงบอกด้วย "แถบซ้าย" แทนสี: ส้ม = กำลังใช้งานอยู่ */
+.cal-event.is-inuse::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #f59e0b;
+}
+.cal-event.is-overdue::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #fca5a5;
+}
+/* ตัวอย่างสีในคำอธิบายสัญลักษณ์: ไล่หลายสีให้รู้ว่าสีไม่ได้แปลว่าสถานะ */
+.gantt-legend .lg-busy,
+.tl24-legend .lg-busy {
+  background: linear-gradient(135deg, hsl(210, 72%, 58%) 0 33%, hsl(330, 72%, 58%) 33% 66%, hsl(95, 72%, 48%) 66% 100%);
+}
