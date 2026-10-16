@@ -137,6 +137,25 @@ try {
         if (isset($feedback[$row['SystemFeedback']])) $feedback[$row['SystemFeedback']] = (int)$row['cnt'];
     }
 
+    // 💾 เช็คว่าการสำรองฐานข้อมูลยังทำงานอยู่ไหม — เคยพังเงียบๆ หลายวันโดยไม่มีใครรู้
+    // (Scheduled Task ชี้ไปที่สคริปต์ที่หายไปจากเครื่อง) คราวนี้ให้ขึ้นเตือนบนหน้า Dashboard เลย
+    $backup = null;
+    try {
+        $newest = 0;
+        foreach (glob('D:/CarBooking/Backup/CarBookingDB_*.bak') ?: [] as $bf) {
+            $m = @filemtime($bf);
+            if ($m && $m > $newest) $newest = $m;
+        }
+        $ageHours = $newest ? (int)floor((time() - $newest) / 3600) : null;
+        $backup = [
+            'last'      => $newest ? date('d/m/Y H:i', $newest) : null,
+            'age_hours' => $ageHours,
+            'stale'     => $ageHours === null || $ageHours > 48, // ปกติสำรองทุกคืน เกิน 2 วัน = ผิดปกติ
+        ];
+    } catch (Throwable $e) {
+        $backup = null; // เช็คไม่ได้ก็ไม่ควรทำให้หน้า Dashboard พัง
+    }
+
     echo json_encode([
         "success" => true,
         "counts" => [
@@ -154,6 +173,7 @@ try {
         "maint_due"     => $maintDue,
         "overdue_returns" => $overdueReturns,
         "feedback"      => $feedback,
+        "backup"        => $backup,
     ], JSON_UNESCAPED_UNICODE);
 } catch (PDOException $e) {
     error_log('get_dashboard_stats DB error: ' . $e->getMessage());

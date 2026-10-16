@@ -39,7 +39,7 @@ function fetchDashboardStats() {
       renderFleetStatusList(data.cars);
       renderWeekTimeline(data.cars, data.week_start, data.week_bookings);
       renderRecentBookings(data.recent);
-      renderAlerts(data.alerts, data.maint_due, data.overdue_returns);
+      renderAlerts(data.alerts, data.maint_due, data.overdue_returns, data.backup);
     })
     .catch((err) => {
       console.error("Error Dashboard:", err);
@@ -202,10 +202,22 @@ function renderRecentBookings(list) {
 }
 
 // ---------- 4) แจ้งเตือนสำคัญ (ค้างคืนรถ / ประกัน / พ.ร.บ. / เช็คระยะ ใกล้หมด) ----------
-function renderAlerts(alerts, maintDue, overdueReturns) {
+function renderAlerts(alerts, maintDue, overdueReturns, backup) {
   const wrap = document.getElementById("alerts-list");
   if (!wrap) return;
 
+  // 💾 เตือนเมื่อไฟล์สำรองฐานข้อมูลล่าสุดเก่าเกิน 2 วัน — เคยพังเงียบหลายวันโดยไม่มีใครรู้
+  const backupHtml =
+    backup && backup.stale
+      ? `
+        <div class="alert-row alert-expired">
+          <i class="fa-solid fa-database"></i>
+          <div>
+            <strong>ระบบสำรองฐานข้อมูลอาจมีปัญหา</strong>
+            <span>ไฟล์สำรองล่าสุด: ${backup.last ? escapeHtml(backup.last) + " น. (" + backup.age_hours + " ชม. ที่แล้ว)" : "ไม่พบไฟล์สำรองเลย"} — ปกติต้องมีทุกคืน กรุณาแจ้งผู้ดูแลระบบ</span>
+          </div>
+        </div>`
+      : "";
   // รอบที่เช็คอินแล้วยังไม่ปิดงานคืนรถ — ระบบไม่ยกเลิกให้เอง แอดมินต้องตามปิดงาน
   const overdueHtml = (overdueReturns || [])
     .map(
@@ -222,6 +234,7 @@ function renderAlerts(alerts, maintDue, overdueReturns) {
     .join("");
 
   if (
+    !backupHtml &&
     !overdueHtml &&
     (!alerts || alerts.length === 0) &&
     (!maintDue || maintDue.length === 0)
@@ -264,12 +277,13 @@ function renderAlerts(alerts, maintDue, overdueReturns) {
     });
   });
 
-  if (rows.length === 0 && !overdueHtml) {
+  if (rows.length === 0 && !overdueHtml && !backupHtml) {
     wrap.innerHTML = `<p class="empty-hint">ไม่มีการแจ้งเตือนตอนนี้</p>`;
     return;
   }
 
-  wrap.innerHTML = overdueHtml + rows
+  // เรื่องระบบสำรองข้อมูลขึ้นบนสุด เพราะกระทบทั้งระบบ ไม่ใช่แค่รถคันเดียว
+  wrap.innerHTML = backupHtml + overdueHtml + rows
     .map((r) => {
       const expired = r.diffDays < 0;
       return `

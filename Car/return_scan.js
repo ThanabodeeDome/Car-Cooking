@@ -593,7 +593,8 @@ function runOcrAuto(dataUrl) {
     .then((result) => {
       if (result.success && result.digits && result.digits.length >= 3) {
         // needs_confirm = ตัวอ่าน 2 ตัวของ OCR ให้เลขไม่ตรงกัน -> ให้ผู้ใช้ยืนยันเอง ไม่เติมอัตโนมัติ
-        showOcrResult(statusEl, endMileInput, Number(result.digits), result.candidates || [], result.needs_confirm === true);
+        // in_range = ฝั่งเซิร์ฟเวอร์เทียบกับไมล์ตอนออกให้แล้ว (false = เป็นไปไม่ได้) ส่งต่อไปใช้ด้วย
+        showOcrResult(statusEl, endMileInput, Number(result.digits), result.candidates || [], result.needs_confirm === true, result.in_range);
       } else {
         console.warn(
           "OCR.space อ่านไม่สำเร็จ กำลัง fallback ไปตัวอ่านในเครื่อง:",
@@ -636,21 +637,27 @@ function appendCandidateButtons(statusEl, endMileInput, label, values) {
   statusEl.appendChild(wrap);
 }
 
-function showOcrResult(statusEl, endMileInput, value, candidates, needsConfirm) {
-  // 🩹 ตัวอ่าน 2 ตัวของ OCR ให้เลขไม่ตรงกัน = ไม่ชัวร์ -> ไม่เติมให้อัตโนมัติ กันเลขที่ผิดแบบเนียนหลุดเข้าระบบ
-  // (เคสที่เจอจากการวัดจริง: OCR อ่าน 88639 เป็น 88539 ซึ่งอยู่ในช่วงที่สมเหตุสมผล ผู้ใช้กดผ่านได้โดยไม่ทันสังเกต)
-  if (needsConfirm) {
+function showOcrResult(statusEl, endMileInput, value, candidates, needsConfirm, serverInRange) {
+  // 🩹 ไม่เติมเลขให้อัตโนมัติใน 2 กรณี กันเลขผิดแบบเนียนหลุดเข้าระบบ
+  //   1) ตัวอ่าน 2 ตัวของ OCR ให้เลขไม่ตรงกัน = ไม่ชัวร์
+  //      (เคสจริง: OCR อ่าน 88639 เป็น 88539 ซึ่งอยู่ในช่วงสมเหตุสมผล ผู้ใช้กดผ่านโดยไม่ทันสังเกต)
+  //   2) เลขที่ได้ไม่อยู่ในช่วงที่เป็นไปได้เมื่อเทียบกับไมล์ตอนออก — เดิมยัง "เติมให้" แล้วขึ้นเตือนสีส้ม
+  //      ซึ่งเสี่ยงมากเพราะผู้ใช้กดยืนยันต่อได้ทันที (เคสจริง: อ่านสเกลรอบเครื่องยนต์ 100120
+  //      ทั้งที่ไมล์ตอนออก 71,000) ตอนนี้โชว์เป็นปุ่มให้กดเลือกแทน ต้องตั้งใจกดถึงจะเข้าช่อง
+  //      ใช้ผลตรวจของเซิร์ฟเวอร์ (in_range) เป็นหลัก และเช็คซ้ำฝั่งนี้เองด้วย
+  const outOfRange = serverInRange === false || !isPlausibleMile(value);
+  if (needsConfirm || outOfRange) {
     endMileInput.value = "";
-    statusEl.textContent = "⚠️ อ่านได้ไม่ชัดเจน (ตัวอ่าน 2 ตัวให้เลขไม่ตรงกัน) กรุณากดเลือกเลขที่ตรงกับหน้าปัด หรือกรอกเอง";
+    statusEl.textContent = needsConfirm
+      ? "⚠️ อ่านได้ไม่ชัดเจน (ตัวอ่าน 2 ตัวให้เลขไม่ตรงกัน) กรุณากดเลือกเลขที่ตรงกับหน้าปัด หรือกรอกเอง"
+      : "⚠️ อ่านได้ " + value + " ซึ่งเป็นไปไม่ได้ (ไมล์ตอนออก " + startMileage + ") กรุณากดเลือกเลขที่ตรงกับหน้าปัด หรือกรอกเอง";
     statusEl.style.color = "#f59e0b";
     appendCandidateButtons(statusEl, endMileInput, "เลขที่อ่านได้: ", [value, ...candidates]);
     return;
   }
   endMileInput.value = String(value); // ตัด 0 นำหน้า เช่น 0185318 -> 185318
-  const ok = isPlausibleMile(value);
-  statusEl.textContent =
-    "อ่านได้: " + value + (ok ? " กรุณาตรวจสอบตัวเลขให้ตรงก่อนกดยืนยัน" : " ⚠️ ไม่อยู่ในช่วงที่เป็นไปได้ (ไมล์ตอนออก " + startMileage + ") กรุณาตรวจ/แก้ให้ถูกต้อง");
-  statusEl.style.color = ok ? "#4ade80" : "#f59e0b";
+  statusEl.textContent = "อ่านได้: " + value + " กรุณาตรวจสอบตัวเลขให้ตรงก่อนกดยืนยัน";
+  statusEl.style.color = "#4ade80";
   appendCandidateButtons(statusEl, endMileInput, "ตัวเลขอื่นในรูป: ", candidates.map(Number).filter((c) => c !== value));
 }
 
