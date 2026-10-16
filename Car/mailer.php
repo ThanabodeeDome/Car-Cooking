@@ -28,6 +28,10 @@ function mail_build(array $cfg, $to, string $subject, string $htmlBody): PHPMail
     $m->SMTPAutoTLS = ($cfg['secure'] ?? '') !== '';
     $m->Timeout = 5;
     $m->setFrom($cfg['from_email'], $cfg['from_name'] ?? '');
+    // 🩹 Gmail จะเขียนทับช่อง From เป็นบัญชีที่ใช้ login เสมอ ถ้า from_email ไม่ได้ถูกยืนยัน
+    // เป็น alias ของบัญชีนั้น -> ตั้ง Reply-To ไว้ด้วย อย่างน้อยคนกดตอบกลับจะวิ่งไปที่อีเมลที่ตั้งใจ
+    $replyTo = $cfg['reply_to'] ?? $cfg['from_email'];
+    if ($replyTo && $replyTo !== ($cfg['username'] ?? '')) $m->addReplyTo($replyTo, $cfg['from_name'] ?? '');
     foreach ((array)$to as $addr) $m->addAddress($addr);
     $m->isHTML(true);
     $m->Subject = $subject;
