@@ -1,33 +1,69 @@
 <?php
-// เรียกใช้จาก get_my_bookings.php / admin_get_bookings.php ก่อนดึงข้อมูลทุกครั้ง
+// เรียกใช้จาก get_my_bookings.php / admin_get_bookings.php / get_overdue_returns.php ก่อนดึงข้อมูลทุกครั้ง
 //
-// 🩹 เอา UPDATE ชุดเดิมที่อิง TimeSlot (เช้า/บ่าย/ทั้งวัน) ออก — เป็นโค้ดตายที่ทำงานไม่ได้เลย:
-//    1) เงื่อนไข BookingStatus = 'ขาไป' AND CheckInTime IS NULL ไม่มีทางจริง เพราะ confirm_checkin.php
-//       เซ็ตสถานะ 'ขาไป' พร้อม CheckinTime ในคำสั่งเดียวกัน
-//    2) save_booking.php ไม่ได้บันทึก TimeSlot แล้ว (ระบบย้ายไปใช้ OutTime/PlannedReturnTime) ค่าเลยเป็น NULL ทุกแถว
-//
-// ⚠️ รอบที่ "เช็คอินแล้วแต่ไม่คืน" ระบบจะไม่ยกเลิก/ปิดงานให้เองโดยเจตนา เพราะรถอาจยังอยู่นอกสถานที่จริง
-//    (ปิดงานเองจะได้ไมล์/รูปคืนไม่ครบ และปล่อยให้คนอื่นจองรถที่ยังไม่กลับ) — ใช้วิธีตามเตือนแทน:
-//    notify_lib.php / notify_cron.php เตือนผู้ขับ + แอดมินซ้ำวันละครั้งจนกว่าจะปิดงาน
-//    และ Admin/get_dashboard_stats.php ขึ้นรายการค้างให้แอดมินกดปิดงานเอง
-function autoCancelNoShows($conn) {
-    autoReleaseNoShows($conn);
+// 🔁 เปลี่ยนระบบ (จากเดิมที่ปล่อยคิวถ้าไม่เช็คอินใน 60 นาที):
+//    1) ถึงเวลาออก (OutTime) แล้ว คิว 'จองแล้ว' จะถูกเช็คอินให้อัตโนมัติ เป็น 'ขาไป' — ไม่ต้องสแกน QR/ไม่ต้องรอใครกด
+//       (คนขับที่ไม่ได้ใช้รถต้องกด "ไม่ได้ใช้รถ" ที่หน้าการจองของฉันเอง — ดู cancel_booking.php)
+//    2) คิวที่ผ่านเวลากลับไปแล้วโดยไม่มีใครเปิดระบบเลยตลอดช่วงนั้น (ยังเป็น 'จองแล้ว') จะถูกปล่อยเป็น 'ยกเลิก (ไม่มาใช้งาน)'
+//    3) รอบที่ "เช็คอินแล้วแต่ไม่คืน" ระบบไม่ปิดงานให้เองโดยเจตนา (รถอาจยังอยู่นอกสถานที่จริง ปิดเองจะได้ไมล์/รูปคืนไม่ครบ)
+//       ใช้วิธีตามเตือน (notify_lib.php / notify_cron.php) และขึ้นรายชื่อ "ค้างคืนรถ" ให้ทุกคนเห็น (get_overdue_returns.php)
+//    ทั้งหมดไม่แก้โครงสร้าง DB และเรียกซ้ำได้ปลอดภัย (idempotent)
+
+// ตารางเวลาเริ่ม/จบจริงของแต่ละการจอง (จบ = เวลากลับ; ถ้าเวลากลับ <= เวลาไป ถือว่าข้ามคืน +1 วัน)
+// $statusLiteral เช่น "N'จองแล้ว'" — ใส่เองจากโค้ด ห้ามรับจากผู้ใช้
+function bookingTimesSql(string $statusLiteral): string {
+    return "SELECT BookingID, CarPlate, StartAt, EndAt FROM (
+              SELECT y.BookingID, y.CarPlate,
+                     CASE WHEN ISDATE(y.OutTime) = 1 THEN CAST(y.BookingDate AS DATETIME) + CAST(y.OutTime AS DATETIME) END AS StartAt,
+                     CASE WHEN ISDATE(y.OutTime) = 1 AND ISDATE(y.RT) = 1
+                          THEN CAST(y.BookingDate AS DATETIME) + CAST(y.RT AS DATETIME) + CASE WHEN y.RT <= LEFT(y.OutTime, 5) THEN 1 ELSE 0 END
+                     END AS EndAt
+              FROM (SELECT BookingID, CarPlate, BookingDate, OutTime, CONVERT(varchar(5), PlannedReturnTime, 108) AS RT
+                    FROM CarBookings WHERE BookingStatus = $statusLiteral) y
+            ) z WHERE StartAt IS NOT NULL";
 }
 
-// ระบบเวลาอิสระ (OutTime): ปล่อยคิวถ้าเลยเวลาออก 60 นาทีแล้วยังไม่เช็คอิน (สถานะยังเป็น 'จองแล้ว')
-// ไม่แก้โครงสร้าง DB — แค่เปลี่ยนสถานะแถวเดิม. เรียกซ้ำได้ปลอดภัย (idempotent)
-function autoReleaseNoShows($conn, int $graceMinutes = 60) {
+function autoCancelNoShows($conn) {
+    autoReleaseNoShows($conn);
+    autoCheckInByTime($conn);
+}
+
+// คิวที่เลยเวลากลับแล้วแต่ยังเป็น 'จองแล้ว' (ไม่มีใครเช็คอินให้เลย) -> ปล่อยคิว
+function autoReleaseNoShows($conn) {
     try {
-        $stmt = $conn->prepare(
-            "UPDATE CarBookings
-             SET BookingStatus = 'ยกเลิก (ไม่มาใช้งาน)'
-             WHERE BookingStatus = 'จองแล้ว'
-               AND CheckInTime IS NULL
-               AND OutTime IS NOT NULL AND LEN(OutTime) >= 4 AND ISDATE(OutTime) = 1
-               AND DATEADD(MINUTE, CAST(:grace AS INT), CAST(BookingDate AS DATETIME) + CAST(OutTime AS DATETIME)) < GETDATE()"
+        $conn->exec(
+            "UPDATE b SET BookingStatus = N'ยกเลิก (ไม่มาใช้งาน)'
+             FROM CarBookings b
+             JOIN (" . bookingTimesSql("N'จองแล้ว'") . ") t ON t.BookingID = b.BookingID
+             WHERE b.BookingStatus = N'จองแล้ว' AND b.CheckInTime IS NULL
+               AND t.EndAt IS NOT NULL AND t.EndAt <= GETDATE()"
         );
-        $stmt->execute([':grace' => $graceMinutes]);
     } catch (Throwable $e) {
         error_log('autoReleaseNoShows: ' . $e->getMessage());
+    }
+}
+
+// ถึงเวลาออกแล้ว -> เช็คอินให้ (เวลาเช็คอิน = เวลาออกตามที่จอง) เฉพาะรถที่ไม่มีใครใช้อยู่ และต่อรถ 1 คันได้ทีละ 1 คิว
+function autoCheckInByTime($conn) {
+    try {
+        require_once __DIR__ . '/geo_lib.php';
+        $mark = geo_columns_ok($conn) ? ", b.CheckInGeo = 'auto'" : ''; // ให้แอดมินเห็นว่าเป็นการเช็คอินอัตโนมัติ
+        $conn->exec(
+            "UPDATE b
+             SET b.BookingStatus = N'ขาไป', b.CheckinTime = d.StartAt,
+                 b.StartMileage = ISNULL((SELECT TOP 1 Mileage FROM Cars WHERE REPLACE(Plate, ' ', '') = REPLACE(b.CarPlate, ' ', '')), b.StartMileage)
+                 $mark
+             FROM CarBookings b
+             JOIN (SELECT BookingID, StartAt,
+                          ROW_NUMBER() OVER (PARTITION BY REPLACE(CarPlate, ' ', '') ORDER BY StartAt, BookingID) AS rn
+                   FROM (" . bookingTimesSql("N'จองแล้ว'") . ") t
+                   WHERE StartAt <= GETDATE() AND (EndAt IS NULL OR EndAt > GETDATE())) d
+               ON d.BookingID = b.BookingID AND d.rn = 1
+             WHERE b.BookingStatus = N'จองแล้ว' AND b.CheckInTime IS NULL
+               AND NOT EXISTS (SELECT 1 FROM CarBookings o
+                               WHERE REPLACE(o.CarPlate, ' ', '') = REPLACE(b.CarPlate, ' ', '') AND o.BookingStatus = N'ขาไป')"
+        );
+    } catch (Throwable $e) {
+        error_log('autoCheckInByTime: ' . $e->getMessage());
     }
 }

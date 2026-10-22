@@ -25,10 +25,19 @@ try {
     // 🩹 เพิ่ม 'จองแล้ว' เข้าเงื่อนไข — booking ใหม่ตอนนี้เริ่มที่สถานะนี้ (ยังไม่เช็คอิน)
     // 🩹 ตัด 'ขาไป' ออก: ตอนนี้ 'ขาไป' = เช็คอินรับรถไปแล้ว ถ้ายกเลิกได้ รถที่ยังไม่คืนจะกลายเป็น "ว่าง"
     // ให้คนอื่นจองซ้อน และไม่มีการบันทึกเลขไมล์คืน (ต้องคืนรถแทน หรือให้แอดมินยกเลิก)
-    $stmt = $conn->prepare("UPDATE CarBookings SET BookingStatus = 'ยกเลิก'
-                         WHERE BookingID = :id AND EmployeeID = :emp
-                           AND (BookingStatus = 'จองแล้ว' OR BookingStatus IS NULL)");
-    $stmt->execute([':id' => $data['booking_id'], ':emp' => $sessionEmployeeId]);
+    // ผู้ขับ หรือ ผู้จอง (กรณีจองแทนกัน) ยกเลิกได้
+    if (!empty($data['unused'])) {
+        // "ไม่ได้ใช้รถ": คิวที่ถูกเช็คอินอัตโนมัติตามเวลาไปแล้ว ('ขาไป') แต่ไม่ได้ใช้จริง — ปล่อยรถคืนได้โดยไม่ต้องกรอกไมล์
+        // ใช้ได้เฉพาะที่ยังไม่มีการคืน/ไม่มีเลขไมล์คืน
+        $stmt = $conn->prepare("UPDATE CarBookings SET BookingStatus = N'ยกเลิก (ไม่ได้ใช้รถ)'
+                             WHERE BookingID = :id AND (EmployeeID = :emp OR BookedByUserID = :uid)
+                               AND BookingStatus = N'ขาไป' AND EndMileage IS NULL");
+    } else {
+        $stmt = $conn->prepare("UPDATE CarBookings SET BookingStatus = 'ยกเลิก'
+                             WHERE BookingID = :id AND (EmployeeID = :emp OR BookedByUserID = :uid)
+                               AND (BookingStatus = 'จองแล้ว' OR BookingStatus IS NULL)");
+    }
+    $stmt->execute([':id' => $data['booking_id'], ':emp' => $sessionEmployeeId, ':uid' => $_SESSION['user_id']]);
 
     if ($stmt->rowCount() === 0) {
         echo json_encode(["success" => false, "message" => "ไม่สามารถยกเลิกได้ (อาจถูกเช็คอิน คืนรถ หรือยกเลิกไปแล้ว)"]);

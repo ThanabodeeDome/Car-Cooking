@@ -18,7 +18,7 @@ $sent = is_file($stateFile) ? (json_decode((string)file_get_contents($stateFile)
 $cut = time() - 3 * 86400;
 $sent = array_filter($sent, fn($t) => $t > $cut);
 
-if (!$dry) autoReleaseNoShows($conn);
+if (!$dry) autoCancelNoShows($conn);
 $now  = nt_now();
 $rows = nt_fetch_window_bookings($conn);
 $emails = [];

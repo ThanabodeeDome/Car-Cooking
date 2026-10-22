@@ -90,7 +90,7 @@ function updateSummaryMetrics(bookings) {
   // Header metric counts
   const setElText = (id, val) => {
     const el = document.getElementById(id);
-    if (el) el.innerText = val.toLocaleString("th-TH");
+    if (el) { if (window.fxCount) window.fxCount(el, val); else el.innerText = val.toLocaleString("th-TH"); }
   };
 
   setElText("count-all", total);
@@ -199,17 +199,25 @@ function applyFilterAndRender(highlightPlate) {
     // Action buttons in detail drawer
     let actionButtons = "";
     if (!isReturned && !isCancelled) {
-      actionButtons = `
-        <div class="detail-actions-row">
-          ${
-            bk.BookingStatus === "ขาไป"
-              ? "" /* รับรถไปแล้ว ยกเลิกไม่ได้ ต้องคืนรถ (ตรงกับ cancel_booking.php) */
-              : `<button type="button" class="btn-cancel-booking" onclick="cancelBooking(${Number(bk.BookingID)})">
+      // สีบอกความหมาย: เขียว = คืนรถ, ฟ้า = เช็คอินรับรถ, เทา = ปล่อยรถ (ไม่ได้ใช้), แดง = ยกเลิกการจองเท่านั้น
+      const plateQ = encodeURIComponent(bk.CarPlate || "");
+      actionButtons =
+        bk.BookingStatus === "ขาไป"
+          ? /* ระบบเช็คอินให้ตามเวลาจองแล้ว: ถ้าไม่ได้ใช้รถจริงให้กดปล่อยรถเอง (ไม่งั้นรถจะค้างสถานะกำลังใช้งาน) */
+            `<div class="detail-actions-row">
+          <button type="button" class="btn-release" onclick="markUnused(${Number(bk.BookingID)})">
+            <i class="fa-solid fa-key"></i> ไม่ได้ใช้รถ (ปล่อยรถ)
+          </button>
+          <a href="scan.php?plate=${plateQ}" class="btn-action-return">
+            <i class="fa-solid fa-flag-checkered"></i> คืนรถ (ถ่ายรูปเลขไมล์)
+          </a>
+        </div>`
+          : `<div class="detail-actions-row">
+          <button type="button" class="btn-cancel-booking" onclick="cancelBooking(${Number(bk.BookingID)})">
             <i class="fa-solid fa-xmark"></i> ยกเลิกการจองนี้
-          </button>`
-          }
-          <a href="scan.php?plate=${encodeURIComponent(bk.CarPlate || "")}" class="btn-action-checkin">
-            <i class="fa-solid fa-qrcode"></i> ${bk.BookingStatus === "ขาไป" ? "ไปหน้าคืนรถ" : "ไปหน้าสแกนเช็คอิน"}
+          </button>
+          <a href="scan.php?plate=${plateQ}" class="btn-action-checkin">
+            <i class="fa-solid fa-qrcode"></i> เช็คอินรับรถ (สแกน QR)
           </a>
         </div>`;
     }
@@ -486,6 +494,36 @@ async function cancelBooking(bookingId) {
       console.error("Cancel booking error:", err);
       notify("error", "ติดต่อ Server ไม่ได้ กรุณาลองใหม่อีกครั้ง");
     });
+}
+
+/**
+ * "ไม่ได้ใช้รถ" — คิวที่ระบบเช็คอินให้ตามเวลาแล้วแต่ไม่ได้ใช้จริง
+ */
+async function markUnused(bookingId) {
+  const ok = await AppDialog.confirm({
+    title: "ไม่ได้ใช้รถคันนี้จริงใช่ไหม?",
+    message: "ระบบจะปล่อยรถให้คนอื่นจองได้ทันที ถ้าใช้รถไปแล้วให้กด \"ไปหน้าคืนรถ\" แทน เพื่อบันทึกเลขไมล์",
+    confirmText: "ไม่ได้ใช้รถ",
+    cancelText: "กลับ",
+    danger: true,
+  });
+  if (!ok) return;
+
+  fetch("cancel_booking.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ booking_id: bookingId, unused: true }),
+  })
+    .then((res) => res.json())
+    .then((result) => {
+      if (result.success) {
+        notify("success", "ปล่อยรถเรียบร้อยแล้ว");
+        fetchMyBookings();
+      } else {
+        notify("error", result.message || "ทำรายการไม่สำเร็จ");
+      }
+    })
+    .catch(() => notify("error", "ติดต่อ Server ไม่ได้ กรุณาลองใหม่อีกครั้ง"));
 }
 
 /**

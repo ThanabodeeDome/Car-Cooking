@@ -31,7 +31,7 @@
   .an-links a{display:block;padding:8px 16px;border-radius:999px;color:#b4b8c6;font-size:14px;text-decoration:none;transition:background .15s,color .15s;white-space:nowrap}
   .an-links a:hover{background:rgba(255,255,255,.07);color:#fff}
   .an-links a.on{background:rgba(229,37,42,.16);color:#ff6b6b}
-  .an-links a:focus-visible,.an-av:focus-visible,.an-tab:focus-visible,.an-mid:focus-visible{outline:2px solid #ff6b6b;outline-offset:2px}
+  .an-links a:focus-visible,.an-av:focus-visible,.an-tab:focus-visible,.an-mid:focus-visible{outline:2px solid #c4b5fd;outline-offset:2px}
   .an-right{display:flex;align-items:center;gap:4px;flex:none}
   .an-av{width:36px;height:36px;border-radius:50%;background:rgba(229,37,42,.16);border:1px solid #e5252a;color:#ff8a8a;font:500 14px "Prompt",sans-serif;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
   .an-av[aria-expanded="true"]{background:rgba(229,37,42,.3)}
@@ -55,7 +55,7 @@
     .an-tab{display:flex;flex-direction:column;align-items:center;gap:1px;width:56px;color:#9aa0b3;font-size:11px;text-decoration:none;background:none;border:none;padding:4px 0;cursor:pointer;font-family:inherit}
     .an-tab svg{width:22px;height:22px}
     .an-tab.on{color:#ff6b6b}
-    .an-mid{width:52px;height:52px;margin-top:-24px;border-radius:50%;background:#e5252a;color:#fff;border:4px solid #0d0f16;box-sizing:content-box;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;text-decoration:none}
+    .an-mid{width:52px;height:52px;margin-top:-24px;border-radius:50%;background:#7c3aed;color:#fff;border:4px solid #0d0f16;box-sizing:content-box;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;text-decoration:none}
     .an-mid svg{width:26px;height:26px}
     .an-mid:active{transform:scale(.95)}
     #fab-add{display:none!important}
@@ -150,6 +150,89 @@
       .catch(() => {})
       .finally(() => (window.location.href = "index.html"));
   });
+
+
+  // ป้ายประกาศลอย "รถยังไม่ได้คืน" ให้ทุกคนเห็นทุกหน้า — กด × / ปุ่มรับทราบ / แตะที่ไหนก็ได้ 1 ครั้ง / Esc เพื่อปิด
+  // ปิดแล้วจะไม่เด้งซ้ำในแท็บนี้ 30 นาที (เว้นแต่รายการค้างเปลี่ยนไป)
+  {
+    const ps = document.createElement("style");
+    ps.textContent = `
+    .an-odp{position:fixed;inset:0;z-index:1500;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;background:radial-gradient(ellipse at 50% 40%,rgba(120,20,26,.35),rgba(4,6,10,.82) 70%);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);cursor:pointer;font-family:"Prompt","Sarabun",sans-serif;animation:odpFade .25s ease-out}
+    .an-odp-card{position:relative;width:min(430px,100%);max-height:82vh;overflow:auto;box-sizing:border-box;padding:0 0 18px;background:#14161f;border:1px solid rgba(255,255,255,.1);border-radius:24px;color:#e8eaf2;box-shadow:0 40px 80px -24px rgba(0,0,0,.9),0 0 60px -10px rgba(229,37,42,.45);animation:odpPop .45s cubic-bezier(.2,.9,.3,1.25)}
+    .an-odp-hd{position:relative;padding:30px 22px 22px;text-align:center;background:linear-gradient(160deg,#e5252a 0%,#9b1218 100%);overflow:hidden}
+    .an-odp-hd::before,.an-odp-hd::after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.08)}
+    .an-odp-hd::before{width:180px;height:180px;top:-90px;left:-50px}
+    .an-odp-hd::after{width:120px;height:120px;bottom:-60px;right:-20px}
+    .an-odp-tag{position:relative;display:inline-block;margin-bottom:10px;padding:3px 12px;border-radius:999px;background:rgba(0,0,0,.28);color:#ffe3e3;font-size:11.5px;font-weight:500;letter-spacing:.14em}
+    .an-odp-ic{position:relative;width:190px;max-width:70%;margin:0 auto 6px;animation:odpFloat 3.2s ease-in-out infinite}
+    .an-odp-ic svg{display:block;width:100%;height:auto;filter:drop-shadow(0 10px 14px rgba(0,0,0,.35))}.an-odp-ic .bd{transform-origin:162px 26px;animation:odpBadge 1.6s ease-in-out infinite}
+    .an-odp h2{position:relative;margin:0;font-size:22px;font-weight:600;color:#fff}
+    .an-odp-hd p{position:relative;margin:6px 0 0;font-size:13.5px;line-height:1.6;color:#ffe3e3}
+    .an-odp-x{position:absolute;top:12px;right:12px;z-index:1;width:34px;height:34px;padding:0;border:none;border-radius:50%;background:rgba(0,0,0,.28);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .an-odp-x:hover{background:rgba(0,0,0,.45)}
+    .an-odp-x svg{width:16px;height:16px}
+    .an-odp ul{list-style:none;margin:0;padding:16px 16px 4px;display:grid;gap:10px}
+    .an-odp li{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center;padding:12px;background:#1c1f2b;border:1px solid rgba(255,255,255,.07);border-radius:16px}
+    .an-odp .plate{grid-row:span 2;min-width:92px;text-align:center;padding:7px 10px;background:#fff;color:#14161f;border:2px solid #14161f;outline:2px solid #fff;border-radius:9px;font-size:17px;font-weight:700;letter-spacing:.5px;box-shadow:0 3px 8px rgba(0,0,0,.4)}
+    .an-odp .who{font-size:15px;font-weight:600;color:#fff;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .an-odp .meta{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:center;font-size:12.5px;color:#9aa0b3}
+    .an-odp .late{display:inline-flex;align-items:center;gap:5px;color:#ff8a8a;font-weight:600}
+    .an-odp .late svg{width:14px;height:14px}
+    .an-odp-ok{display:block;width:calc(100% - 32px);margin:14px 16px 0;padding:13px;border:none;border-radius:14px;background:linear-gradient(135deg,#ff5a5f,#e5252a);box-shadow:0 10px 22px -10px rgba(229,37,42,.8);color:#fff;font:600 15px "Prompt",sans-serif;cursor:pointer}
+    .an-odp-hint{margin-top:9px;text-align:center;font-size:12px;color:#6f7589}
+    @keyframes odpFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}@keyframes odpBadge{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+    @keyframes odpFade{from{opacity:0}to{opacity:1}}
+    @keyframes odpPop{0%{opacity:0;transform:scale(.86) translateY(18px)}100%{opacity:1;transform:none}}
+    @media (prefers-reduced-motion:reduce){.an-odp,.an-odp-card,.an-odp-ic{animation:none}}`;
+    document.head.appendChild(ps);
+    const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+    const dur = (m) => (m >= 1440 ? Math.floor(m / 1440) + " วัน " + Math.floor((m % 1440) / 60) + " ชม." : m >= 60 ? Math.floor(m / 60) + " ชม. " + (m % 60) + " นาที" : m + " นาที");
+    const due = (s) => {
+      const t = String(s || "");
+      const same = t.slice(0, 10) === new Date().toLocaleDateString("sv-SE");
+      return "กำหนดคืน " + (same ? "" : t.slice(8, 10) + "/" + t.slice(5, 7) + " ") + t.slice(11, 16) + " น.";
+    };
+    const KEY = "od-dismissed";
+    fetch("get_overdue_returns.php", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        const rows = (d && d.overdue) || [];
+        if (!rows.length) return;
+        const sig = rows.map((o) => o.CarPlate + o.DueAt).join("|");
+        try {
+          const prev = JSON.parse(sessionStorage.getItem(KEY) || "null");
+          if (!/[?&]od=1(&|$)/.test(location.search) && prev && prev.sig === sig && Date.now() - prev.at < 30 * 60000) return; // ?od=1 = บังคับแสดง (ไว้ลองดู)
+        } catch (e) {}
+        const clock = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+        const ov = document.createElement("div");
+        ov.className = "an-odp";
+        ov.setAttribute("role", "alertdialog");
+        ov.setAttribute("aria-label", "ประกาศรถยังไม่ได้คืน");
+        ov.innerHTML = `<div class="an-odp-card">
+          <div class="an-odp-hd">
+            <button type="button" class="an-odp-x" aria-label="ปิด"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+            <span class="an-odp-tag">ประกาศ</span>
+            <div class="an-odp-ic" aria-hidden="true"><svg viewBox="0 0 200 100" fill="none" aria-hidden="true"><defs><linearGradient id="odb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d9dce8"/></linearGradient><linearGradient id="odw" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a5470"/><stop offset="1" stop-color="#1d2233"/></linearGradient></defs><ellipse cx="98" cy="88" rx="78" ry="6" fill="rgba(0,0,0,.28)"/><path d="M14 70 C14 59 22 54 33 52 L55 35 C59 32 64 30 70 30 H120 C128 30 135 33 140 38 L156 52 C170 54 184 58 184 69 V74 H14 Z" fill="url(#odb)"/><path d="M58 38 C60 36 63 35 67 35 H87 V52 H44 Z" fill="url(#odw)"/><path d="M93 35 H119 C124 35 128 37 131 40 L144 52 H93 Z" fill="url(#odw)"/><path d="M90 36 V72" stroke="#b9bdd0" stroke-width="2" stroke-linecap="round"/><rect x="100" y="58" width="11" height="3" rx="1.5" fill="#b0b4c6"/><path d="M176 58 H184 V65 H176 Z" fill="#ffd36b"/><path d="M14 60 H21 V67 H14 Z" fill="#ff5a5f"/><rect x="14" y="70" width="170" height="4" fill="#c3c7d8"/><circle cx="52" cy="74" r="15" fill="#171a26"/><circle cx="52" cy="74" r="7" fill="#cfd3e0"/><circle cx="52" cy="74" r="2.5" fill="#171a26"/><circle cx="146" cy="74" r="15" fill="#171a26"/><circle cx="146" cy="74" r="7" fill="#cfd3e0"/><circle cx="146" cy="74" r="2.5" fill="#171a26"/><g class="bd"><circle cx="162" cy="26" r="20" fill="#fff" stroke="#ffb347" stroke-width="4"/><circle cx="162" cy="26" r="20" stroke="#e5252a" stroke-width="2" stroke-dasharray="4 4" opacity=".55"/><path d="M162 14 V26 L170 31" stroke="#e5252a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></g></svg></div>
+            <h2>รถยังไม่ได้คืน ${rows.length} คัน</h2>
+            <p>เลยกำหนดคืนแล้ว ผู้ขับกรุณาถ่ายรูปเลขไมล์<br>และกดคืนรถในระบบ เพื่อให้คนถัดไปใช้รถได้</p>
+          </div>
+          <ul>${rows.map((o) => `<li><span class="plate">${esc(o.CarPlate)}</span><span class="who">${esc(o.DriverName || "-")}</span><span class="meta"><span>${esc(due(o.DueAt))}</span><span class="late">${clock}เกิน ${dur(Number(o.OverdueMin) || 0)}</span></span></li>`).join("")}</ul>
+          <button type="button" class="an-odp-ok">รับทราบ</button>
+          <div class="an-odp-hint">แตะที่ไหนก็ได้เพื่อปิด</div>
+        </div>`;
+        const close = () => {
+          ov.remove();
+          document.removeEventListener("keydown", onKey);
+          try { sessionStorage.setItem(KEY, JSON.stringify({ sig, at: Date.now() })); } catch (e) {}
+        };
+        const onKey = (e) => e.key === "Escape" && close();
+        ov.addEventListener("click", close);
+        document.addEventListener("keydown", onKey);
+        document.body.appendChild(ov);
+        ov.querySelector(".an-odp-ok").focus({ preventScroll: true });
+      })
+      .catch(() => {});
+  }
 
   fetch("get_current_user.php", { cache: "no-store" })
     .then((r) => r.json())

@@ -804,7 +804,7 @@ function confirmReturn() {
     .then((res) => res.json())
     .then((result) => {
       if (result.success) {
-        showToast("success", result.message || "บันทึกการคืนรถสำเร็จ!");
+        showToast("success", result.message || "บันทึกการคืนรถสำเร็จ!"); if (window.fxCelebrate) window.fxCelebrate();
         setTimeout(() => {
           askSystemFeedback(currentBookingId, () => {
             window.location.href = "booking-details.html?plate=" + encodeURIComponent(currentPlate);

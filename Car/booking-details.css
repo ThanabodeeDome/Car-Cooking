@@ -136,20 +136,20 @@ body {
   gap: 8px;
   padding: 11px 22px;
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, #ff6666 0%, #ff4d4d 100%);
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
   color: #fff;
   font-size: 0.92rem;
   font-weight: 600;
   text-decoration: none;
-  box-shadow: 0 4px 15px rgba(255, 77, 77, 0.35);
+  box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
   transition: all 0.25s ease;
   white-space: nowrap;
 }
 
 .btn-new-booking:hover {
-  background: linear-gradient(135deg, #ff4d4d 0%, #e60000 100%);
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(255, 77, 77, 0.5);
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.55);
 }
 
 /* =========================================
@@ -1002,5 +1002,66 @@ body {
     flex: 0 1 auto;
     padding-top: 0;
     border-top: none;
+  }
+}
+
+/* ปุ่มในแผงรายละเอียด: ใช้สีบอกความหมาย — เขียว=คืนรถ ฟ้า=เช็คอินรับรถ เทา=ปล่อยรถ(ไม่ได้ใช้) แดง=ยกเลิกการจอง */
+.btn-action-checkin {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  box-shadow: 0 3px 12px rgba(37, 99, 235, 0.35);
+}
+.btn-action-checkin:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 5px 16px rgba(37, 99, 235, 0.5);
+}
+
+.btn-action-return {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  color: #fff;
+  border: none;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: var(--font-family);
+  text-decoration: none;
+  box-shadow: 0 3px 12px rgba(22, 163, 74, 0.35);
+  transition: all 0.25s ease;
+}
+.btn-action-return:hover {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(22, 163, 74, 0.5);
+}
+
+.btn-release {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: #cbd5e1;
+  border: 1px solid rgba(203, 213, 225, 0.35);
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: var(--font-family);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-release:hover {
+  background: rgba(203, 213, 225, 0.12);
+  border-color: rgba(203, 213, 225, 0.6);
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .btn-release,
+  .btn-action-return {
+    width: 100%;
+    justify-content: center;
   }
 }

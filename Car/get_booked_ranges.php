@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 // ยกเลิกคิวที่ไม่มาเช็คอิน — ทำหลังเช็ค login (ไม่ให้คนนอกยิงสั่งเขียน DB ได้)
-autoReleaseNoShows($conn);
+autoCancelNoShows($conn);
 
 $plate = isset($_GET['plate']) ? trim($_GET['plate']) : '';
 $date = isset($_GET['date']) ? trim($_GET['date']) : '';

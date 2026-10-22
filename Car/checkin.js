@@ -129,7 +129,7 @@ function confirmCheckin() {
     )
     .then((result) => {
       if (result.success) {
-        showToast("success", result.message || "เช็คอินสำเร็จ!");
+        showToast("success", result.message || "เช็คอินสำเร็จ!"); if (window.fxCelebrate) window.fxCelebrate();
         setTimeout(() => (window.location.href = "booking-details.html?plate=" + encodeURIComponent(currentPlate)), 1800);
       } else {
         showToast("error", result.message || "เช็คอินไม่สำเร็จ");
@@ -234,7 +234,7 @@ function confirmReturn() {
     )
     .then((result) => {
       if (result.success) {
-        showToast("success", result.message || "คืนรถสำเร็จ!");
+        showToast("success", result.message || "คืนรถสำเร็จ!"); if (window.fxCelebrate) window.fxCelebrate();
         setTimeout(() => (window.location.href = "booking-details.html?plate=" + encodeURIComponent(currentPlate)), 1800);
       } else {
         showToast("error", result.message || "คืนรถไม่สำเร็จ");

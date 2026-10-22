@@ -13,7 +13,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 // ยกเลิกคิวที่ไม่มาเช็คอิน — ทำหลังเช็ค login (ไม่ให้คนนอกยิงสั่งเขียน DB ได้)
-autoReleaseNoShows($conn);
+autoCancelNoShows($conn);
 
 try {
     $stmt = $conn->prepare("SELECT employee_id FROM Users WHERE id = :id");

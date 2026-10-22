@@ -451,7 +451,7 @@ function submitBooking() {
           `จองสำเร็จ ${ok} จาก ${repeatWeeks + 1} สัปดาห์` + (skipped.length ? ` (ข้ามวันที่ติดจอง: ${skipped.join(", ")})` : ""),
         );
       } else {
-        showToast("success", "บันทึกการจองสำเร็จ!");
+        showToast("success", "บันทึกการจองสำเร็จ!"); if (window.fxCelebrate) window.fxCelebrate();
       }
       const rw = document.getElementById("repeat-weeks");
       if (rw) rw.value = "0";
@@ -562,7 +562,7 @@ function submitReturn() {
     .then((res) => res.json())
     .then((result) => {
       if (result.success) {
-        showToast("success", "บันทึกการคืนรถสำเร็จ!");
+        showToast("success", "บันทึกการคืนรถสำเร็จ!"); if (window.fxCelebrate) window.fxCelebrate();
         setTimeout(() => {
           askSystemFeedback(bookingId, () => {
             window.location.href = "booking-details.html";

@@ -114,10 +114,10 @@ function nt_build_user_items(array $rows, string $employeeId, DateTime $now): ar
                     ($start->format('Y-m-d') === $now->format('Y-m-d') ? 'วันนี้' : 'พรุ่งนี้') . " $label ไปที่: " . ($b['Destination'] ?: '-'), 'booking-details.html', $start);
             } elseif ($minToStart > 0 && $minToStart <= 60) {
                 $items[] = nt_item("soon:{$b['BookingID']}", 'warn', "อีก $minToStart นาทีถึงเวลารับรถ $plate",
-                    'ไปที่รถแล้วสแกน QR เพื่อเช็คอิน', 'booking-details.html', $start);
+                    'ถึงเวลาแล้วระบบจะเช็คอินให้เอง ไม่ต้องสแกน QR — ถ้าไม่ได้ใช้รถให้ยกเลิกคิวไว้ก่อน', 'booking-details.html', $start);
             } elseif ($minToStart <= 0 && $minToStart >= -180) {
                 $items[] = nt_item("late_ci:{$b['BookingID']}", 'warn', "เลยเวลารับรถ $plate มา " . nt_fmt_duration(-$minToStart) . " แล้ว",
-                    'ยังไม่ได้เช็คอิน ระบบจะปล่อยคิวอัตโนมัติเมื่อเลยเวลา 60 นาที ถ้าไม่ใช้รถแล้วกรุณายกเลิกเพื่อให้คนอื่นใช้ได้', 'booking-details.html', $start);
+                    'ระบบเช็คอินให้ตามเวลาจองแล้ว (เปิดหน้าการจองของฉันเพื่อดูสถานะ) ถ้าไม่ได้ใช้รถให้กด "ไม่ได้ใช้รถ" เพื่อปล่อยรถ', 'booking-details.html', $start);
             }
         } elseif ($status === 'ขาไป') {
             if ($minLate > 0) {

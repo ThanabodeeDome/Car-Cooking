@@ -27,10 +27,10 @@ try {
                    StartMileage, Passengers, OutDate, OutTime, JobDetail, OutRemark, BookingStatus,
                    CheckInTime, ReturnDate, ReturnTime, EndMileage, ReturnRemark
             FROM CarBookings
-            WHERE EmployeeID = :emp_id
+            WHERE EmployeeID = :emp_id OR BookedByUserID = :uid -- รวมคิวที่เราจองให้คนอื่นด้วย (จองแทนกัน)
             ORDER BY BookingID DESC";
     $stmt2 = $conn->prepare($sql);
-    $stmt2->execute([':emp_id' => $user['employee_id']]);
+    $stmt2->execute([':emp_id' => $user['employee_id'], ':uid' => $_SESSION['user_id']]);
     $bookings = $stmt2->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode(["success" => true, "bookings" => $bookings]);

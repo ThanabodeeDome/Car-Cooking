@@ -737,6 +737,7 @@ function geoLine(label, geo, lat, lng, dist, happened) {
     ok: `<span style="color:#16a34a">อยู่ในจุดบริษัท</span>${dist != null ? ` (ห่าง ${dist} ม.)` : ""}`,
     far: `<span style="color:#dc2626">นอกจุดบริษัท ห่าง ${dist ?? "?"} ม.</span>`,
     none: `<span style="color:#d97706">ไม่ได้ยืนยันพิกัด</span>`,
+    auto: `<span style="color:#2563eb">เช็คอินอัตโนมัติตามเวลาจอง</span>`,
     nosite: "บันทึกพิกัดแล้ว (ยังไม่ได้ตั้งจุดบริษัท)",
   }[geo] || "-";
   return `<div style="grid-column: span 2;"><strong>${label}:</strong> ${txt}${map}</div>`;
