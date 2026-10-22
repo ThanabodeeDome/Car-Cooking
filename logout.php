@@ -18,6 +18,9 @@ try {
     require_once __DIR__ . '/db_connect.php';
     require_once __DIR__ . '/Car/remember_helpers.php';
     clearRememberToken($conn);
+    // 📝 บันทึกระบบ: ออกจากระบบ (ทำก่อน session_unset ด้านล่าง เพื่อยังรู้ว่าใครออก)
+    require_once __DIR__ . '/Car/log_lib.php';
+    if ($userId > 0) sl_log($conn, 'logout', 'ออกจากระบบ', ['target_type' => 'user', 'target' => (string)($_SESSION['username'] ?? '')]);
 } catch (Throwable $e) {
     error_log('Logout: clearRememberToken failed - ' . $e->getMessage());
 }

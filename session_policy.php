@@ -146,7 +146,9 @@ function cb_enforce_session_policy(): string
     }
 
     $reason = '';
-    if (!hash_equals($device, cb_device_hash())) {
+    // ผูกเครื่องเฉพาะแอดมิน — ผู้ใช้ทั่วไป UA เปลี่ยนได้เองโดยไม่ใช่การขโมย (โหมดจำลองมือถือ, ขอเว็บเดสก์ท็อป,
+    // เบราว์เซอร์อัปเดต, service worker) แล้วโดนเด้ง login ทั้งที่ไม่มีอะไรผิด; cookie เป็น HttpOnly และไม่อยู่ใน URL
+    if ($isAdmin && !hash_equals($device, cb_device_hash())) {
         $reason = 'device';                       // cookie ถูกเอาไปใช้ในเครื่อง/เบราว์เซอร์อื่น
     } elseif ($now - $seenAt > $idleMax) {
         $reason = 'idle';

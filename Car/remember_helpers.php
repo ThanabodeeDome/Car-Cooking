@@ -5,8 +5,8 @@
 // ใช้เฉพาะฝั่งผู้ใช้ทั่วไป (Car/) เท่านั้น ฝั่ง Admin ไม่ใช้ pattern นี้ (session สั้นเหมือนเดิมตามที่ตกลงไว้)
 
 const REMEMBER_COOKIE_NAME = 'remember_me';
-// 30 วัน (เดิม 90) — ยังพอลดการ login บ่อยของพนักงาน แต่ไม่ค้างสิทธิ์อยู่ในเครื่องนานเกินไป
-const REMEMBER_DAYS = 30;
+// 60 วัน — ลดการ login ซ้ำจากการสแกน QR/เปิดแอป แต่ยังต้องติ๊ก "จดจำฉัน" เองเท่านั้น (ไม่ติ๊กให้) และผูกกับเครื่องที่ login
+const REMEMBER_DAYS = 60;
 
 function issueRememberToken(PDO $conn, int $userId, bool $isHttps): void {
     $selector = bin2hex(random_bytes(9));
@@ -74,7 +74,10 @@ function tryRememberLogin(PDO $conn, bool $isHttps): bool {
         || hash_equals((string)$row['device_hash'], cb_device_hash());
 
     // token หมดอายุ / validator ไม่ตรง / มาจากเครื่องอื่น -> ลบทิ้ง กันใช้ซ้ำ
-    if (!$deviceOk || strtotime($row['expires_at']) < time() || !hash_equals($row['token_hash'], hash('sha256', $validator))) {
+    // เครื่อง/UA ไม่ตรง (เช่นสลับโหมดจำลองมือถือ) = แค่ไม่ให้เข้าอัตโนมัติรอบนี้ ไม่ลบ token ทิ้ง กลับมา UA เดิมแล้วใช้ต่อได้
+    if (!$deviceOk) return false;
+
+    if (strtotime($row['expires_at']) < time() || !hash_equals($row['token_hash'], hash('sha256', $validator))) {
         $del = $conn->prepare("DELETE FROM RememberTokens WHERE id = :id");
         $del->execute([':id' => $row['id']]);
         setcookie(REMEMBER_COOKIE_NAME, '', ['expires' => time() - 3600, 'path' => '/']);

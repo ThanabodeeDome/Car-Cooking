@@ -77,6 +77,11 @@ try {
     ]);
 
     if ($result) {
+        require_once __DIR__ . '/Car/log_lib.php';
+        sl_log($conn, 'register', 'สมัครสมาชิกใหม่: ' . trim($first_name . ' ' . $last_name) . ' (รหัสพนักงาน ' . $employee_id . ')', [
+            'actor' => ['name' => trim($first_name . ' ' . $last_name), 'emp' => $employee_id],
+            'target_type' => 'user', 'target' => $username,
+        ]);
         echo json_encode(['success' => true, 'message' => 'ลงทะเบียนพนักงานสำเร็จแล้วครับเพื่อน! ยินดีต้อนรับเข้าสู่ระบบ']);
     } else {
         echo json_encode(['success' => false, 'message' => 'เกิดข้อผิดพลาดในการเขียนข้อมูลลงตารางพนักงาน']);

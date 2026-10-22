@@ -13,6 +13,7 @@ function cb_is_https(): bool
 
 function cb_session_start(): void
 {
+    @ini_set('display_errors', '0'); // 🔒 ห้ามโชว์ error/path ของ PHP ให้ผู้ใช้เห็น (ยังลง log ตามปกติ)
     if (session_status() !== PHP_SESSION_NONE) return; // มีคนเปิดไปแล้ว ไม่ต้องทำซ้ำ
 
     // 🔒 use_strict_mode: ไม่ยอมรับ session id ที่ยังไม่เคยมีจริงในเซิร์ฟเวอร์
