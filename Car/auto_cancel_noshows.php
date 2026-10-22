@@ -31,13 +31,22 @@ function autoCancelNoShows($conn) {
 // คิวที่เลยเวลากลับแล้วแต่ยังเป็น 'จองแล้ว' (ไม่มีใครเช็คอินให้เลย) -> ปล่อยคิว
 function autoReleaseNoShows($conn) {
     try {
-        $conn->exec(
-            "UPDATE b SET BookingStatus = N'ยกเลิก (ไม่มาใช้งาน)'
-             FROM CarBookings b
+        $where = "FROM CarBookings b
              JOIN (" . bookingTimesSql("N'จองแล้ว'") . ") t ON t.BookingID = b.BookingID
              WHERE b.BookingStatus = N'จองแล้ว' AND b.CheckInTime IS NULL
-               AND t.EndAt IS NOT NULL AND t.EndAt <= GETDATE()"
-        );
+               AND t.EndAt IS NOT NULL AND t.EndAt <= GETDATE()";
+        // รายชื่อที่กำลังจะถูกปล่อย (ไว้เขียน log) — ไม่มีก็ไม่ต้อง UPDATE
+        $due = $conn->query("SELECT b.BookingID, b.BookingNumber, b.CarPlate, b.DriverName $where")->fetchAll(PDO::FETCH_ASSOC);
+        if (!$due) return;
+        $n = $conn->exec("UPDATE b SET BookingStatus = N'ยกเลิก (ไม่มาใช้งาน)' $where");
+        if ($n > 0) {
+            require_once __DIR__ . '/log_lib.php';
+            foreach ($due as $d) {
+                sl_log($conn, 'release_noshow', 'ปล่อยคิว (ไม่มาใช้งาน) ' . trim($d['CarPlate'] . ' ' . $d['DriverName']), [
+                    'system' => true, 'target_type' => 'booking', 'target' => (string)$d['BookingNumber'],
+                ]);
+            }
+        }
     } catch (Throwable $e) {
         error_log('autoReleaseNoShows: ' . $e->getMessage());
     }
@@ -48,12 +57,7 @@ function autoCheckInByTime($conn) {
     try {
         require_once __DIR__ . '/geo_lib.php';
         $mark = geo_columns_ok($conn) ? ", b.CheckInGeo = 'auto'" : ''; // ให้แอดมินเห็นว่าเป็นการเช็คอินอัตโนมัติ
-        $conn->exec(
-            "UPDATE b
-             SET b.BookingStatus = N'ขาไป', b.CheckinTime = d.StartAt,
-                 b.StartMileage = ISNULL((SELECT TOP 1 Mileage FROM Cars WHERE REPLACE(Plate, ' ', '') = REPLACE(b.CarPlate, ' ', '')), b.StartMileage)
-                 $mark
-             FROM CarBookings b
+        $dueSql = "FROM CarBookings b
              JOIN (SELECT BookingID, StartAt,
                           ROW_NUMBER() OVER (PARTITION BY REPLACE(CarPlate, ' ', '') ORDER BY StartAt, BookingID) AS rn
                    FROM (" . bookingTimesSql("N'จองแล้ว'") . ") t
@@ -61,8 +65,25 @@ function autoCheckInByTime($conn) {
                ON d.BookingID = b.BookingID AND d.rn = 1
              WHERE b.BookingStatus = N'จองแล้ว' AND b.CheckInTime IS NULL
                AND NOT EXISTS (SELECT 1 FROM CarBookings o
-                               WHERE REPLACE(o.CarPlate, ' ', '') = REPLACE(b.CarPlate, ' ', '') AND o.BookingStatus = N'ขาไป')"
+                               WHERE REPLACE(o.CarPlate, ' ', '') = REPLACE(b.CarPlate, ' ', '') AND o.BookingStatus = N'ขาไป')";
+        // รายการที่กำลังจะถูกเช็คอิน (ไว้เขียน log)
+        $due = $conn->query("SELECT b.BookingID, b.BookingNumber, b.CarPlate, b.DriverName $dueSql")->fetchAll(PDO::FETCH_ASSOC);
+        if (!$due) return;
+        $n = $conn->exec(
+            "UPDATE b
+             SET b.BookingStatus = N'ขาไป', b.CheckinTime = d.StartAt,
+                 b.StartMileage = ISNULL((SELECT TOP 1 Mileage FROM Cars WHERE REPLACE(Plate, ' ', '') = REPLACE(b.CarPlate, ' ', '')), b.StartMileage)
+                 $mark
+             $dueSql"
         );
+        if ($n > 0) {
+            require_once __DIR__ . '/log_lib.php';
+            foreach ($due as $d) {
+                sl_log($conn, 'checkin_auto', 'เช็คอินอัตโนมัติตามเวลาจอง ' . trim($d['CarPlate'] . ' ' . $d['DriverName']), [
+                    'system' => true, 'target_type' => 'booking', 'target' => (string)$d['BookingNumber'],
+                ]);
+            }
+        }
     } catch (Throwable $e) {
         error_log('autoCheckInByTime: ' . $e->getMessage());
     }

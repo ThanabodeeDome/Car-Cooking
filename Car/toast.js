@@ -27,6 +27,13 @@ function showToast(type, message, duration = 3500) {
 }
 
 // 🌟 ถาม feedback หลังคืนรถเสร็จ — เลือก 👍/👎 และ/หรือพิมพ์ความคิดเห็น (ไม่บังคับ กดข้ามได้)
+// 🔒 ข้อความ error ที่โชว์ให้ผู้ใช้เห็น: ห้ามเอา err.message ดิบ (เช่น "Failed to fetch", ชื่อไฟล์/ขั้นตอนฝั่งระบบ) ไปโชว์
+//    ข้อความจะแสดงเฉพาะ error ที่สร้างด้วย safeErr() (เป็นประโยคที่เราเขียนเองให้ผู้ใช้อ่าน) ที่เหลือใช้ข้อความกลางๆ
+//    รายละเอียดจริงไปอยู่ใน console / log ฝั่งเซิร์ฟเวอร์เท่านั้น
+window.safeErr = function (msg) { const e = new Error(msg); e.safe = true; return e; };
+window.errToast = function (err, fallback) {
+  showToast("error", err && err.safe && err.message ? err.message : fallback || "ระบบขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง");
+};
 // เรียก onDone() เสมอไม่ว่าจะตอบหรือข้าม (ไม่ขวาง flow หลัก) — ใช้ร่วมกันทั้ง return_scan.js และ booking.js
 function askSystemFeedback(bookingId, onDone) {
   if (!document.getElementById("fbm-style")) {

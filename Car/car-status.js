@@ -212,10 +212,7 @@ function fetchCarsData(dateStr) {
                 alt="${escapeHtml(car.Brand || 'รถยนต์')}"
                 onerror="this.onerror=null; this.src='assets/img-car/car-placeholder.png';"
               />
-              <span class="status-tag tag-${statusClass}">
-                <i class="${statusIcon}"></i>
-                <span>${status}</span>
-              </span>
+              ${statusBadge(status, { type: "car" })}
             </div>
             <div class="card-body">
               <h4>${escapeHtml(car.Brand || "")} ${escapeHtml(car.Model || "")}</h4>

@@ -24,7 +24,8 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  fetch(`get_booking_by_plate.php?plate=${encodeURIComponent(currentPlate)}`)
+  const isPicked = params.get("picked") === "1"; // มาจาก scan.php: คิวที่ระบบเช็คอินให้อัตโนมัติแล้ว
+  fetch(`get_booking_by_plate.php?plate=${encodeURIComponent(currentPlate)}${isPicked ? "&status=" + encodeURIComponent("ขาไป") : ""}`)
     .then((res) => res.json())
     .then((data) => {
       loadingEl.classList.add("hidden");
@@ -40,6 +41,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (data.mode === "checkin") {
         titleEl.innerText = "เช็คอินรับรถ";
         renderCheckinMode(b);
+      } else if (isPicked && b.AutoCheckin) {
+        titleEl.innerText = "รับรถ / คืนรถ";
+        renderPickedMode(b);
+      } else if (isPicked) {
+        // ยืนยันรับรถไปแล้ว (หรือเปิดลิงก์เก่า) -> ไปหน้าคืนรถ
+        window.location.replace("return_scan.html?plate=" + encodeURIComponent(currentPlate));
       } else {
         titleEl.innerText = "คืนรถ";
         renderReturnMode(b);
@@ -53,29 +60,70 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-// ================= โหมดเช็คอิน =================
+// ================= โหมดเช็คอิน (ปุ่มเดียว) =================
 function renderCheckinMode(b) {
-  document.getElementById("ci-plate").value = b.CarPlate || "";
-  document.getElementById("ci-driver").value = b.DriverName || "";
-  document.getElementById("ci-empid").value = b.EmployeeID || "";
-  document.getElementById("ci-dept").value = b.Department || "";
-  document.getElementById("ci-passengers").value = b.Passengers || "-";
-  document.getElementById("ci-datetime").value =
-    b.OutTime && b.PlannedReturnTime
-      ? `${b.BookingDate || ""} ${b.OutTime}-${b.PlannedReturnTime} น.`
-      : `${b.BookingDate || ""}${b.TimeSlot ? " (" + b.TimeSlot + ")" : ""}`;
-  document.getElementById("ci-mileage").value = b.StartMileage || "0";
-  document.getElementById("ci-destination").value = b.Destination || "-";
+  document.getElementById("ci-plate").textContent = b.CarPlate || "-";
+  document.getElementById("ci-driver").textContent = b.DriverName || "-";
+  const when = b.OutTime && b.PlannedReturnTime ? `${b.BookingDate || ""}  ${b.OutTime}–${b.PlannedReturnTime} น.` : `${b.BookingDate || ""}${b.TimeSlot ? " (" + b.TimeSlot + ")" : ""}`;
+  document.getElementById("ci-datetime").textContent = when;
+  document.getElementById("ci-destination").textContent = b.Destination || "-";
+  const pax = (b.Passengers || "").trim();
+  document.getElementById("ci-passengers").textContent = pax || "-";
+  document.getElementById("ci-pax-row").classList.toggle("hidden", !pax || pax === "-");
 
   document.getElementById("mode-checkin").classList.remove("hidden");
-  startLiveClock();
 
-  const photoInput = document.getElementById("ci-photo-input");
-  photoInput.addEventListener("change", function () {
+  document.getElementById("ci-photo-input").addEventListener("change", function () {
     selectedCheckinPhoto = this.files[0] || null;
-    if (!selectedCheckinPhoto) return;
-    previewPhoto(selectedCheckinPhoto, "ci-photo-preview");
+    if (selectedCheckinPhoto) previewPhoto(selectedCheckinPhoto, "ci-photo-preview");
   });
+}
+
+// ================= ระบบเช็คอินให้แล้ว: ยืนยันรับรถ / ไปคืนรถ =================
+function renderPickedMode(b) {
+  document.getElementById("pk-plate").textContent = b.CarPlate || "-";
+  document.getElementById("pk-driver").textContent = b.DriverName || "-";
+  document.getElementById("pk-time").textContent = b.CheckinHM || b.OutTime || "-";
+  document.getElementById("pk-return-link").href = "return_scan.html?plate=" + encodeURIComponent(currentPlate);
+  document.getElementById("mode-picked").classList.remove("hidden");
+  document.getElementById("pk-photo-input").addEventListener("change", function () {
+    selectedCheckinPhoto = this.files[0] || null;
+    if (selectedCheckinPhoto) previewPhoto(selectedCheckinPhoto, "pk-photo-preview");
+  });
+}
+
+function confirmPickup() {
+  const btn = document.getElementById("pk-confirm-btn");
+  btn.disabled = true;
+  btn.innerText = "กำลังบันทึก...";
+  const upload = selectedCheckinPhoto ? uploadPhoto(selectedCheckinPhoto, "upload_checkin_photo.php") : Promise.resolve(null);
+  upload
+    .then((photoPath) =>
+      (window.getGeo ? window.getGeo() : Promise.resolve(null)).then((geo) =>
+        fetch("confirm_pickup.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plate: currentPlate, photo_path: photoPath, geo }),
+        }),
+      ),
+    )
+    .then((res) => res.json())
+    .then((result) => {
+      if (result.success) {
+        showToast("success", result.message || "ยืนยันรับรถแล้ว");
+        if (window.fxCelebrate) window.fxCelebrate();
+        setTimeout(() => (window.location.href = "booking-details.html?plate=" + encodeURIComponent(currentPlate)), 1800);
+      } else {
+        showToast("error", result.message || "ทำรายการไม่สำเร็จ");
+        btn.disabled = false;
+        btn.innerText = "ยืนยันรับรถที่รถ";
+      }
+    })
+    .catch((err) => {
+      errToast(err, "ระบบขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง");
+      btn.disabled = false;
+      btn.innerText = "ยืนยันรับรถที่รถ";
+    });
 }
 
 function startLiveClock() {
@@ -98,7 +146,7 @@ function confirmCheckin() {
 
   const uploadPromise = selectedCheckinPhoto
     ? uploadPhoto(selectedCheckinPhoto, "upload_checkin_photo.php").catch((err) => {
-        throw new Error("ขั้นตอนอัปโหลดรูป: " + err.message);
+        throw err && err.safe ? err : new Error("upload step failed");
       })
     : Promise.resolve(null);
 
@@ -110,7 +158,7 @@ function confirmCheckin() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ plate: currentPlate, photo_path: photoPath, geo }),
         }).catch((err) => {
-          throw new Error("ขั้นตอนเชื่อมต่อ server: " + err.message);
+          throw new Error("network step failed");
         }),
       ),
     )
@@ -123,7 +171,9 @@ function confirmCheckin() {
           return JSON.parse(text);
         } catch (e) {
           console.error("confirm_checkin.php response ไม่ใช่ JSON:", text);
-          throw new Error("เซิร์ฟเวอร์ตอบกลับผิดปกติ (ไม่ใช่ JSON) — อาจมี error ฝั่ง server กรุณาแจ้งผู้ดูแลระบบพร้อม log");
+          // ถูกเด้งไปหน้า login (session หมด) = ไม่ใช่ error ของระบบ บอกให้เข้าสู่ระบบใหม่
+          if (res.redirected) throw safeErr("หมดเวลาการเข้าใช้งาน กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
+          throw safeErr("ระบบขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง");
         }
       }),
     )
@@ -134,14 +184,14 @@ function confirmCheckin() {
       } else {
         showToast("error", result.message || "เช็คอินไม่สำเร็จ");
         btn.disabled = false;
-        btn.innerText = "ยืนยันเช็คอิน / รับรถ";
+        btn.innerText = "เช็คอินรับรถ";
       }
     })
     .catch((err) => {
       // 🌟 ใส่ tag ขั้นตอนไว้แล้วด้านบน ครั้งหน้าถ้าพังอีกจะรู้ทันทีว่าพังตรงไหน ไม่ใช่แค่ error ดิบสั้นๆ
-      showToast("error", err.message || "ติดต่อ Server ไม่ได้");
+      errToast(err, "ระบบขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง");
       btn.disabled = false;
-      btn.innerText = "ยืนยันเช็คอิน / รับรถ";
+      btn.innerText = "เช็คอินรับรถ";
       console.error("confirm checkin error:", err);
     });
 }
@@ -209,7 +259,7 @@ function confirmReturn() {
   uploadPhoto(selectedReturnPhoto, "upload_return_photo.php")
     .then((photoPath) => {
       if (!photoPath) {
-        throw new Error("อัปโหลดรูปไม่สำเร็จ");
+        throw safeErr("อัปโหลดรูปไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
       }
       return fetch("confirm_return.php", {
         method: "POST",
@@ -228,7 +278,8 @@ function confirmReturn() {
           return JSON.parse(text);
         } catch (e) {
           console.error("confirm_return.php response ไม่ใช่ JSON:", text);
-          throw new Error("เซิร์ฟเวอร์ตอบกลับผิดปกติ (ไม่ใช่ JSON) — อาจมี error ฝั่ง server กรุณาแจ้งผู้ดูแลระบบพร้อม log");
+          if (res.redirected) throw safeErr("หมดเวลาการเข้าใช้งาน กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
+          throw safeErr("ระบบขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง");
         }
       }),
     )
@@ -243,7 +294,7 @@ function confirmReturn() {
       }
     })
     .catch((err) => {
-      showToast("error", err.message || "ติดต่อ Server ไม่ได้");
+      errToast(err, "ระบบขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง");
       btn.disabled = false;
       btn.innerText = "ยืนยันคืนรถ";
       console.error("confirm return error:", err);
@@ -300,7 +351,7 @@ function compressImage(file, maxDim = 1600, quality = 0.75) {
 function uploadPhoto(file, endpoint) {
   return compressImage(file)
     .catch((err) => {
-      throw new Error("ขั้นตอนบีบอัดรูป: " + err.message);
+      throw new Error("compress step failed");
     })
     .then((compressed) => {
     const formData = new FormData();
@@ -317,12 +368,12 @@ function uploadPhoto(file, endpoint) {
             // เป็น error งงๆ ของเบราว์เซอร์ (Safari: "The string did not match the expected pattern")
             // จับไว้ตรงนี้ ให้ error message อ่านรู้เรื่องแทน
             console.error("Upload response ไม่ใช่ JSON:", text);
-            throw new Error("เซิร์ฟเวอร์ตอบกลับผิดปกติ กรุณาลองใหม่ หรือแจ้งผู้ดูแลระบบ");
+            throw safeErr("ระบบขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง");
           }
           // 🩹 FIX: เดิมถ้า server ตอบ success:false (เช่นไฟล์ถูกปฏิเสธ, mime เพี้ยน) จะ return null เงียบๆ
           // เหมือน "อัปโหลดสำเร็จแต่ไม่มีรูป" ทั้งที่จริงคือ "อัปโหลดพัง" — โยน error ให้ผู้เรียกจัดการแทน
           if (!result.success) {
-            throw new Error(result.message || "อัปโหลดรูปไม่สำเร็จ");
+            throw safeErr(result.message || "อัปโหลดรูปไม่สำเร็จ");
           }
           return result.photo_path;
         }),

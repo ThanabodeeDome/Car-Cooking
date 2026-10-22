@@ -12,7 +12,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="toast.css" />
-    <link rel="stylesheet" href="scan.css?v=3" />
+    <link rel="stylesheet" href="scan.css?v=6" />
     <link rel="stylesheet" href="form-ios-zoom.css?v=2" />
     <!-- 🌟 เลิกใช้ Tesseract.js แล้ว เปลี่ยนเป็น seven-segment digit reader ที่เขียนเองใน return_scan.js
          (แม่นกว่าสำหรับจอ LCD 7-segment + ทำงาน offline ไม่ต้องพึ่ง CDN ภายนอก) -->
@@ -29,9 +29,8 @@
       </ul>
     </nav>
 
-    <div class="booking-card sc-wrap">
+    <div class="booking-card sc-wrap rt-wrap">
       <h2 class="sc-title">คืนรถ</h2>
-      <p class="sc-sub">ถ่ายรูป ตรวจเลขไมล์ แล้วยืนยัน</p>
 
       <div id="return-loading" class="sc-state">
         กำลังตรวจสอบข้อมูลการจอง...
@@ -40,72 +39,67 @@
       <div id="return-error" class="sc-state err hidden"></div>
 
       <div id="return-content" class="hidden">
-        <div class="sc-card">
-          <div class="sc-plate">
-            <div class="ic">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>
-            </div>
-            <div class="sc-f" style="flex: 1; min-width: 0">
-              <label for="rt-plate">ทะเบียนรถ</label>
-              <input type="text" id="rt-plate" class="sc-val big" readonly />
-            </div>
-          </div>
-          <div class="sc-grid">
-            <div class="sc-f">
-              <label for="rt-driver">ผู้ขับ</label>
-              <input type="text" id="rt-driver" class="sc-val" readonly />
-            </div>
-            <div class="sc-f">
-              <label for="rt-start-mile">เลขไมล์ตอนออก</label>
-              <input type="text" id="rt-start-mile" class="sc-val" readonly />
-            </div>
-          </div>
+        <!-- หัวการ์ด: ป้ายทะเบียน + ผู้ขับ + เลขไมล์ตอนออก (ค่าที่ return_scan.js เติมให้) -->
+        <div class="sc-hero">
+          <input type="text" id="rt-plate" class="sc-hero-plate rt-plate-in" readonly aria-label="ทะเบียนรถ" />
+          <div class="rt-driver-line"><span>ผู้ขับ</span><input type="text" id="rt-driver" class="rt-plain" readonly aria-label="ผู้ขับ" /></div>
+        </div>
+        <div class="rt-start"><span>เลขไมล์ตอนออก</span><input type="text" id="rt-start-mile" class="rt-plain" readonly aria-label="เลขไมล์ตอนออก" /></div>
+
+        <div class="rt-progress" aria-live="polite">
+          <div class="rt-bar"><i id="rt-bar-fill"></i></div>
+          <small id="rt-progress-text">เหลืออีก 2 ขั้นตอน</small>
         </div>
 
-        <div class="sc-card">
-          <h3 class="sc-card-t"><span class="n">1</span>ถ่ายรูปหน้าปัดเลขไมล์<small class="req">บังคับ</small></h3>
-          <label class="sc-photo" for="rt-odometer-input">
+        <!-- ขั้น 1: เลขไมล์ -->
+        <section class="rt-step" id="rt-step-1">
+          <header><span class="rt-n"><b>1</b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5l10 -10"/></svg></span><h3>เลขไมล์ตอนคืน</h3><small class="req">บังคับ</small></header>
+          <label class="rt-snap" for="rt-odometer-input">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg>
-            แตะเพื่อถ่ายรูปเลขไมล์
+            <span>แตะเพื่อถ่ายรูปหน้าปัดเลขไมล์ <em>ระบบอ่านตัวเลขให้อัตโนมัติ</em></span>
             <input type="file" id="rt-odometer-input" accept="image/*" capture="environment" />
           </label>
           <img id="rt-odometer-preview" class="sc-preview hidden" alt="รูปเลขไมล์" />
           <p id="rt-ocr-status" class="sc-status"></p>
+          <div class="rt-mile">
+            <button type="button" class="rt-step-btn" onclick="bumpEndMile(-1)" aria-label="ลด 1">−</button>
+            <input type="number" id="rt-end-mile" class="sc-input sc-mile" inputmode="numeric" placeholder="เลขไมล์" aria-label="เลขไมล์ตอนคืน" />
+            <button type="button" class="rt-step-btn" onclick="bumpEndMile(1)" aria-label="เพิ่ม 1">+</button>
+          </div>
+          <p class="rt-dist" id="rt-dist">ถ้าอ่านเลขไม่ตรง แก้ตัวเลขเองได้</p>
+        </section>
 
-          <label for="rt-end-mile" style="display: block; margin: 12px 0 6px; font-size: 12.5px; color: #9ea3b3">
-            เลขไมล์ตอนคืน (ระบบอ่านให้ แก้ไขได้ถ้าไม่ตรง)
-          </label>
-          <input type="number" id="rt-end-mile" class="sc-input sc-mile" inputmode="numeric" placeholder="0" />
-        </div>
-
-        <div class="sc-card">
-          <h3 class="sc-card-t"><span class="n">2</span>ถ่ายรูปสภาพรถตอนคืน<small class="req">บังคับ</small></h3>
-          <label class="sc-photo" for="rt-condition-input">
+        <!-- ขั้น 2: รูปสภาพรถ -->
+        <section class="rt-step" id="rt-step-2">
+          <header><span class="rt-n"><b>2</b><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5l10 -10"/></svg></span><h3>รูปสภาพรถ</h3><small class="req">บังคับ</small></header>
+          <label class="rt-snap" for="rt-condition-input">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg>
-            แตะเพื่อถ่ายรูปสภาพรถ
+            <span>แตะเพื่อถ่ายรูปรถตอนคืน <em>เห็นรอบคันหรือจุดที่มีตำหนิ</em></span>
             <input type="file" id="rt-condition-input" accept="image/*" capture="environment" />
           </label>
           <img id="rt-condition-preview" class="sc-preview hidden" alt="รูปสภาพรถตอนคืน" />
-        </div>
+        </section>
 
-        <div class="sc-card">
-          <h3 class="sc-card-t"><span class="n">3</span>แจ้งปัญหาที่พบ<small>ถ้ามี</small></h3>
-          <textarea id="rt-remark" rows="3" class="sc-input" placeholder="ระบุปัญหาที่พบหลังใช้งาน เช่น ไฟเตือนติด เสียงดัง รอยขีดข่วน"></textarea>
-        </div>
+        <!-- ขั้น 3: ปัญหา (ไม่บังคับ) -->
+        <section class="rt-step opt" id="rt-step-3">
+          <header><span class="rt-n"><b>3</b></span><h3>แจ้งปัญหาที่พบ</h3><small>ถ้ามี</small></header>
+          <textarea id="rt-remark" rows="2" class="sc-input" placeholder="เช่น ไฟเตือนติด เสียงดัง รอยขีดข่วน"></textarea>
+        </section>
 
-        <button type="button" class="sc-submit green" id="rt-confirm-btn" onclick="confirmReturn()">
-          ยืนยันการคืนรถ
-        </button>
+        <div class="rt-submit-bar">
+          <button type="button" class="sc-big rt-confirm wait" id="rt-confirm-btn" onclick="confirmReturn()">ยืนยันการคืนรถ</button>
+        </div>
       </div>
     </div>
 
-    <script src="toast.js?v=5"></script>
+    <script src="toast.js?v=6"></script>
     <script src="geo.js?v=1"></script>
-    <script src="return_scan.js?v=10"></script>
+    <script src="return_scan.js?v=11"></script>
+    <script src="return-ui.js?v=1"></script>
     <script src="app-nav.js?v=12"></script>
     <script src="notify-bell.js?v=6"></script>
       <script src="ui-dialog.js?v=3"></script>
       <script src="fx.js?v=2"></script>
-      <script src="pwa.js?v=2"></script>
+      <script src="pwa.js?v=3"></script>
   </body>
 </html>

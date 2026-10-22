@@ -191,6 +191,9 @@ function applyFilterAndRender(highlightPlate) {
       statusIcon = "fa-solid fa-hourglass-half";
     }
 
+    // สถานะดิบสำหรับป้ายกลาง (ยกเลิกใช้ค่าจริงเพื่อแยก "ไม่ได้ใช้รถ" / "ไม่มาใช้งาน")
+    const rawStatus = isCancelled ? bk.BookingStatus : isReturned ? "คืนแล้ว" : bk.CheckInTime ? "ขาไป" : "จองแล้ว";
+
     const row = document.createElement("article");
     row.className = "booking-row-container";
     row.id = `row-${dropdownId}`;
@@ -309,10 +312,7 @@ function applyFilterAndRender(highlightPlate) {
           </div>
         </div>
 
-        <div class="status-badge ${statusClass}">
-          <i class="${statusIcon}"></i>
-          <span>${statusText}</span>
-        </div>
+        <div class="bk-st">${statusBadge(rawStatus)}</div>
 
         <div class="arrow-icon-wrap">
           <i class="fa-solid fa-chevron-down"></i>

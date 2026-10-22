@@ -880,7 +880,7 @@ function renderCarSelectList(cars) {
         <div class="plate">${escHtml(car.Plate)}</div>
         <div class="model">${escHtml(car.Brand || "")} ${escHtml(car.Model || "")}</div>
       </div>
-      <span class="car-status-badge ${CAR_STATUS_CLASS[status] || "st-off"}">${status}</span>`;
+      ${statusBadge(status, { type: "car" })}`;
     if (!disabled) {
       item.addEventListener("click", () => selectGanttCar(car.Plate));
     }
@@ -1350,20 +1350,6 @@ function openBookingModal(plate, dateStr, startHour) {
   setTimeout(applySelection, 150); // รอ dropdown เติมตัวเลือกจาก loadAvailableCars ก่อน
 
   overlay.classList.remove("hidden");
-
-  // ผู้ขับเริ่มต้น = ตัวเอง (จองให้คนอื่นก็แก้รหัสพนักงานได้) — ลดช่องที่ต้องกรอก
-  const empEl = document.getElementById("employee-id");
-  if (empEl && !empEl.value.trim()) {
-    fetch("get_current_user.php", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((u) => {
-        if (u && u.success && u.employee_id && !empEl.value.trim()) {
-          empEl.value = u.employee_id;
-          if (typeof lookupDriverName === "function") lookupDriverName();
-        }
-      })
-      .catch(() => {});
-  }
 }
 
 function closeBookingModal() {

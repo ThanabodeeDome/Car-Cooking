@@ -67,12 +67,14 @@ function updateHistoryTable() {
             badgeClass = "status-booked";
             badgeText = "ติดจอง";
           }
+          // สถานะดิบสำหรับป้ายกลาง: ยกเลิก/คืนแล้ว ใช้ค่าจริง, ที่เหลือดูจากเวลาเช็คอิน
+          const rawStatus = isCancelled || isReturned ? status : item.checkin_time ? "ขาไป" : "จองแล้ว";
           return `
       <tr>
           <td>${escHtml(item.out_date || "-")}</td>
           <td>${escHtml(formatThaiTime(item.checkin_time))}</td>
           <td>${escHtml(item.return_time || "-")}</td>
-          <td><span class="status-badge ${badgeClass}">${badgeText}</span></td>
+          <td>${statusBadge(rawStatus)}</td>
           <td>${escHtml(item.car_plate || "-")}</td>
           <td>${escHtml(item.driver_name || "-")}</td>
           <td>${escHtml(item.employeeId || "-")}</td>
@@ -129,9 +131,7 @@ function loadCarData(statusFilter = "all", btn = null) {
                         <h3 class="car-plate">${car.plate}</h3>
                         <p class="car-brand">${car.brand}</p>
                         <div class="car-info">
-                            <span class="status-badge ${car.status === "available" ? "status-available" : "status-busy"}">
-                                ${car.status === "available" ? "ว่าง" : "ไม่ว่าง"}
-                            </span>
+                            ${statusBadge(car.status === "available" ? "ว่าง" : "ไม่ว่าง", { type: "car" })}
                             <span style="color: #888;">ไมล์: ${Number(car.current_mileage).toLocaleString()} กม.</span>
                         </div>
                     </div>

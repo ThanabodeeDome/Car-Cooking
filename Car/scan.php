@@ -5,6 +5,7 @@
 // เช็คสถานะ booking ปัจจุบันของรถคันนี้ แล้วเด้งไปหน้าที่ถูกต้องให้อัตโนมัติ ไม่ต้องมี 2 QR แยกกัน
 require_once 'guard_user.php'; // ยังไม่ login จะเด้งไป login พร้อมจำ ?plate= ไว้กลับมาที่นี่ต่อ
 require_once 'db_connect.php';
+require_once __DIR__ . '/geo_lib.php';
 
 $plate = isset($_GET['plate']) ? trim($_GET['plate']) : '';
 
@@ -15,7 +16,7 @@ if (empty($plate)) {
 
 try {
     $stmt = $conn->prepare(
-        "SELECT TOP 1 BookingStatus FROM CarBookings
+        "SELECT TOP 1 BookingStatus" . (geo_columns_ok($conn) ? ", CheckInGeo" : "") . " FROM CarBookings
          WHERE REPLACE(CarPlate, ' ', '') = REPLACE(:plate, ' ', '') AND BookingStatus IN (N'จองแล้ว', N'ขาไป')
          ORDER BY CASE WHEN BookingStatus = N'ขาไป' THEN 0 ELSE 1 END, ABS(DATEDIFF(MINUTE, GETDATE(), CAST(BookingDate AS DATETIME) + CASE WHEN ISDATE(OutTime) = 1 THEN CAST(OutTime AS DATETIME) ELSE CAST('00:00' AS DATETIME) END)), BookingID ASC"
     );
@@ -24,6 +25,9 @@ try {
 
     if ($row && $row['BookingStatus'] === 'จองแล้ว') {
         header('Location: checkin.html?plate=' . urlencode($plate));
+    } elseif ($row && $row['BookingStatus'] === 'ขาไป' && ($row['CheckInGeo'] ?? '') === 'auto') {
+        // ระบบเช็คอินให้อัตโนมัติไปแล้วตามเวลาจอง: คนสแกนอาจกำลังรับรถ (ยังไม่ได้ยืนยันที่รถ) หรือกำลังคืนรถ -> ให้เลือกบนหน้าเดียว
+        header('Location: checkin.html?plate=' . urlencode($plate) . '&picked=1');
     } elseif ($row && $row['BookingStatus'] === 'ขาไป') {
         header('Location: return_scan.html?plate=' . urlencode($plate));
     } else {

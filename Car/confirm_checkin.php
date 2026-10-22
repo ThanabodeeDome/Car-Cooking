@@ -39,14 +39,14 @@ try {
     // เลือกรายการที่ "ใกล้เวลาปัจจุบันที่สุด" (เดิมเลือกรายการที่จองล่าสุด ซึ่งอาจเป็นคิวของวันอื่น)
     // 🩹 ให้รายการของคนที่สแกนเองมาก่อน — เดิมถ้ามีคิวคนอื่นใกล้เวลากว่า เจ้าของคิวตัวจริงจะเช็คอินไม่ได้เลย
     // (ลำดับเดียวกับ get_booking_by_plate.php หน้าจอจะได้โชว์รายการเดียวกับที่เช็คอินจริง)
-    $sql = "SELECT TOP 1 BookingID, EmployeeID,
+    $sql = "SELECT TOP 1 BookingID, EmployeeID, BookedByUserID,
                    CASE WHEN ISDATE(OutTime) = 1 THEN CONVERT(varchar(16), CAST(BookingDate AS DATETIME) + CAST(OutTime AS DATETIME), 120) END AS StartAt
             FROM CarBookings
             WHERE REPLACE(CarPlate, ' ', '') = REPLACE(:plate, ' ', '') AND BookingStatus = N'จองแล้ว'
-            ORDER BY CASE WHEN EmployeeID = :emp THEN 0 ELSE 1 END,
+            ORDER BY CASE WHEN EmployeeID = :emp OR BookedByUserID = :uid THEN 0 ELSE 1 END,
                      ABS(DATEDIFF(MINUTE, GETDATE(), CAST(BookingDate AS DATETIME) + CASE WHEN ISDATE(OutTime) = 1 THEN CAST(OutTime AS DATETIME) ELSE CAST('00:00' AS DATETIME) END)), BookingID ASC";
     $stmt = $conn->prepare($sql);
-    $stmt->execute([':plate' => $plate, ':emp' => (string)$sessionEmployeeId]);
+    $stmt->execute([':plate' => $plate, ':emp' => (string)$sessionEmployeeId, ':uid' => (int)($_SESSION['user_id'] ?? 0)]);
     $booking = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$booking) {
@@ -55,7 +55,9 @@ try {
     }
 
     // 🌟 กันคนอื่นสแกนแล้วกดเช็คอินแทนผู้ขับตัวจริง — ต้องเป็นเจ้าของ booking เท่านั้น (หรือ admin)
-    if (strtolower($sessionRole) !== 'admin' && $sessionEmployeeId !== $booking['EmployeeID']) {
+    // (ผู้จองแทนที่ล็อกอินอยู่ก็กดแทนผู้ขับได้ — กรณีผู้ขับไม่มีบัญชี)
+    if (strtolower($sessionRole) !== 'admin' && $sessionEmployeeId !== $booking['EmployeeID']
+        && (int)($booking['BookedByUserID'] ?? 0) !== (int)($_SESSION['user_id'] ?? -1)) {
         echo json_encode(['success' => false, 'message' => 'คุณไม่ใช่ผู้ขับที่ระบุไว้ในรายการจองนี้']);
         exit;
     }
@@ -92,6 +94,13 @@ try {
     // GPS: บันทึกพิกัด + เทียบกับจุดบริษัท (ไม่บล็อก ถ้านอกจุด/ไม่มีพิกัด ติดธงให้แอดมิน)
     $ev = geo_evaluate($data['geo'] ?? null);
     geo_store($conn, (int)$booking['BookingID'], 'CheckIn', $ev);
+
+    require_once __DIR__ . '/log_lib.php';
+    $bi = sl_booking_info($conn, (int)$booking['BookingID']);
+    sl_log($conn, 'checkin', 'เช็คอินรับรถ ' . trim($bi['plate'] . ' ' . $bi['driver']), [
+        'target_type' => 'booking', 'target' => $bi['no'],
+        'detail' => ['geo' => $ev['geo'], 'dist_m' => $ev['dist'], 'photo' => $photoPath !== null],
+    ]);
 
     echo json_encode(['success' => true, 'message' => 'เช็คอินสำเร็จ รับรถได้เลยครับ' . geo_user_note($ev, 'รับรถ'), 'geo' => $ev['geo']]);
 } catch (PDOException $e) {

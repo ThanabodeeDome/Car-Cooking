@@ -12,8 +12,19 @@
     document.head.appendChild(m);
     const a = document.createElement("link");
     a.rel = "apple-touch-icon";
-    a.href = "assets/image/apple-touch-icon.png";
+    a.href = "assets/image/apple-touch-icon.png?v=2";
     document.head.appendChild(a);
+  }
+  // ไอคอนแท็บ/ทางลัดบนคอม (favicon) — ใช้โลโก้แอปตัวเดียวกัน
+  if (!document.querySelector('link[rel="icon"]')) {
+    [["48x48", "favicon-48.png"], ["32x32", "favicon-32.png"], ["192x192", "pwa-192.png"]].forEach(([sz, f]) => {
+      const i = document.createElement("link");
+      i.rel = "icon";
+      i.type = "image/png";
+      i.sizes = sz;
+      i.href = "assets/image/" + f + "?v=2";
+      document.head.appendChild(i);
+    });
   }
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));

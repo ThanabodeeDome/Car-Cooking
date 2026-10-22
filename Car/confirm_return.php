@@ -105,6 +105,12 @@ try {
 
     $conn->commit();
 
+    require_once __DIR__ . '/log_lib.php';
+    $bi = sl_booking_info($conn, (int)$booking['BookingID']);
+    sl_log($conn, 'return', 'คืนรถ ' . trim($bi['plate'] . ' ' . $bi['driver']) . ' ระยะทาง ' . number_format($endMile - $startMileage) . ' กม.', [
+        'target_type' => 'booking', 'target' => $bi['no'],
+        'detail' => ['start_mileage' => $startMileage, 'end_mileage' => $endMile],
+    ]);
     echo json_encode(['success' => true, 'message' => 'คืนรถสำเร็จแล้วครับ']);
 } catch (PDOException $e) {
     if ($conn->inTransaction()) {

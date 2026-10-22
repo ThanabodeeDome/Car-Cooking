@@ -282,10 +282,7 @@ function applyCarFilterAndRender() {
             alt="${escapeHtml(car.Model || 'รถยนต์')}"
             onerror="this.onerror=null; this.src='assets/img-car/car-placeholder.png';"
           />
-          <span class="car-status-badge status-${statusClass}">
-            <i class="${statusIcon}"></i>
-            <span>${status}</span>
-          </span>
+          ${statusBadge(status, { type: "car" })}
         </div>
 
         <!-- Car Body & Specs -->

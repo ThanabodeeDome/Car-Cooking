@@ -12,7 +12,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="toast.css" />
-    <link rel="stylesheet" href="scan.css?v=3" />
+    <link rel="stylesheet" href="scan.css?v=4" />
     <link rel="stylesheet" href="form-ios-zoom.css?v=2" />
     <!-- 🌟 Tesseract.js — OCR อ่านเลขไมล์จากรูปถ่าย ทำงานฝั่งเบราว์เซอร์ ไม่ต้องพึ่ง API เสียเงิน -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
@@ -38,67 +38,53 @@
 
       <div id="checkin-error" class="sc-state err hidden"></div>
 
-      <!-- ================= โหมดเช็คอิน (รับรถ) ================= -->
+      <!-- ================= โหมดเช็คอิน (รับรถ): ปุ่มเดียว ================= -->
       <div id="mode-checkin" class="hidden">
-        <div class="sc-card">
-          <div class="sc-plate">
-            <div class="ic">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg>
-            </div>
-            <div class="sc-f" style="flex: 1; min-width: 0">
-              <label for="ci-plate">ทะเบียนรถ</label>
-              <input type="text" id="ci-plate" class="sc-val big" readonly />
-            </div>
-          </div>
-          <div class="sc-grid">
-            <div class="sc-f">
-              <label for="ci-driver">ผู้ขับ</label>
-              <input type="text" id="ci-driver" class="sc-val" readonly />
-            </div>
-            <div class="sc-f">
-              <label for="ci-empid">รหัสพนักงาน</label>
-              <input type="text" id="ci-empid" class="sc-val" readonly />
-            </div>
-            <div class="sc-f full">
-              <label for="ci-dept">หน่วยงาน</label>
-              <input type="text" id="ci-dept" class="sc-val" readonly />
-            </div>
-            <div class="sc-f">
-              <label for="ci-datetime">วันที่ / ช่วงเวลา</label>
-              <input type="text" id="ci-datetime" class="sc-val" readonly />
-            </div>
-            <div class="sc-f">
-              <label for="ci-mileage">เลขไมล์ตอนออก</label>
-              <input type="text" id="ci-mileage" class="sc-val" readonly />
-            </div>
-            <div class="sc-f full">
-              <label for="ci-destination">สถานที่ไป</label>
-              <input type="text" id="ci-destination" class="sc-val" readonly />
-            </div>
-            <div class="sc-f full">
-              <label for="ci-passengers">ผู้ร่วมเดินทาง</label>
-              <input type="text" id="ci-passengers" class="sc-val" readonly />
-            </div>
-          </div>
+        <div class="sc-hero">
+          <div class="sc-hero-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg></div>
+          <div class="sc-hero-plate" id="ci-plate">-</div>
+          <div class="sc-hero-driver" id="ci-driver">-</div>
+        </div>
+        <div class="sc-rows">
+          <div class="sc-row"><small>เวลาที่จอง</small><b id="ci-datetime">-</b></div>
+          <div class="sc-row"><small>สถานที่ไป</small><b id="ci-destination">-</b></div>
+          <div class="sc-row" id="ci-pax-row"><small>ผู้ร่วมเดินทาง</small><b id="ci-passengers">-</b></div>
         </div>
 
-        <div class="sc-card">
-          <h3 class="sc-card-t"><span class="n">1</span>ถ่ายรูปสภาพรถก่อนออก<small>ไม่บังคับ</small></h3>
-          <label class="sc-photo" for="ci-photo-input">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg>
-            แตะเพื่อถ่ายรูป (ถ้ามีตำหนิ)
-            <input type="file" id="ci-photo-input" accept="image/*" capture="environment" />
-          </label>
-          <img id="ci-photo-preview" class="sc-preview hidden" alt="รูปสภาพรถก่อนออก" />
+        <button type="button" class="sc-big" id="ci-confirm-btn" onclick="confirmCheckin()">เช็คอินรับรถ</button>
+
+        <label class="sc-photo-link" for="ci-photo-input">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg>
+          <span>ถ่ายรูปสภาพรถก่อนออก <em>(ไม่บังคับ — ถ้ามีตำหนิ)</em></span>
+          <input type="file" id="ci-photo-input" accept="image/*" capture="environment" />
+        </label>
+        <img id="ci-photo-preview" class="sc-preview hidden" alt="รูปสภาพรถก่อนออก" />
+        <p class="sc-hint">กดปุ่มเดียวเพื่อรับรถ — ถ้าเปิดแอปตอนถึงเวลาจอง ระบบจะเช็คอินให้อัตโนมัติอยู่แล้ว</p>
+      </div>
+
+      <!-- ================= ระบบเช็คอินให้อัตโนมัติแล้ว: ยืนยันรับรถ หรือ ไปคืนรถ ================= -->
+      <div id="mode-picked" class="hidden">
+        <div class="sc-auto-banner">
+          <b>✓ ระบบเช็คอินให้อัตโนมัติแล้ว</b>
+          <span>เมื่อเวลา <span id="pk-time">-</span> น. ตามที่จองไว้</span>
+        </div>
+        <div class="sc-hero">
+          <div class="sc-hero-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M17 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M5 17h-2v-6l2 -5h9l4 5h1a2 2 0 0 1 2 2v4h-2m-4 0h-6m-6 -6h15m-6 0v-5"/></svg></div>
+          <div class="sc-hero-plate" id="pk-plate">-</div>
+          <div class="sc-hero-driver" id="pk-driver">-</div>
         </div>
 
-        <p class="sc-clock">
-          เวลาที่จะบันทึกเป็นเวลาเช็คอิน: <span id="ci-live-clock"></span>
-        </p>
+        <button type="button" class="sc-big" id="pk-confirm-btn" onclick="confirmPickup()">ยืนยันรับรถที่รถ</button>
+        <label class="sc-photo-link" for="pk-photo-input">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h1a2 2 0 0 0 2 -2a1 1 0 0 1 1 -1h6a1 1 0 0 1 1 1a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-9a2 2 0 0 1 2 -2"/><path d="M9 13a3 3 0 1 0 6 0a3 3 0 0 0 -6 0"/></svg>
+          <span>ถ่ายรูปสภาพรถก่อนออก <em>(ไม่บังคับ)</em></span>
+          <input type="file" id="pk-photo-input" accept="image/*" capture="environment" />
+        </label>
+        <img id="pk-photo-preview" class="sc-preview hidden" alt="รูปสภาพรถก่อนออก" />
 
-        <button type="button" class="sc-submit red" id="ci-confirm-btn" onclick="confirmCheckin()">
-          ยืนยันเช็คอิน / รับรถ
-        </button>
+        <div class="sc-or"><span>หรือ</span></div>
+        <a class="sc-big ghost" id="pk-return-link" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1 -4.069 0l-.301 -.301l-6.558 6.558a2 2 0 0 1 -1.239 .578l-.175 .008h-1.172a1 1 0 0 1 -.993 -.883l-.007 -.117v-1.172a2 2 0 0 1 .467 -1.284l.119 -.13l.414 -.414h2v-2h2v-2l2.144 -2.144l-.301 -.301a2.877 2.877 0 0 1 0 -4.069l2.643 -2.643a2.877 2.877 0 0 1 4.069 0z"/><path d="M15 9h.01"/></svg> ฉันกำลังคืนรถ</a>
+        <p class="sc-hint">กด "ยืนยันรับรถ" ตอนอยู่ที่รถเพื่อบันทึกตำแหน่งจริง (ไม่ต้องกรอกอะไรเพิ่ม)</p>
       </div>
 
       <!-- ================= โหมดคืนรถ ================= -->
@@ -190,13 +176,13 @@
       </div>
     </div>
 
-    <script src="toast.js?v=5"></script>
+    <script src="toast.js?v=6"></script>
     <script src="geo.js?v=1"></script>
-    <script src="checkin.js?v=4"></script>
+    <script src="checkin.js?v=6"></script>
     <script src="app-nav.js?v=12"></script>
     <script src="notify-bell.js?v=6"></script>
       <script src="ui-dialog.js?v=3"></script>
       <script src="fx.js?v=2"></script>
-      <script src="pwa.js?v=2"></script>
+      <script src="pwa.js?v=3"></script>
   </body>
 </html>

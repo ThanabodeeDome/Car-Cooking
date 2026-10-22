@@ -159,6 +159,13 @@ try {
     $ev = array_key_exists('geo', $data) ? geo_evaluate($data['geo']) : ['geo' => 'nosite', 'dist' => null, 'lat' => null, 'lng' => null, 'acc' => null];
     if (array_key_exists('geo', $data)) geo_store($conn, (int)$booking['BookingID'], 'Return', $ev);
 
+    require_once __DIR__ . '/log_lib.php';
+    $bi = sl_booking_info($conn, (int)$booking['BookingID']);
+    sl_log($conn, 'return', 'คืนรถ ' . trim($bi['plate'] . ' ' . $bi['driver']) . ' ไมล์คืน ' . number_format($endMile) . ' กม.', [
+        'target_type' => 'booking', 'target' => $bi['no'],
+        'detail' => ['start_mileage' => (int)$startMileage, 'end_mileage' => (int)$endMile, 'geo' => $ev['geo']],
+    ]);
+
     echo json_encode(["success" => true, "message" => "บันทึกการคืนรถสำเร็จ" . geo_user_note($ev, 'คืนรถ'), "geo" => $ev['geo']]);
 } catch (PDOException $e) {
     if ($conn->inTransaction()) {

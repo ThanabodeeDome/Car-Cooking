@@ -201,6 +201,13 @@ try {
 
     echo json_encode(["success" => true, "booking_number" => $bookingNumber]);
 
+    // 📝 บันทึกระบบ: จองรถ (ผู้จอง = คนที่ล็อกอิน, ผู้ขับอาจเป็นคนอื่นถ้าจองแทน)
+    require_once __DIR__ . '/log_lib.php';
+    sl_log($conn, 'booking_create', "จอง $carPlate วันที่ $useDate $outTime-$plannedReturnTime ผู้ขับ $driverName", [
+        'target_type' => 'booking', 'target' => $bookingNumber,
+        'detail' => ['driver_emp' => $driverEmployeeId, 'destination' => $destination, 'booked_for_other' => ($driverEmployeeId !== (string)($_SESSION['employee_id'] ?? ''))],
+    ]);
+
     // อีเมลยืนยัน (ฟรี ผ่าน SMTP) — ส่งแยก process เบื้องหลัง ไม่ให้หน้าจองรอ SMTP (พลาดก็ไม่กระทบการจอง)
     require_once __DIR__ . '/mailer.php';
     $mailData = [

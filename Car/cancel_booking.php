@@ -43,6 +43,13 @@ try {
         echo json_encode(["success" => false, "message" => "ไม่สามารถยกเลิกได้ (อาจถูกเช็คอิน คืนรถ หรือยกเลิกไปแล้ว)"]);
         exit;
     }
+    // 📝 บันทึกระบบ: ยกเลิกการจอง / ปล่อยรถ (ไม่ได้ใช้รถ)
+    require_once __DIR__ . '/log_lib.php';
+    $bi = sl_booking_info($conn, (int)$data['booking_id']);
+    $isUnused = !empty($data['unused']);
+    sl_log($conn, $isUnused ? 'booking_unused' : 'booking_cancel', ($isUnused ? 'ปล่อยรถ (ไม่ได้ใช้รถ) ' : 'ยกเลิกการจอง ') . trim($bi['plate'] . ' ' . $bi['driver']), [
+        'target_type' => 'booking', 'target' => $bi['no'],
+    ]);
     echo json_encode(["success" => true]);
 } catch (PDOException $e) {
     error_log('cancel_booking DB error: ' . $e->getMessage());

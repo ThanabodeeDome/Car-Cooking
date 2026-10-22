@@ -817,7 +817,7 @@ function confirmReturn() {
       }
     })
     .catch((err) => {
-      showToast("error", err.message || "ติดต่อ Server ไม่ได้");
+      errToast(err, "ระบบขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง");
       btn.disabled = false;
       btn.innerText = "ยืนยันการคืนรถ";
       console.error("confirm return error:", err);
@@ -877,7 +877,7 @@ function uploadReturnPhoto(file, type) {
         // 🩹 FIX: เดิม result.success:false -> return null เงียบๆ แล้วโค้ดข้างล่างเดินหน้าบันทึก
         // การคืนรถต่อโดยไม่มีรูปจริง (ตรงกับอาการที่แจ้ง: อัปรูปแล้วจองสำเร็จ แต่ไฟล์ไม่ถูกเก็บไว้เลย)
         if (!result.success) {
-          throw new Error(result.message || `อัปโหลดรูป${type === "odometer" ? "เลขไมล์" : "สภาพรถ"}ไม่สำเร็จ`);
+          throw safeErr(result.message || `อัปโหลดรูป${type === "odometer" ? "เลขไมล์" : "สภาพรถ"}ไม่สำเร็จ`);
         }
         return result.photo_path;
       });

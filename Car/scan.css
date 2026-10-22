@@ -274,3 +274,87 @@
     font-size: 20px;
   }
 }
+
+
+/* ===== เช็คอินปุ่มเดียว (v4) ===== */
+.sc-hero { text-align: center; padding: 22px 16px 6px; }
+.sc-hero-ic { width: 60px; height: 60px; margin: 0 auto 12px; border-radius: 18px; background: rgba(59, 130, 246, 0.16); color: #7aa7ff; display: flex; align-items: center; justify-content: center; }
+.sc-hero-ic svg { width: 30px; height: 30px; }
+.sc-hero-plate { display: inline-block; padding: 8px 20px; border-radius: 10px; background: #fff; color: #14161f; border: 3px solid #14161f; outline: 3px solid #fff; font-size: 30px; font-weight: 700; letter-spacing: 1px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45); }
+.sc-hero-driver { margin-top: 14px; font-size: 18px; font-weight: 600; color: #fff; }
+.sc-rows { margin: 16px 0 20px; background: #15151b; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 6px 16px; }
+.sc-row { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+.sc-row:last-child { border-bottom: none; }
+.sc-row small { flex: none; color: #8d93a6; font-size: 13px; }
+.sc-row b { text-align: right; color: #f1f3fb; font-weight: 500; font-size: 15px; min-width: 0; overflow-wrap: anywhere; }
+.sc-big { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 64px; box-sizing: border-box; border: none; border-radius: 18px; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #fff; font: 600 19px "Prompt", sans-serif; text-decoration: none; cursor: pointer; box-shadow: 0 12px 28px -10px rgba(37, 99, 235, 0.7); transition: transform 0.12s ease, box-shadow 0.15s ease; }
+.sc-big:hover { box-shadow: 0 16px 34px -10px rgba(37, 99, 235, 0.85); }
+.sc-big:active { transform: scale(0.98); }
+.sc-big:disabled { opacity: 0.6; cursor: default; }
+.sc-big svg { width: 24px; height: 24px; }
+.sc-big.ghost { min-height: 54px; font-size: 16px; background: transparent; border: 1.5px solid rgba(34, 197, 94, 0.6); color: #4ade80; box-shadow: none; }
+.sc-big.ghost:hover { background: rgba(34, 197, 94, 0.12); }
+.sc-photo-link { display: flex; align-items: center; gap: 10px; justify-content: center; margin: 14px 0 0; padding: 12px; border: 1px dashed rgba(255, 255, 255, 0.18); border-radius: 14px; color: #b4b8c6; font-size: 14px; cursor: pointer; }
+.sc-photo-link:hover { border-color: rgba(255, 255, 255, 0.4); color: #fff; }
+.sc-photo-link svg { width: 20px; height: 20px; flex: none; }
+.sc-photo-link em { font-style: normal; color: #7d8398; font-size: 12.5px; }
+.sc-photo-link input[type="file"] { display: none; }
+.sc-hint { margin: 16px 4px 0; text-align: center; font-size: 12.5px; line-height: 1.6; color: #7d8398; }
+.sc-auto-banner { display: flex; flex-direction: column; gap: 2px; align-items: center; padding: 12px 16px; border-radius: 14px; background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.4); color: #bbf7d0; font-size: 13.5px; text-align: center; }
+.sc-auto-banner b { color: #4ade80; font-size: 15px; }
+.sc-or { display: flex; align-items: center; gap: 12px; margin: 20px 0 14px; color: #6f7589; font-size: 13px; }
+.sc-or::before, .sc-or::after { content: ""; flex: 1; height: 1px; background: rgba(255, 255, 255, 0.1); }
+
+/* ===== หน้าคืนรถ (return_scan.html): การ์ดขั้นตอน + แถบความคืบหน้า — ออกแบบให้ใช้มือถือมือเดียว ===== */
+.rt-plate-in { text-align: center; width: auto; max-width: 100%; font-family: inherit; }
+.rt-driver-line { margin-top: 12px; display: flex; gap: 8px; align-items: baseline; justify-content: center; font-size: 14px; color: #8d93a6; }
+.rt-plain { background: transparent; border: none; padding: 0; margin: 0; color: #fff; font: 600 17px "Prompt", sans-serif; outline: none; min-width: 0; }
+.rt-driver-line .rt-plain { width: auto; field-sizing: content; }
+.rt-start { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 14px 0; padding: 12px 16px; background: #15151b; border: 1px solid rgba(255,255,255,.08); border-radius: 14px; color: #8d93a6; font-size: 13px; }
+.rt-start .rt-plain { text-align: right; font-size: 16px; color: #f1f3fb; width: 50%; }
+.rt-progress { margin: 4px 2px 14px; }
+.rt-bar { height: 6px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; }
+.rt-bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: linear-gradient(90deg, #3b82f6, #22c55e); transition: width .4s ease; }
+.rt-progress small { display: block; margin-top: 7px; font-size: 12.5px; color: #9ea3b3; text-align: center; }
+.rt-progress.ok small { color: #4ade80; }
+.rt-step { margin: 0 0 12px; padding: 16px; background: #15151b; border: 1px solid rgba(255,255,255,.08); border-radius: 18px; transition: border-color .25s, box-shadow .25s; }
+.rt-step header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.rt-step h3 { margin: 0; flex: 1; font-size: 16px; font-weight: 600; color: #fff; }
+.rt-step header small { font-size: 11.5px; color: #8d93a6; }
+.rt-step header small.req { color: #ff8f8f; background: rgba(239,68,68,.14); padding: 2px 9px; border-radius: 99px; }
+.rt-n { position: relative; flex: none; width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,.1); color: #cfd3df; display: grid; place-items: center; font-size: 13px; }
+.rt-n svg { position: absolute; width: 16px; height: 16px; opacity: 0; transform: scale(.4); transition: .25s; }
+.rt-step.done { border-color: rgba(34,197,94,.55); box-shadow: 0 0 0 3px rgba(34,197,94,.08); }
+.rt-step.done .rt-n { background: #22c55e; color: #fff; }
+.rt-step.done .rt-n b { opacity: 0; }
+.rt-step.done .rt-n svg { opacity: 1; transform: none; }
+.rt-step.done header small.req { color: #4ade80; background: rgba(34,197,94,.14); }
+.rt-snap { position: relative; display: flex; align-items: center; gap: 14px; min-height: 76px; padding: 14px 16px; border: 1.5px dashed rgba(255,255,255,.25); border-radius: 14px; background: rgba(59,130,246,.07); color: #dbe6ff; font-size: 15px; cursor: pointer; transition: .15s; }
+.rt-snap:hover, .rt-snap:focus-within { border-color: #60a5fa; background: rgba(59,130,246,.14); }
+.rt-snap svg { flex: none; width: 34px; height: 34px; color: #7aa7ff; }
+.rt-snap em { display: block; margin-top: 2px; font-style: normal; font-size: 12px; color: #8d93a6; }
+.rt-snap input[type="file"] { position: absolute; inset: 0; width: 100% !important; height: 100% !important; opacity: 0; cursor: pointer; padding: 0 !important; border: none !important; }
+.rt-snap.has-img { min-height: 0; padding: 9px 14px; border-style: solid; border-color: rgba(34,197,94,.45); background: rgba(34,197,94,.07); }
+.rt-snap.has-img svg { width: 22px; height: 22px; color: #4ade80; }
+.rt-step .sc-preview { max-height: 200px; }
+.rt-mile { display: flex; gap: 10px; align-items: stretch; margin-top: 10px; }
+.rt-mile .sc-mile { flex: 1; min-width: 0; margin: 0 !important; text-align: center; font-size: 26px !important; font-weight: 700; letter-spacing: 1px; }
+.rt-step-btn { flex: none; width: 56px; min-height: 56px; border: 1px solid rgba(255,255,255,.15); border-radius: 14px; background: rgba(255,255,255,.06); color: #fff; font: 600 26px "Prompt", sans-serif; cursor: pointer; }
+.rt-step-btn:active { transform: scale(.94); }
+.rt-dist { margin: 8px 2px 0; text-align: center; font-size: 12.5px; color: #8d93a6; }
+.rt-dist.ok { color: #4ade80; }
+.rt-dist.bad { color: #ff8f8f; }
+.rt-step.opt .sc-input { margin: 0; }
+.rt-submit-bar { position: sticky; bottom: 0; z-index: 5; margin: 6px -4px 0; padding: 12px 4px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(to top, #0b0c10 60%, transparent); }
+.rt-confirm { background: linear-gradient(135deg, #16a34a, #15803d); box-shadow: 0 12px 28px -10px rgba(22,163,74,.7); }
+.rt-confirm.wait { background: #2a2d38; color: #8d93a6; box-shadow: none; }
+.rt-confirm.ready { animation: rt-ready 2.2s ease-in-out infinite; }
+@keyframes rt-ready { 0%, 100% { box-shadow: 0 12px 28px -10px rgba(22,163,74,.7); } 50% { box-shadow: 0 12px 34px -4px rgba(34,197,94,.95); } }
+@media (prefers-reduced-motion: reduce) { .rt-confirm.ready { animation: none; } .rt-bar i { transition: none; } }
+@media (max-width: 480px) { .rt-step { padding: 14px; } .rt-snap { font-size: 14.5px; } .sc-hero-plate { font-size: 26px; } }
+/* ปรับรอบสอง: ช่องอ่านอย่างเดียวในหน้าคืนรถให้เป็นข้อความเปล่า ไม่เป็นกล่อง, ป้ายทะเบียนขาว, แถบปุ่มลอยเหนือเมนูล่าง */
+.sc-wrap input.rt-plain[readonly] { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; height: auto !important; min-height: 0 !important; color: #fff; font: 600 17px "Prompt", sans-serif !important; }
+.sc-wrap .rt-start input.rt-plain[readonly] { text-align: right; font-size: 17px !important; color: #f1f3fb; }
+.sc-wrap input.rt-plate-in[readonly] { background: #fff !important; color: #14161f !important; border: 3px solid #14161f !important; outline: 3px solid #fff; border-radius: 10px !important; padding: 8px 20px !important; height: auto !important; font-size: 30px !important; font-weight: 700 !important; text-align: center; width: 78% !important; max-width: 280px; box-shadow: 0 6px 18px rgba(0,0,0,.45) !important; }
+.rt-driver-line { margin-top: 16px; }
+@media (max-width: 768px) { .rt-submit-bar { bottom: 96px; margin-bottom: 96px; } }
