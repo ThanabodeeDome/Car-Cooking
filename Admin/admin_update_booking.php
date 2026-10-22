@@ -80,7 +80,7 @@ try {
     $status      = $data['booking_status'] ?? $booking['BookingStatus'];
 
     // สถานะจริงในระบบ (เดิมมี 'ขากลับ' ซึ่งไม่ใช่สถานะจริง ทำให้ตั้ง จองแล้ว/คืนแล้ว ไม่ได้)
-    $allowedStatuses = ['จองแล้ว', 'ขาไป', 'คืนแล้ว', 'ยกเลิก', 'ยกเลิก (ไม่มาใช้งาน)'];
+    $allowedStatuses = ['จองแล้ว', 'ขาไป', 'คืนแล้ว', 'ยกเลิก', 'ยกเลิก (ไม่มาใช้งาน)', 'ยกเลิก (ไม่ได้ใช้รถ)'];
     if (!in_array($status, $allowedStatuses, true)) {
         $status = $booking['BookingStatus'];
     }
@@ -203,6 +203,37 @@ try {
         }
 
         $conn->commit();
+
+        // 📝 บันทึกระบบ: แอดมินแก้ไขการจอง — เก็บค่าก่อน/หลังเฉพาะช่องที่เปลี่ยนจริง
+        try {
+            require_once __DIR__ . '/../Car/log_lib.php';
+            $norm = fn($v) => $v === null ? '' : trim((string)$v);
+            $pairs = [
+                'รหัสผู้ขับ' => [$booking['EmployeeID'], $employeeId],
+                'ทะเบียน'    => [$booking['CarPlate'], $carPlate],
+                'วันที่'     => [substr((string)$booking['BookingDate'], 0, 10), substr((string)$bookingDate, 0, 10)],
+                'เวลาไป'     => [substr((string)$booking['OutTime'], 0, 5), substr((string)$outTime, 0, 5)],
+                'เวลากลับ'   => [substr((string)$booking['PlannedReturnTime'], 0, 5), substr((string)$plannedReturnTime, 0, 5)],
+                'สถานที่ไป'  => [$booking['Destination'], $destination],
+                'ไมล์ออก'    => [$booking['StartMileage'], $startMile],
+                'ไมล์คืน'    => [$booking['EndMileage'], $endMile],
+                'สถานะ'      => [$booking['BookingStatus'], $status],
+            ];
+            $changes = [];
+            foreach ($pairs as $label => [$from, $to]) {
+                if ($norm($from) !== $norm($to)) $changes[$label] = ['จาก' => $norm($from), 'เป็น' => $norm($to)];
+            }
+            if ($changes) {
+                $parts = [];
+                foreach ($changes as $label => $c) $parts[] = $label . ' ' . ($c['จาก'] !== '' ? $c['จาก'] : '-') . ' → ' . ($c['เป็น'] !== '' ? $c['เป็น'] : '-');
+                sl_log($conn, 'admin_booking_edit', 'แก้ไขการจอง ' . $booking['BookingNumber'] . ': ' . implode(', ', $parts), [
+                    'target_type' => 'booking', 'target' => (string)$booking['BookingNumber'], 'detail' => $changes,
+                ]);
+            }
+        } catch (Throwable $e) {
+            error_log('admin_update_booking log: ' . $e->getMessage());
+        }
+
         echo json_encode(["success" => true]);
     } catch (PDOException $e) {
         if ($conn->inTransaction()) {

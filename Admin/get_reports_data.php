@@ -119,13 +119,14 @@ try {
         error_log('get_reports_data insights: ' . $e->getMessage());
     }
     // ---------- 6) ชุดข้อมูลสำหรับหน้ารายงานใหม่: KPI / ตารางต่อคัน / ผู้ขับ / ความคิดเห็น / ปัญหา ----------
-    $extra = ['kpi' => [], 'per_car' => [], 'top_drivers' => [], 'comments' => [], 'problems' => []];
+    $extra = ['kpi' => [], 'per_car' => [], 'top_drivers' => [], 'comments' => [], 'problems' => [], 'accountability' => []];
     try {
         require_once '../Car/geo_lib.php';
         $hasGeo = geo_columns_ok($conn);
         $hasFb = (int)$conn->query("SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID('CarBookings') AND name = 'SystemFeedback'")->fetchColumn() > 0;
         $cols = "BookingID, CarPlate, DriverName, EmployeeID, CONVERT(varchar(10), BookingDate, 23) AS BookingDate, OutTime,
-                 CONVERT(varchar(5), PlannedReturnTime, 108) AS PlannedReturnTime, StartMileage, EndMileage, BookingStatus, ReturnRemark"
+                 CONVERT(varchar(5), PlannedReturnTime, 108) AS PlannedReturnTime, StartMileage, EndMileage, BookingStatus, ReturnRemark,
+                 CONVERT(varchar(10), ReturnDate, 23) AS ReturnDate, CONVERT(varchar(8), ReturnTime, 108) AS ReturnTime"
               . ($hasFb ? ", SystemFeedback" : "")
               . ($hasGeo ? ", CheckInGeo, ReturnGeo" : "");
         $stmt = $conn->prepare("SELECT $cols FROM CarBookings WHERE BookingDate >= :start AND BookingDate < :endEx ORDER BY BookingDate DESC, BookingID DESC");
@@ -136,6 +137,8 @@ try {
         $k = ['total' => 0, 'returned' => 0, 'active' => 0, 'cancelled' => 0, 'noshow' => 0, 'km_total' => 0, 'trips_with_km' => 0,
               'hours_total' => 0.0, 'good' => 0, 'bad' => 0, 'geo_flags' => 0];
         $cars = []; $drivers = [];
+        $acc = []; // ความรับผิดชอบรายบุคคล — นับรวมรายการที่ยกเลิกด้วย (ต้องทำก่อนข้ามรายการยกเลิกด้านล่าง)
+        $nowTs = time();
         foreach ($all as $r) {
             $k['total']++;
             $st = (string)$r['BookingStatus'];
@@ -145,6 +148,30 @@ try {
                 if (strpos($st, 'ไม่มาใช้งาน') !== false) $k['noshow']++;
             } elseif ($st === 'คืนแล้ว') $k['returned']++;
             else $k['active']++;
+
+            // --- ความรับผิดชอบรายบุคคล ---
+            $accKey = (string)$r['EmployeeID'] !== '' ? (string)$r['EmployeeID'] : trim((string)$r['DriverName']);
+            if (!isset($acc[$accKey])) $acc[$accKey] = ['name' => trim((string)$r['DriverName']) ?: $accKey, 'employee_id' => (string)$r['EmployeeID'], 'trips' => 0, 'auto_checkin' => 0, 'unused' => 0, 'noshow' => 0, 'late_returns' => 0, 'not_returned' => 0, 'late_minutes' => 0];
+            if ($cancelled) {
+                if (strpos($st, 'ไม่ได้ใช้รถ') !== false) $acc[$accKey]['unused']++;
+                elseif (strpos($st, 'ไม่มาใช้งาน') !== false) $acc[$accKey]['noshow']++;
+            } else {
+                $acc[$accKey]['trips']++;
+                if ($hasGeo && ($r['CheckInGeo'] ?? '') === 'auto') $acc[$accKey]['auto_checkin']++;
+                // เลยกำหนดคืนเกิน 60 นาที: ยังไม่คืน (ขาไป) เทียบกับเวลาปัจจุบัน / คืนแล้วเทียบกับเวลาที่คืนจริง
+                $o = substr((string)$r['OutTime'], 0, 5); $p = substr((string)$r['PlannedReturnTime'], 0, 5);
+                if ($o !== '' && $p !== '' && strpos($o, ':') !== false) {
+                    $endTs = strtotime($r['BookingDate'] . ' ' . $p . ':00');
+                    if ($endTs && $p <= $o) $endTs += 86400;
+                    $doneTs = null;
+                    if ($st === 'ขาไป') $doneTs = $nowTs;
+                    elseif ($st === 'คืนแล้ว' && !empty($r['ReturnDate'])) $doneTs = strtotime($r['ReturnDate'] . ' ' . ($r['ReturnTime'] ?: '00:00:00'));
+                    if ($endTs && $doneTs && $doneTs - $endTs > 3600) {
+                        $acc[$accKey]['late_minutes'] += (int)floor(($doneTs - $endTs) / 60);
+                        if ($st === 'ขาไป') $acc[$accKey]['not_returned']++; else $acc[$accKey]['late_returns']++;
+                    }
+                }
+            }
 
             $plate = (string)$r['CarPlate'];
             if (!isset($cars[$plate])) $cars[$plate] = ['CarPlate' => $plate, 'trips' => 0, 'hours' => 0.0, 'km' => 0, 'cancelled' => 0];
@@ -183,6 +210,12 @@ try {
                 elseif (count($extra['problems']) < 12) $extra['problems'][] = $item;
             }
         }
+
+        // คนที่มีปัญหามากสุดขึ้นก่อน (ไม่คืนรถ/คืนช้าหนักสุด) — เอาเฉพาะคนที่มีอย่างน้อย 1 เรื่อง
+        $accScore = fn($x) => $x['not_returned'] * 3 + $x['late_returns'] * 2 + $x['noshow'] + $x['unused'];
+        $accList = array_values(array_filter($acc, fn($x) => $accScore($x) > 0));
+        usort($accList, fn($x, $y) => $accScore($y) <=> $accScore($x));
+        $extra['accountability'] = array_slice($accList, 0, 20);
 
         // repair cost per plate (already computed above as $repairCost)
         $repairByPlate = [];
@@ -228,6 +261,7 @@ try {
         "kpi" => $extra['kpi'],
         "per_car" => $extra['per_car'],
         "top_drivers" => $extra['top_drivers'],
+        "accountability" => $extra['accountability'],
         "comments" => $extra['comments'],
         "problems" => $extra['problems'],
         "repair_cost" => $repairCost,

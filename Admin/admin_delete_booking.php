@@ -18,8 +18,13 @@ if (!$data || empty($data['booking_id'])) {
 }
 
 try {
+    require_once __DIR__ . '/../Car/log_lib.php';
+    $bi = sl_booking_info($conn, (int)$data['booking_id']); // ต้องอ่านก่อนลบ ไม่งั้นข้อมูลหาย
     $stmt = $conn->prepare("DELETE FROM CarBookings WHERE BookingID = :id");
     $stmt->execute([':id' => $data['booking_id']]);
+    if ($stmt->rowCount() > 0) {
+        sl_log($conn, 'admin_booking_delete', 'แอดมินลบการจอง ' . trim($bi['plate'] . ' ' . $bi['driver']), ['target_type' => 'booking', 'target' => $bi['no']]);
+    }
     echo json_encode(["success" => true]);
 } catch (PDOException $e) {
     error_log('admin_delete_booking DB error: ' . $e->getMessage());

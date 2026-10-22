@@ -54,6 +54,9 @@ function switchTab(tabId) {
   if (tabId === "reports-tab" && typeof fetchReports === "function") {
     fetchReports();
   }
+  if (tabId === "log-tab" && typeof fetchSystemLog === "function") {
+    fetchSystemLog(1);
+  }
 }
 
 /**
@@ -85,31 +88,71 @@ function loadUsers() {
 function renderUsersTable(users) {
   const tbody = document.getElementById("users-tbody");
   if (!tbody) return;
+  const countEl = document.getElementById("users-count");
+  if (countEl) countEl.textContent = `${(users || []).length.toLocaleString("th-TH")} คน${users && users.length !== allUsersCache.length ? ` (จากทั้งหมด ${allUsersCache.length.toLocaleString("th-TH")})` : ""}`;
 
   if (!users || users.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">ไม่มีข้อมูลผู้ใช้</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:#94a3b8;">ไม่มีข้อมูลผู้ใช้</td></tr>`;
     return;
   }
 
-  const roleLabel = { admin: "🛡️ Admin", user: "👤 พนักงาน" };
-
   tbody.innerHTML = users
-    .map(
-      (u) => `
-      <tr>
-        <td>${escapeHtml(u.employee_id) || "-"}</td>
-        <td>${escapeHtml(u.username) || "-"}</td>
-        <td>${escapeHtml(((u.first_name || "") + " " + (u.last_name || "")).trim()) || "-"}</td>
-        <td>${roleLabel[u.role] || u.role || "-"}</td>
+    .map((u) => {
+      const full = ((u.first_name || "") + " " + (u.last_name || "")).trim() || u.username || "-";
+      const initial = Array.from(String(u.first_name || u.username || "?"))[0].toUpperCase();
+      const isAdmin = u.role === "admin";
+      return `
+      <tr class="clickable-row" style="cursor:pointer;" onclick="openUserEditModal(allUsersCache.find((x) => Number(x.id) === ${Number(u.id)}))">
+        <td><span class="us-emp">${escapeHtml(u.employee_id) || "-"}</span></td>
         <td>
-          <div class="action-buttons-group">
-            <button class="op-edit" onclick="openUserEditModal(${escapeHtml(JSON.stringify(u))})">แก้ไข</button>
-            ${u.role === "admin" || Number(u.id) === Number(window.currentAdminId) ? "" : `<button class="op-del" onclick="deleteUser(${Number(u.id)}, ${escapeHtml(JSON.stringify(u.username || ""))})">ลบ</button>`}
+          <div class="us-who">
+            <span class="us-av${isAdmin ? " admin" : ""}">${escapeHtml(initial)}</span>
+            <span class="us-name"><b>${escapeHtml(full)}</b><small>@${escapeHtml(u.username) || "-"}</small></span>
           </div>
         </td>
-      </tr>`,
-    )
+        <td class="us-mail">${escapeHtml(u.email) || '<span style="color:#cbd5e1;">-</span>'}</td>
+        <td><span class="us-role ${isAdmin ? "admin" : "user"}">${isAdmin ? '<i class="fa-solid fa-shield-halved"></i> Admin' : '<i class="fa-solid fa-user"></i> พนักงาน'}</span></td>
+        <td class="op-cell" onclick="event.stopPropagation()">
+          <button type="button" class="row-menu-btn" aria-label="เมนูจัดการ" onclick="openUserMenu(event, ${Number(u.id)})"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+        </td>
+      </tr>`;
+    })
     .join("");
+}
+
+// เมนู ⋮ ของแถวผู้ใช้ (ใช้สไตล์เดียวกับเมนูในตารางจัดการการจอง)
+function openUserMenu(ev, id) {
+  ev.stopPropagation();
+  const had = document.getElementById("row-menu");
+  closeRowMenu();
+  const u = allUsersCache.find((x) => Number(x.id) === Number(id));
+  if (!u || had) return;
+  const canDelete = u.role !== "admin" && Number(u.id) !== Number(window.currentAdminId);
+  const m = document.createElement("div");
+  m.id = "row-menu";
+  m.className = "row-menu";
+  m.innerHTML = `
+    <button type="button" data-a="edit"><i class="fa-solid fa-user-pen"></i> แก้ไขผู้ใช้</button>
+    ${canDelete ? `<hr /><button type="button" data-a="del" class="danger"><i class="fa-solid fa-trash"></i> ลบผู้ใช้</button>` : ""}`;
+  document.body.appendChild(m);
+  const r = ev.currentTarget.getBoundingClientRect();
+  const w = m.offsetWidth, h = m.offsetHeight;
+  m.style.left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8)) + "px";
+  m.style.top = (r.bottom + h + 12 > window.innerHeight ? Math.max(8, r.top - h - 6) : r.bottom + 6) + "px";
+  m.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    closeRowMenu();
+    if (b.dataset.a === "edit") openUserEditModal(u);
+    else if (b.dataset.a === "del") deleteUser(Number(u.id), u.username || "");
+  });
+  setTimeout(() => {
+    document.addEventListener("click", closeRowMenu, { once: true });
+    document.addEventListener("keydown", function esc(e) {
+      if (e.key === "Escape") { closeRowMenu(); document.removeEventListener("keydown", esc); }
+    });
+    window.addEventListener("scroll", closeRowMenu, { once: true, capture: true });
+  }, 0);
 }
 
 function filterUsersTable(keyword) {
@@ -202,6 +245,88 @@ document.addEventListener("DOMContentLoaded", () => {
 /**
  * 📊 3. ฟังก์ชันดึงรายการรถทั้งหมดมาโชว์ในตารางประวัติด้านล่าง
  */
+const carMap = {};
+
+// วันครบกำหนด (ประกัน/พ.ร.บ.) เป็นป้ายสี: แดง = หมดอายุแล้ว, เหลือง = ภายใน 30 วัน, เทา = ปกติ
+function expiryChip(dateStr) {
+  const m = String(dateStr || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return '<span style="color:#cbd5e1;">-</span>';
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((d - today) / 86400000);
+  const txt = `${m[3]}/${m[2]}/${Number(m[1]) + 543}`;
+  if (days < 0) return `<span class="exp-chip red" title="หมดอายุแล้ว">${txt}<small>หมดอายุ</small></span>`;
+  if (days <= 30) return `<span class="exp-chip amber" title="ใกล้หมดอายุ">${txt}<small>อีก ${days} วัน</small></span>`;
+  return `<span class="exp-chip">${txt}</span>`;
+}
+
+// วันที่ธรรมดา (เช็กระยะล่าสุด) เป็นป้ายหน้าตาเดียวกับป้ายประกัน/พ.ร.บ. — ถ้ากำลังซ่อมอยู่ (\"2026-10-19 (กำลังซ่อม)\") ขึ้นป้ายเหลืองพร้อมคำว่า กำลังซ่อม
+function dateChip(raw) {
+  const str = String(raw || "");
+  const m = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return '<span style="color:#cbd5e1;">-</span>';
+  const txt = `${m[3]}/${m[2]}/${Number(m[1]) + 543}`;
+  return /กำลังซ่อม/.test(str) ? `<span class="exp-chip amber">${txt}<small>กำลังซ่อม</small></span>` : `<span class="exp-chip">${txt}</span>`;
+}
+
+function openCarMenu(ev, id) {
+  ev.stopPropagation();
+  const had = document.getElementById("row-menu");
+  closeRowMenu();
+  const car = carMap[id];
+  if (!car || had) return;
+  const m = document.createElement("div");
+  m.id = "row-menu";
+  m.className = "row-menu";
+  m.innerHTML = `
+    <button type="button" data-a="edit"><i class="fa-solid fa-pen"></i> แก้ไขข้อมูลรถ</button>
+    <button type="button" data-a="maint"><i class="fa-solid fa-screwdriver-wrench"></i> ประวัติซ่อมบำรุง</button>
+    <hr />
+    <button type="button" data-a="del" class="danger"><i class="fa-solid fa-trash"></i> ลบรถ</button>`;
+  document.body.appendChild(m);
+  const r = ev.currentTarget.getBoundingClientRect();
+  const w = m.offsetWidth, h = m.offsetHeight;
+  m.style.left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8)) + "px";
+  m.style.top = (r.bottom + h + 12 > window.innerHeight ? Math.max(8, r.top - h - 6) : r.bottom + 6) + "px";
+  m.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    closeRowMenu();
+    if (b.dataset.a === "edit") fillWorkspaceForm(car);
+    else if (b.dataset.a === "maint") openMaintenanceModal(Number(car.CarID), car.Plate || "");
+    else if (b.dataset.a === "del") deleteCarFromWorkspace(car.CarID);
+  });
+  setTimeout(() => {
+    document.addEventListener("click", closeRowMenu, { once: true });
+    document.addEventListener("keydown", function esc(e) {
+      if (e.key === "Escape") { closeRowMenu(); document.removeEventListener("keydown", esc); }
+    });
+    window.addEventListener("scroll", closeRowMenu, { once: true, capture: true });
+  }, 0);
+}
+
+// ตัวอย่างรูปในฟอร์ม (รูปที่เลือกใหม่ / รูปเดิมของรถ)
+function previewCarImage(input) {
+  const img = document.getElementById("car-img-preview");
+  const name = document.getElementById("car-img-name");
+  const f = input.files && input.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = (e) => (img.src = e.target.result);
+  reader.readAsDataURL(f);
+  if (name) name.textContent = f.name;
+}
+function setCarPreview(imgName) {
+  const img = document.getElementById("car-img-preview");
+  const name = document.getElementById("car-img-name");
+  if (!img) return;
+  const n = (imgName || "").trim();
+  img.onerror = () => { img.onerror = null; img.src = "../Car/assets/img-car/car-placeholder.png"; };
+  img.src = n ? `../Car/assets/img-car/${encodeURIComponent(n)}` : "../Car/assets/img-car/car-placeholder.png";
+  if (name) name.textContent = n ? "รูปปัจจุบัน — เลือกรูปใหม่เพื่อเปลี่ยน" : "ยังไม่ได้เลือกรูป";
+}
+
 function loadCarsToWorkspaceTable() {
   fetch("manage_cars.php?action=fetch")
     .then((res) => res.json())
@@ -209,45 +334,39 @@ function loadCarsToWorkspaceTable() {
       const tbody = document.getElementById("crud-car-tbody");
       if (!tbody) return;
       tbody.innerHTML = "";
+      const countEl = document.getElementById("cars-count");
 
       if (!cars || cars.length === 0 || cars.error) {
-        tbody.innerHTML = `<tr><td colspan="9" style="color: #64748b; padding:30px; text-align:center;">❌ ไม่มีข้อมูลรถยนต์ในระบบ</td></tr>`;
+        if (countEl) countEl.textContent = "";
+        tbody.innerHTML = `<tr><td colspan="8" style="color: #94a3b8; padding:30px; text-align:center;">ไม่มีข้อมูลรถยนต์ในระบบ</td></tr>`;
         return;
       }
+      if (countEl) countEl.textContent = cars.length + " คัน";
 
       cars.forEach((car) => {
-        let statusPillClass = "pill-empty";
-        if (car.CarStatus === "ไม่ว่าง") statusPillClass = "pill-busy";
-        if (car.CarStatus === "เช็คระยะ" || car.CarStatus === "ซ่อมบำรุง")
-          statusPillClass = "pill-maintenance";
+        carMap[car.CarID] = car;
+        const isOff = car.CarStatus === "เช็คระยะ" || car.CarStatus === "ซ่อมบำรุง";
+        const statusPill = statusBadge(isOff ? "งดให้บริการ" : car.CarStatus === "ไม่ว่าง" ? "ไม่ว่าง" : "ใช้งานได้", { type: "car" });
+
+        const imgName = car.CarImage ? car.CarImage.trim() : "";
+        const imgPath = imgName ? `../Car/assets/img-car/${encodeURIComponent(imgName)}` : "../Car/assets/img-car/car-placeholder.png";
+        const maint = car.LastMaintenanceLog || car.LastMaintenance;
 
         const tr = document.createElement("tr");
-        const carJsonString = escapeHtml(JSON.stringify(car));
-
-        // รูปภาพ
-        const imgName = car.CarImage ? car.CarImage.trim() : "";
-        const imgPath = imgName
-          ? `../Car/assets/img-car/${encodeURIComponent(imgName)}`
-          : `../Car/assets/img-car/car-placeholder.png`;
-
-        // สร้างแถวให้ครบ 7 คอลัมน์ ตามหัวตาราง
+        tr.className = "clickable-row";
+        tr.style.cursor = "pointer";
+        tr.onclick = () => fillWorkspaceForm(car);
         tr.innerHTML = `
-          <td><img src="${imgPath}" width="50" height="35" style="border-radius:6px; object-fit:cover;" onerror="this.onerror=null; this.src='../Car/assets/img-car/car-placeholder.png';"></td>
-          <td>${escapeHtml(car.Plate)}</td>
-          <td>${escapeHtml(car.Model)}</td>
-          <td>${escapeHtml(car.Mileage)}</td>
-          <td>${car.InsuranceExpiry || "-"}</td>
-          <td>${car.ActExpiry || "-"}</td>
-          <td>${car.LastMaintenanceLog || car.LastMaintenance || "-"}</td>
-          <td><span class="status-pill ${statusPillClass}">${car.CarStatus || "ว่าง"}</span></td>
-          <td>
-            <div class="action-buttons-group">
-              <button class="op-edit" onclick="fillWorkspaceForm(${carJsonString})">แก้ไข</button>
-              <button class="op-del" onclick="deleteCarFromWorkspace(${car.CarID})">ลบ</button>
-              <button class="op-edit" onclick="openMaintenanceModal(${Number(car.CarID)}, ${escapeHtml(JSON.stringify(car.Plate || ""))})">ประวัติซ่อม</button>
-            </div>
-          </td>
-        `;
+          <td><img class="car-thumb" src="${imgPath}" alt="" onerror="this.onerror=null; this.src='../Car/assets/img-car/car-placeholder.png';"></td>
+          <td><div class="car-cell"><b>${escapeHtml(car.Plate)}</b><small>${escapeHtml(((car.Brand || "") + " " + (car.Model || "")).trim())}</small></div></td>
+          <td class="car-num">${car.Mileage != null && car.Mileage !== "" ? Number(car.Mileage).toLocaleString("th-TH") + " กม." : "-"}</td>
+          <td>${expiryChip(car.InsuranceExpiry)}</td>
+          <td>${expiryChip(car.ActExpiry)}</td>
+          <td>${dateChip(maint)}</td>
+          <td>${statusPill}</td>
+          <td class="op-cell" onclick="event.stopPropagation()">
+            <button type="button" class="row-menu-btn" aria-label="เมนูจัดการ" onclick="openCarMenu(event, ${Number(car.CarID)})"><i class="fa-solid fa-ellipsis-vertical"></i></button>
+          </td>`;
         tbody.appendChild(tr);
       });
     })
@@ -260,8 +379,11 @@ function loadCarsToWorkspaceTable() {
 function fillWorkspaceForm(car) {
   const modeTitle = document.getElementById("action-mode-title");
   if (modeTitle) {
-    modeTitle.innerHTML = `<i class="fa-solid fa-pen-to-square" style="color: #00f2fe;"></i> แก้ไขข้อมูลรถยนต์`;
+    modeTitle.innerHTML = `<i class="fa-solid fa-pen-to-square"></i> แก้ไขข้อมูลรถยนต์`;
   }
+  setCarPreview(car.CarImage);
+  const fileInput = document.getElementById("form-car-image");
+  if (fileInput) fileInput.value = "";
 
   if (document.getElementById("form-car-id"))
     document.getElementById("form-car-id").value = car.CarID;
@@ -351,8 +473,9 @@ function clearToInputMode() {
   // 4. เปลี่ยนหัวข้อฟอร์มกลับมาเป็นโหมดเพิ่มรถใหม่
   const modeTitle = document.getElementById("action-mode-title");
   if (modeTitle) {
-    modeTitle.innerHTML = `<i class="fa-solid fa-square-plus" style="color: #00f2fe"></i> เพิ่มข้อมูลรถยนต์ใหม่`;
+    modeTitle.innerHTML = `<i class="fa-solid fa-square-plus"></i> เพิ่มข้อมูลรถยนต์ใหม่`;
   }
+  setCarPreview("");
 }
 
 /**
@@ -421,22 +544,69 @@ function bookingOverdueText(bk) {
   return `เลยกำหนด ${h > 0 ? `${h} ชม. ` : ""}${m} นาที`;
 }
 
+// เก็บรายการจองล่าสุดตาม BookingID ไว้ให้เมนู ⋮ / ปุ่มในหน้ารายละเอียดเรียกใช้ (ไม่ต้องยัด JSON ลง onclick)
+const adminBookingMap = {};
+
+function closeRowMenu() {
+  const m = document.getElementById("row-menu");
+  if (m) m.remove();
+}
+
+function openRowMenu(ev, id) {
+  ev.stopPropagation();
+  const had = document.getElementById("row-menu");
+  closeRowMenu();
+  const bk = adminBookingMap[id];
+  if (!bk || had) return; // กดปุ่มเดิมซ้ำ = ปิดเมนู
+  const canCancel = bk.BookingStatus === "จองแล้ว" || bk.BookingStatus === "ขาไป";
+  const m = document.createElement("div");
+  m.id = "row-menu";
+  m.className = "row-menu";
+  m.innerHTML = `
+    <button type="button" data-a="detail"><i class="fa-solid fa-clipboard-list"></i> ดูรายละเอียด</button>
+    <button type="button" data-a="edit"><i class="fa-solid fa-pen"></i> แก้ไข</button>
+    ${canCancel ? `<button type="button" data-a="cancel"><i class="fa-solid fa-ban"></i> ยกเลิกการจอง</button>` : ""}
+    <hr />
+    <button type="button" data-a="del" class="danger"><i class="fa-solid fa-trash"></i> ลบถาวร</button>`;
+  document.body.appendChild(m);
+  const r = ev.currentTarget.getBoundingClientRect();
+  const w = m.offsetWidth, h = m.offsetHeight;
+  m.style.left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8)) + "px";
+  m.style.top = (r.bottom + h + 12 > window.innerHeight ? Math.max(8, r.top - h - 6) : r.bottom + 6) + "px";
+  m.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    closeRowMenu();
+    if (b.dataset.a === "detail") openBookingDetailModal(bk);
+    else if (b.dataset.a === "edit") openBookingEditModal(bk);
+    else if (b.dataset.a === "cancel") adminCancelBooking(bk.BookingID);
+    else if (b.dataset.a === "del") adminDeleteBooking(bk.BookingID);
+  });
+  setTimeout(() => {
+    document.addEventListener("click", closeRowMenu, { once: true });
+    document.addEventListener("keydown", function esc(e) {
+      if (e.key === "Escape") { closeRowMenu(); document.removeEventListener("keydown", esc); }
+    });
+    window.addEventListener("scroll", closeRowMenu, { once: true, capture: true });
+  }, 0);
+}
+
 function loadAdminBookings() {
   const tbody = document.getElementById("admin-bookings-tbody");
   if (!tbody) return;
 
-  tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:20px;">กำลังโหลด...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:20px;">กำลังโหลด...</td></tr>`;
 
   fetch("admin_get_bookings.php")
     .then((res) => res.json())
     .then((data) => {
       if (!data.success) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#ef4444;">${escapeHtml(data.message)}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#ef4444;">${escapeHtml(data.message)}</td></tr>`;
         return;
       }
 
       if (!data.bookings || data.bookings.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">ไม่มีรายการจอง</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;">ไม่มีรายการจอง</td></tr>`;
         return;
       }
 
@@ -468,6 +638,7 @@ function loadAdminBookings() {
             .join("");
 
           const bkJson = JSON.stringify(bk).replace(/'/g, "&apos;");
+          adminBookingMap[bk.BookingID] = bk;
 
           return `
             <tr class="clickable-row" style="cursor:pointer;" onclick='openBookingDetailModal(${bkJson})'>
@@ -483,21 +654,13 @@ function loadAdminBookings() {
               <td>${escapeHtml(bk.CarPlate)}</td>
               <td>${bk.BookingDate || "-"}</td>
               <td>${formatBookingTimeRange(bk)}</td>
-              <td class="status-cell"><span class="status-badge no-glow ${statusClass}">${bk.BookingStatus || "-"}</span>${
+              <td class="status-cell">${statusBadge(bk.BookingStatus, { overdue: !!overdueText })}${
                 overdueText
                   ? `<div style="margin-top:4px; color:#ef4444; font-size:11px; font-weight:600;">⚠️ ${escapeHtml(overdueText)}</div>`
                   : ""
               }</td>
-              <td onclick="event.stopPropagation()">
-                <button class="op-edit" onclick='openBookingEditModal(${bkJson})'>แก้ไข</button>
-              </td>
-              <td onclick="event.stopPropagation()">
-                ${
-                  canCancel
-                    ? `<button class="op-del" onclick="adminCancelBooking(${bk.BookingID})">ยกเลิก</button>`
-                    : `<span style="color:#64748b;">-</span>`
-                }
-                <button class="op-del" onclick="adminDeleteBooking(${bk.BookingID})">ลบ</button>
+              <td class="op-cell" onclick="event.stopPropagation()">
+                <button type="button" class="row-menu-btn" aria-label="เมนูจัดการ" onclick="openRowMenu(event, ${Number(bk.BookingID)})"><i class="fa-solid fa-ellipsis-vertical"></i></button>
               </td>
             </tr>`;
         })
@@ -505,7 +668,7 @@ function loadAdminBookings() {
     })
     .catch((err) => {
       console.error("Error loading admin bookings:", err);
-      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color:#ef4444;">เชื่อมต่อเซิร์ฟเวอร์ไม่ได้</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:#ef4444;">เชื่อมต่อเซิร์ฟเวอร์ไม่ได้</td></tr>`;
     });
 }
 
@@ -589,8 +752,27 @@ function renderCalendar() {
       right: "dayGridMonth,timeGridWeek,timeGridDay",
     },
     initialView: "dayGridMonth",
-    dayMaxEvents: 3, // เกินนี้พับเป็น "+more" กันรกจอ
+    buttonText: { today: "วันนี้", month: "เดือน", week: "สัปดาห์", day: "วัน" },
+    fixedWeekCount: false, // ไม่เติมแถวว่างท้ายเดือน
+    dayMaxEvents: 3, // เกินนี้พับเป็น "+N รายการ" กันรกจอ
+    moreLinkContent: (a) => "+" + a.num + " รายการ",
     displayEventTime: false, // ปิดเวลาดิบ (08:00) ที่ทำให้งง ใช้ label ในชื่อ event แทน
+    eventClassNames: (arg) => {
+      const st = (arg.event.extendedProps && arg.event.extendedProps.status) || "";
+      return ["cal-ev", st === "คืนแล้ว" ? "cal-st-done" : st === "ขาไป" ? "cal-st-out" : "cal-st-booked"];
+    },
+    eventContent: (arg) => {
+      const p = arg.event.extendedProps || {};
+      if (!p.plate) return undefined; // ข้อมูลเก่า -> ใช้หัวข้อเดิม
+      const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+      return {
+        html: `<div class="cal-chip"><span class="cal-plate">${esc(p.plate)}</span><span class="cal-time">${esc(p.out)}–${esc(p.ret)}</span><span class="cal-name">${esc(p.driver)}</span></div>`,
+      };
+    },
+    eventDidMount: (info) => {
+      const p = info.event.extendedProps || {};
+      info.el.title = `${p.plate || ""} • ${p.driver || ""}\n${p.timeSlot || ""} • ${p.status || ""}`;
+    },
     events: "get_calendar_events.php",
     eventClick: function (info) {
       const p = info.event.extendedProps;
@@ -803,8 +985,9 @@ function openBookingDetailModal(bk) {
         ${photoBlock("สภาพรถตอนคืน", bk.ReturnPhotoPath, false)}
       </div>
 
-      <div style="display:flex; justify-content:flex-end;">
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
         <button type="button" class="btn-clear" onclick="closeBookingDetailModal()">ปิด</button>
+        <button type="button" class="btn btn-primary" onclick="closeBookingDetailModal(); openBookingEditModal(adminBookingMap[${Number(bk.BookingID)}])"><i class="fa-solid fa-pen"></i> แก้ไขรายการนี้</button>
       </div>
     </div>
   `;
@@ -819,85 +1002,81 @@ function closeBookingDetailModal() {
 /**
  * ✏️ 6.6 แก้ไขข้อมูลการจอง — แอดมินแก้ผู้ขับ/รถ/วันเวลา/เลขไมล์/สถานะได้ตรงๆ
  */
+// ช่องเลือกเวลา 24 ชม. (ชั่วโมง : นาที) — แทน <input type="time"> ที่โชว์ AM/PM ตามเครื่อง
+function bookingTimeSelects(id, value) {
+  const parts = String(value || "").slice(0, 5).split(":");
+  const h = parts[0] || "";
+  const m = parts[1] || "";
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+  const mins = [...new Set(["00", "15", "30", "45", ...(m ? [m] : [])])].sort();
+  const opt = (v, cur) => `<option value="${v}" ${v === cur ? "selected" : ""}>${v}</option>`;
+  return `<div class="ef-time">
+    <select id="${id}-h" aria-label="ชั่วโมง">${hours.map((x) => opt(x, h)).join("")}</select>
+    <b>:</b>
+    <select id="${id}-m" aria-label="นาที">${mins.map((x) => opt(x, m)).join("")}</select>
+    <span>น.</span>
+  </div>`;
+}
+function readBookingTime(id) {
+  return document.getElementById(id + "-h").value + ":" + document.getElementById(id + "-m").value;
+}
+
 function openBookingEditModal(bk) {
   const overlay = document.createElement("div");
   overlay.className = "modal-overlay";
   overlay.id = "booking-edit-modal-overlay";
+  overlay.addEventListener("mousedown", (e) => e.target === overlay && closeBookingEditModal());
+
+  const statuses = ["จองแล้ว", "ขาไป", "คืนแล้ว", "ยกเลิก", "ยกเลิก (ไม่มาใช้งาน)", "ยกเลิก (ไม่ได้ใช้รถ)"];
+  const statusClass = (bk.BookingStatus || "").includes("ยกเลิก") ? "status-cancelled" : bk.BookingStatus === "คืนแล้ว" ? "status-returned" : bk.BookingStatus === "ขาไป" ? "status-inuse" : "status-booked";
 
   overlay.innerHTML = `
-    <div class="modal-content" style="width: 560px; max-width: 95vw; max-height: 92vh; overflow-y: auto;">
-      <h2 style="margin-top:0; margin-bottom:14px;">
-        <i class="fa-solid fa-pen"></i> แก้ไขการจอง — ${bk.BookingNumber}
-      </h2>
+    <div class="modal-content ef-modal">
+      <div class="ef-head">
+        <div>
+          <h2><i class="fa-solid fa-pen-to-square"></i> แก้ไขการจอง</h2>
+          <p>${escapeHtml(bk.BookingNumber)} • ${statusBadge(bk.BookingStatus)}</p>
+        </div>
+        <button type="button" class="ef-x" aria-label="ปิด" onclick="closeBookingEditModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
 
-      <form id="booking-edit-form" style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;">
-        <div>
-          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">รหัสพนักงานผู้ขับ</label>
-          <input type="text" id="edit-employee-id" value="${escapeHtml(bk.EmployeeID)}" style="margin-bottom:0;">
-        </div>
-        <div>
-          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ทะเบียนรถ</label>
-          <input type="text" id="edit-car-plate" value="${escapeHtml(bk.CarPlate)}" style="margin-bottom:0;">
-        </div>
-
-        <div>
-          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">วันที่ใช้งาน</label>
-          <input type="date" id="edit-booking-date" value="${bk.BookingDate || ""}" style="margin-bottom:0;">
-        </div>
-        <div>
-          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">เวลาไป</label>
-          <!-- 🩹 FIX: เดิมช่องนี้เป็น select ฟิก 4 ตัวเลือก (เช้า/บ่าย/ทั้งวัน/กลางคืน) แล้วเปลี่ยนเป็น
-               text input ผูกกับ TimeSlot แต่ระบบจองจริงเปลี่ยนไปเก็บ OutTime/PlannedReturnTime
-               (เวลาอิสระ) ไปแล้ว แก้ TimeSlot ไม่มีผลอะไรกับเวลาที่โชว์จริงเลย
-               เปลี่ยนเป็น time input ผูกกับ OutTime/PlannedReturnTime ตรงๆ ให้แก้ได้ตรงค่าจริง -->
-          <input type="time" id="edit-out-time" value="${(bk.OutTime || "").slice(0, 5)}" style="margin-bottom:0;">
-        </div>
-        <div>
-          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">เวลากลับ (โดยประมาณ)</label>
-          <input type="time" id="edit-return-time" value="${(bk.PlannedReturnTime || "").slice(0, 5)}" style="margin-bottom:0;">
+      <form id="booking-edit-form" class="ef">
+        <div class="ef-sec">ผู้ขับและรถ</div>
+        <div class="ef-grid">
+          <label class="ef-f"><span>รหัสพนักงานผู้ขับ</span><input type="text" id="edit-employee-id" value="${escapeHtml(bk.EmployeeID)}" /></label>
+          <label class="ef-f"><span>ทะเบียนรถ</span><input type="text" id="edit-car-plate" value="${escapeHtml(bk.CarPlate)}" /></label>
         </div>
 
-        <div style="grid-column: span 2;">
-          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">สถานที่ไป</label>
-          <input type="text" id="edit-destination" value="${escapeHtml(bk.Destination)}" style="margin-bottom:0;">
+        <div class="ef-sec">วันและเวลา</div>
+        <div class="ef-grid ef-grid-3">
+          <label class="ef-f"><span>วันที่ใช้งาน</span><input type="date" id="edit-booking-date" value="${bk.BookingDate || ""}" /></label>
+          <div class="ef-f"><span>เวลาไป</span>${bookingTimeSelects("edit-out-time", bk.OutTime)}</div>
+          <div class="ef-f"><span>เวลากลับ (โดยประมาณ)</span>${bookingTimeSelects("edit-return-time", bk.PlannedReturnTime)}</div>
         </div>
 
-        <div>
-          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">เลขไมล์ตอนออก</label>
-          <input type="number" id="edit-start-mileage" value="${bk.StartMileage ?? ""}" style="margin-bottom:0;">
-        </div>
-        <div>
-          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">เลขไมล์ตอนคืน</label>
-          <input type="number" id="edit-end-mileage" value="${bk.EndMileage ?? ""}" style="margin-bottom:0;">
+        <div class="ef-sec">เส้นทางและเลขไมล์</div>
+        <div class="ef-grid">
+          <label class="ef-f ef-span"><span>สถานที่ไป</span><input type="text" id="edit-destination" value="${escapeHtml(bk.Destination)}" /></label>
+          <label class="ef-f"><span>เลขไมล์ตอนออก (กม.)</span><input type="number" id="edit-start-mileage" value="${bk.StartMileage ?? ""}" /></label>
+          <label class="ef-f"><span>เลขไมล์ตอนคืน (กม.)</span><input type="number" id="edit-end-mileage" value="${bk.EndMileage ?? ""}" /></label>
         </div>
 
-        <div style="grid-column: span 2;">
-          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">สถานะ</label>
-          <select id="edit-booking-status" style="margin-bottom:0;">
-            ${["จองแล้ว", "ขาไป", "คืนแล้ว", "ยกเลิก", "ยกเลิก (ไม่มาใช้งาน)"]
-              .map(
-                (s) =>
-                  `<option value="${s}" ${bk.BookingStatus === s ? "selected" : ""}>${s}</option>`,
-              )
-              .join("")}
-          </select>
-        </div>
+        <div class="ef-sec">สถานะ</div>
+        <label class="ef-f"><select id="edit-booking-status">${statuses.map((s) => `<option value="${s}" ${bk.BookingStatus === s ? "selected" : ""}>${s}</option>`).join("")}</select></label>
+        <p class="ef-note"><i class="fa-solid fa-circle-info"></i> ถ้าตั้งเป็น "คืนแล้ว" ต้องกรอกเลขไมล์ตอนคืนให้มากกว่าเลขไมล์ตอนออก</p>
 
-        <div style="grid-column: span 2; display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+        <div class="ef-actions">
           <button type="button" class="btn-clear" onclick="closeBookingEditModal()">ยกเลิก</button>
-          <button type="submit" class="btn btn-primary">บันทึก</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> บันทึก</button>
         </div>
       </form>
-    </div>
-  `;
+    </div>`;
   document.body.appendChild(overlay);
 
-  document
-    .getElementById("booking-edit-form")
-    .addEventListener("submit", (e) => {
-      e.preventDefault();
-      submitBookingEdit(bk.BookingID);
-    });
+  document.getElementById("booking-edit-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    submitBookingEdit(bk.BookingID);
+  });
 }
 
 function submitBookingEdit(bookingId) {
@@ -906,8 +1085,8 @@ function submitBookingEdit(bookingId) {
     employee_id: document.getElementById("edit-employee-id").value.trim(),
     car_plate: document.getElementById("edit-car-plate").value.trim(),
     booking_date: document.getElementById("edit-booking-date").value,
-    out_time: document.getElementById("edit-out-time").value,
-    planned_return_time: document.getElementById("edit-return-time").value,
+    out_time: readBookingTime("edit-out-time"),
+    planned_return_time: readBookingTime("edit-return-time"),
     destination: document.getElementById("edit-destination").value.trim(),
     start_mileage: document.getElementById("edit-start-mileage").value,
     end_mileage: document.getElementById("edit-end-mileage").value,
@@ -1064,48 +1243,55 @@ async function deleteMaintenanceRecord(maintenanceId) {
  * 👤 7. แก้ไขข้อมูลผู้ใช้ (Modal)
  */
 function openUserEditModal(user) {
+  if (!user) return;
   const overlay = document.createElement("div");
   overlay.className = "modal-overlay";
   overlay.id = "user-edit-modal-overlay";
+  overlay.addEventListener("mousedown", (e) => e.target === overlay && closeUserEditModal());
 
   // 🌟 รหัสผ่านของ admin ต้องไปเปลี่ยนใน DB โดยตรงเท่านั้น ไม่ให้ตั้งผ่านหน้าเว็บนี้
   // (กันกรณีบัญชี Admin คนหนึ่งไปตั้งรหัสให้ Admin อีกคนได้ตามใจชอบผ่าน UI)
   const isAdminRow = user.role === "admin";
+  const full = ((user.first_name || "") + " " + (user.last_name || "")).trim() || user.username || "-";
   const passwordFieldHtml = isAdminRow
-    ? `<p style="font-size:13px; color:#94a3b8; margin: 4px 0 15px;">
-         🔒 บัญชี Admin ต้องเปลี่ยนรหัสผ่านผ่านฐานข้อมูลโดยตรงเท่านั้น (ไม่รองรับตั้งผ่านหน้านี้)
-       </p>`
-    : `<label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ตั้งรหัสผ่านใหม่ (เว้นว่าง = ไม่เปลี่ยน)</label>
-       <input type="password" id="edit-new-password" placeholder="เว้นว่างไว้ถ้าไม่เปลี่ยน">`;
+    ? `<p class="ef-note"><i class="fa-solid fa-lock"></i> บัญชี Admin ต้องเปลี่ยนรหัสผ่านผ่านฐานข้อมูลโดยตรงเท่านั้น (ไม่รองรับตั้งผ่านหน้านี้)</p>`
+    : `<label class="ef-f"><span>ตั้งรหัสผ่านใหม่ <small style="font-weight:400;color:#94a3b8">(เว้นว่าง = ไม่เปลี่ยน)</small></span>
+         <input type="password" id="edit-new-password" placeholder="อย่างน้อย 6 ตัวอักษร" autocomplete="new-password" /></label>`;
 
   overlay.innerHTML = `
-    <div class="modal-content" style="width: 420px;">
-      <h2 style="margin-top:0;"><i class="fa-solid fa-user-pen"></i> แก้ไขผู้ใช้</h2>
-      <form id="user-edit-form">
-        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">รหัสพนักงาน</label>
-        <input type="text" id="edit-employee-id" value="${escapeHtml(user.employee_id)}">
+    <div class="modal-content ef-modal" style="width: 520px !important;">
+      <div class="ef-head">
+        <div>
+          <h2><i class="fa-solid fa-user-pen"></i> แก้ไขผู้ใช้</h2>
+          <p>${escapeHtml(full)} • <span class="us-role ${isAdminRow ? "admin" : "user"}">${isAdminRow ? "Admin" : "พนักงาน"}</span></p>
+        </div>
+        <button type="button" class="ef-x" aria-label="ปิด" onclick="closeUserEditModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
 
-        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">Username *</label>
-        <input type="text" id="edit-username" value="${escapeHtml(user.username)}" required>
+      <form id="user-edit-form" class="ef">
+        <div class="ef-sec">ข้อมูลบัญชี</div>
+        <div class="ef-grid">
+          <label class="ef-f"><span>รหัสพนักงาน</span><input type="text" id="edit-employee-id" value="${escapeHtml(user.employee_id)}" /></label>
+          <label class="ef-f"><span>Username *</span><input type="text" id="edit-username" value="${escapeHtml(user.username)}" required /></label>
+          <label class="ef-f ef-span"><span>ชื่อ</span><input type="text" id="edit-first-name" value="${escapeHtml(user.first_name)}" /></label>
+        </div>
 
-        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ชื่อ-นามสกุล</label>
-        <input type="text" id="edit-first-name" value="${escapeHtml(user.first_name)}">
-
-        <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">สิทธิ์ (Role)</label>
-        <select id="edit-role" class="ctrl-select" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid #cbd5e1; border-radius:6px;">
-          <option value="user" ${user.role === "user" ? "selected" : ""}>พนักงาน</option>
-          <option value="admin" ${user.role === "admin" ? "selected" : ""}>Admin</option>
-        </select>
-
+        <div class="ef-sec">สิทธิ์และรหัสผ่าน</div>
+        <label class="ef-f"><span>สิทธิ์ (Role)</span>
+          <select id="edit-role">
+            <option value="user" ${user.role === "user" ? "selected" : ""}>พนักงาน</option>
+            <option value="admin" ${user.role === "admin" ? "selected" : ""}>Admin</option>
+          </select>
+        </label>
+        <div style="height:12px"></div>
         ${passwordFieldHtml}
 
-        <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+        <div class="ef-actions">
           <button type="button" class="btn-clear" onclick="closeUserEditModal()">ยกเลิก</button>
-          <button type="submit" class="btn btn-primary">บันทึก</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> บันทึก</button>
         </div>
       </form>
-    </div>
-  `;
+    </div>`;
   document.body.appendChild(overlay);
 
   document.getElementById("user-edit-form").addEventListener("submit", (e) => {

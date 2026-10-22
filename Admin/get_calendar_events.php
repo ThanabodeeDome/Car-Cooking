@@ -53,6 +53,10 @@ try {
                 'bookingNumber' => $r['BookingNumber'],
                 'status'        => $r['BookingStatus'],
                 'timeSlot'      => $range,
+                'plate'         => $r['CarPlate'],
+                'driver'        => $r['DriverName'],
+                'out'           => $out,
+                'ret'           => $ret,
             ],
         ];
     }

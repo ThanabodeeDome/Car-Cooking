@@ -5,19 +5,29 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Dashboard - Car Booking</title>
+    <link rel="icon" type="image/png" sizes="48x48" href="../Car/assets/image/favicon-48.png?v=2" />
+    <link rel="icon" type="image/png" sizes="192x192" href="../Car/assets/image/pwa-192.png?v=2" />
+    <link rel="apple-touch-icon" href="../Car/assets/image/apple-touch-icon.png?v=2" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
-    <link rel="stylesheet" href="style.css?v=8" />
+    <link rel="stylesheet" href="style.css?v=19" />
     <link rel="stylesheet" href="admin-datepicker.css" />
     <link rel="stylesheet" href="../Car/form-ios-zoom.css?v=2" />
   </head>
   <body class="admin-app">
+    <!-- 📱 แถบบนสำหรับจอเล็ก: ปุ่มเมนู (เมนูซ้ายกลายเป็นลิ้นชักเลื่อนออกมา) -->
+    <header class="adm-topbar">
+      <button type="button" class="adm-burger" id="adm-burger" aria-label="เปิดเมนู" aria-expanded="false"><i class="fa-solid fa-bars"></i></button>
+      <span class="adm-topbar-title">CH Car Booking <small>Admin</small></span>
+    </header>
+    <div class="nav-backdrop" id="nav-backdrop"></div>
+
     <aside class="sidebar">
       <div class="sidebar-menu-group">
         <div
@@ -54,6 +64,9 @@
         <a href="#" class="menu-link" onclick="switchTab('reports-tab')"
           ><i class="fa-solid fa-chart-column"></i> <span>รายงาน</span></a
         >
+        <a href="#" class="menu-link" onclick="switchTab('log-tab')"
+          ><i class="fa-solid fa-clock-rotate-left"></i> <span>บันทึกระบบ</span></a
+        >
       </div>
       <div class="sidebar-logout-wrapper">
         <div class="sidebar-identity">
@@ -84,7 +97,6 @@
 
     <div class="main-content">
       <div id="dashboard" class="tab-content active">
-        <h1 class="page-title">ภาพรวมระบบ <span>Dashboard</span></h1>
 
         <div class="stats-grid-v2">
           <div class="stat-card-v2 c-available">
@@ -123,6 +135,8 @@
             </div>
           </div>
         </div>
+
+        <div id="overdue-panel" class="dash-panel od-panel" hidden></div>
 
         <div class="dash-grid-main">
           <div class="dash-col-wide">
@@ -167,146 +181,58 @@
       </div>
 
       <div id="cars" class="tab-content">
-        <h1 class="page-title">จัดการ <span>ข้อมูลรถยนต์</span></h1>
         <div class="workspace-vertical-view">
-          <div class="workspace-top-form-card">
-            <div class="card-form-header">
-              <h2 id="action-mode-title">
-                <i class="fa-solid fa-square-plus" style="color: #00f2fe"></i>
-                เพิ่มข้อมูลรถยนต์ใหม่
-              </h2>
+          <div class="workspace-top-form-card cars-card">
+            <div class="cars-head">
+              <span class="cars-head-ic"><i class="fa-solid fa-car-side"></i></span>
+              <div>
+                <h2 id="action-mode-title"><i class="fa-solid fa-square-plus"></i> เพิ่มข้อมูลรถยนต์ใหม่</h2>
+                <p>กรอกข้อมูลรถแล้วกดบันทึก — ช่องที่มี * ต้องกรอก</p>
+              </div>
             </div>
 
-            <form id="crud-car-form" enctype="multipart/form-data">
+            <form id="crud-car-form" class="ef cars-ef" enctype="multipart/form-data">
               <input type="hidden" id="form-car-id" name="CarID" />
-              <div
-                class="form-grid-layout"
-                style="
-                  display: grid;
-                  grid-template-columns: repeat(5, 1fr);
-                  gap: 15px;
-                "
-              >
-                <div class="field-box">
-                  <label>ทะเบียนรถยนต์ *</label
-                  ><input
-                    type="text"
-                    id="form-car-plate"
-                    name="Plate"
-                    class="ctrl-input"
-                    placeholder="เช่น กฉ 9393"
-                    required
-                  />
-                </div>
-                <div class="field-box">
-                  <label>ยี่ห้อรถยนต์ *</label
-                  ><input
-                    type="text"
-                    id="form-car-brand"
-                    name="Brand"
-                    class="ctrl-input"
-                    placeholder="เช่น Toyota"
-                    required
-                  />
-                </div>
-                <div class="field-box">
-                  <label>รุ่นรถยนต์ *</label
-                  ><input
-                    type="text"
-                    id="form-car-model"
-                    name="Model"
-                    class="ctrl-input"
-                    placeholder="เช่น Hilux Vigo"
-                    required
-                  />
-                </div>
-                <div class="field-box">
-                  <label>สีตัวถังรถยนต์</label
-                  ><input
-                    type="text"
-                    id="form-car-color"
-                    name="Color"
-                    class="ctrl-input"
-                  />
-                </div>
-                <div class="field-box">
-                  <label>เลขไมล์ล่าสุด</label
-                  ><input
-                    type="number"
-                    id="form-car-mileage"
-                    name="Mileage"
-                    class="ctrl-input"
-                  />
+              <div class="cars-cols">
+                <div class="cars-photo">
+                  <div class="cars-photo-box" id="car-photo-box">
+                    <img id="car-img-preview" src="../Car/assets/img-car/car-placeholder.png" alt="รูปรถ" />
+                  </div>
+                  <label class="cars-photo-btn" for="form-car-image"><i class="fa-solid fa-camera"></i> เลือกรูปรถ</label>
+                  <input type="file" id="form-car-image" name="CarImage" accept="image/*" onchange="previewCarImage(this)" hidden />
+                  <small id="car-img-name">ยังไม่ได้เลือกรูป</small>
                 </div>
 
-                <div class="field-box">
-                  <label>ประกันภัย</label
-                  ><input
-                    type="date"
-                    name="InsuranceExpiry"
-                    class="ctrl-input"
-                  />
-                </div>
-                <div class="field-box">
-                  <label>พ.ร.บ.</label
-                  ><input type="date" name="ActExpiry" class="ctrl-input" />
-                </div>
-                <div class="field-box">
-                  <label>เช็กระยะล่าสุด</label
-                  ><input
-                    type="date"
-                    name="LastMaintenance"
-                    class="ctrl-input"
-                  />
-                </div>
+                <div class="cars-fields">
+                  <div class="ef-sec" style="margin-top:0">ข้อมูลรถ</div>
+                  <div class="ef-grid ef-grid-3">
+                    <label class="ef-f"><span>ทะเบียนรถยนต์ *</span><input type="text" id="form-car-plate" name="Plate" placeholder="เช่น กฉ 9393" required /></label>
+                    <label class="ef-f"><span>ยี่ห้อ *</span><input type="text" id="form-car-brand" name="Brand" placeholder="เช่น Toyota" required /></label>
+                    <label class="ef-f"><span>รุ่น *</span><input type="text" id="form-car-model" name="Model" placeholder="เช่น Hilux Vigo" required /></label>
+                    <label class="ef-f"><span>สี</span><input type="text" id="form-car-color" name="Color" placeholder="เช่น ขาว" /></label>
+                    <label class="ef-f"><span>เลขไมล์ล่าสุด (กม.)</span><input type="number" id="form-car-mileage" name="Mileage" min="0" /></label>
+                  </div>
 
-                <div class="field-box" style="grid-column: span 2">
-                  <label>สถานะของรถยนต์</label>
-                  <select
-                    id="form-car-status"
-                    name="CarStatus"
-                    class="ctrl-select"
-                  >
-                    <option value="ว่าง">
-                      🟢 ใช้งานได้ปกติ (ระบบคำนวณ ว่าง/ไม่ว่าง เองจากการจอง)
-                    </option>
-                    <option value="เช็คระยะ">
-                      🛠️ งดให้บริการ (ซ่อม/ปิดใช้ชั่วคราว)
-                    </option>
-                  </select>
-                </div>
-                <div class="field-box" style="grid-column: span 3">
-                  <label>อัปโหลดรูปภาพ</label>
-                  <input
-                    type="file"
-                    id="form-car-image"
-                    name="CarImage"
-                    class="ctrl-input"
-                  />
-                </div>
+                  <div class="ef-sec">วันครบกำหนด</div>
+                  <div class="ef-grid ef-grid-3">
+                    <label class="ef-f"><span>ประกันภัยหมดอายุ</span><input type="date" name="InsuranceExpiry" /></label>
+                    <label class="ef-f"><span>พ.ร.บ. หมดอายุ</span><input type="date" name="ActExpiry" /></label>
+                    <label class="ef-f"><span>เช็กระยะล่าสุด</span><input type="date" name="LastMaintenance" /></label>
+                  </div>
 
-                <div
-                  class="form-actions-wrapper"
-                  style="
-                    grid-column: span 5;
-                    display: flex;
-                    justify-content: flex-end;
-                    gap: 10px;
-                    margin-top: 15px;
-                  "
-                >
-                  <button
-                    type="button"
-                    class="btn-clear"
-                    onclick="clearToInputMode()"
-                  >
-                    ล้างข้อมูลฟอร์ม
-                  </button>
-                  <button type="submit" class="btn btn-primary">
-                    <span>บันทึกข้อมูลรถ</span>
-                    <i class="fa-solid fa-arrow-right"></i>
-                  </button>
+                  <div class="ef-sec">สถานะการให้บริการ</div>
+                  <label class="ef-f">
+                    <select id="form-car-status" name="CarStatus">
+                      <option value="ว่าง">ใช้งานได้ปกติ (ระบบคำนวณ ว่าง/ติดจอง เองจากการจอง)</option>
+                      <option value="เช็คระยะ">งดให้บริการ (ซ่อม / ปิดใช้ชั่วคราว)</option>
+                    </select>
+                  </label>
                 </div>
+              </div>
+
+              <div class="ef-actions">
+                <button type="button" class="btn-clear" onclick="clearToInputMode()">ล้างข้อมูลฟอร์ม</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> <span>บันทึกข้อมูลรถ</span></button>
               </div>
             </form>
           </div>
@@ -314,23 +240,22 @@
           <div class="workspace-bottom-table-card">
             <div class="card-form-header">
               <h2>
-                <i class="fa-solid fa-clock-history"></i>
-                ประวัติฐานข้อมูลรถยนต์ในระบบ
+                <i class="fa-solid fa-car"></i>
+                รถยนต์ในระบบ <span class="cars-count" id="cars-count"></span>
               </h2>
             </div>
             <div class="table-scroll-container">
               <table class="car-data-table tbl-fit">
                 <thead>
                   <tr>
-                    <th style="width: 8%">รูปภาพ</th>
-                    <th style="width: 12%">ทะเบียนรถ</th>
-                    <th style="width: 11%">รุ่น</th>
-                    <th style="width: 9%">เลขไมล์</th>
-                    <th style="width: 11%">ประกันภัย</th>
-                    <th style="width: 11%">พ.ร.บ.</th>
-                    <th style="width: 12%">เช็คระยะล่าสุด</th>
-                    <th style="width: 8%">สถานะ</th>
-                    <th style="width: 18%">การจัดการ</th>
+                    <th>รูปภาพ</th>
+                    <th>รถ</th>
+                    <th>เลขไมล์</th>
+                    <th>ประกันภัย</th>
+                    <th>พ.ร.บ.</th>
+                    <th>เช็กระยะล่าสุด</th>
+                    <th>สถานะ</th>
+                    <th class="op-th"></th>
                   </tr>
                 </thead>
                 <tbody id="crud-car-tbody"></tbody>
@@ -341,7 +266,6 @@
       </div>
 
       <div id="calendar-tab" class="tab-content">
-        <h1 class="page-title">ปฏิทิน <span>ตารางการจองรถ</span></h1>
         <div class="calendar-legend">
           <span class="legend-item"
             ><i style="background: #f59e0b"></i> จองแล้ว (ยังไม่เช็คอิน)</span
@@ -357,7 +281,7 @@
       </div>
 
       <div id="bookings-tab" class="tab-content">
-        <h1 class="page-title">จัดการ <span>การจองรถทั้งหมด</span></h1>
+        <div class="st-legend" aria-label="ความหมายสีสถานะ"><b>สถานะ:</b> <span id="st-legend-items"></span></div>
         <div class="table-scroll-container">
           <table class="car-data-table tbl-fit">
             <thead>
@@ -369,8 +293,7 @@
                 <th>วันที่</th>
                 <th>ช่วงเวลา</th>
                 <th>สถานะ</th>
-                <th>รายละเอียด</th>
-                <th>จัดการ</th>
+                <th class="op-th"></th>
               </tr>
             </thead>
             <tbody id="admin-bookings-tbody"></tbody>
@@ -379,8 +302,8 @@
       </div>
 
       <div id="users-tab" class="tab-content">
-        <h1 class="page-title">บัญชี <span>ผู้ใช้งาน</span></h1>
-        <div class="search-bar-wrap" style="max-width: 340px; margin: 0 0 16px">
+        <div class="us-bar">
+        <div class="search-bar-wrap" style="max-width: 340px; margin: 0">
           <input
             type="text"
             id="user-search-input"
@@ -389,15 +312,17 @@
             oninput="filterUsersTable(this.value)"
           />
         </div>
+        <span class="us-count" id="users-count"></span>
+        </div>
         <div class="table-scroll-container">
           <table class="car-data-table tbl-fit">
             <thead>
               <tr>
                 <th>รหัสพนักงาน</th>
-                <th>ชื่อผู้ใช้ (Username)</th>
-                <th>ชื่อ-นามสกุล</th>
-                <th>สิทธิ์ (Role)</th>
-                <th>จัดการ</th>
+                <th>ผู้ใช้</th>
+                <th>อีเมล</th>
+                <th>สิทธิ์</th>
+                <th class="op-th"></th>
               </tr>
             </thead>
             <tbody id="users-tbody"></tbody>
@@ -405,12 +330,41 @@
         </div>
       </div>
 
+      <div id="log-tab" class="tab-content">
+        <div class="dash-panel sl-filter">
+          <div class="sl-presets" role="group" aria-label="ช่วงเวลา">
+            <button type="button" class="sl-pill" data-d="1" onclick="slPreset(1)">วันนี้</button>
+            <button type="button" class="sl-pill on" data-d="7" onclick="slPreset(7)">7 วัน</button>
+            <button type="button" class="sl-pill" data-d="30" onclick="slPreset(30)">30 วัน</button>
+            <button type="button" class="sl-pill" data-d="90" onclick="slPreset(90)">90 วัน</button>
+          </div>
+          <div class="sl-dates">
+            <label>จาก <input type="date" id="sl-start" class="ctrl-input" /></label>
+            <label>ถึง <input type="date" id="sl-end" class="ctrl-input" /></label>
+          </div>
+          <div class="sl-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="sl-q" placeholder="ค้นหา ชื่อผู้ทำ / ทะเบียน / เลขที่จอง / IP / ข้อความ" />
+          </div>
+          <button type="button" class="btn btn-primary" onclick="fetchSystemLog(1)"><i class="fa-solid fa-magnifying-glass"></i> ค้นหา</button>
+          <button type="button" class="rp-export" onclick="slExport()"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+        </div>
+        <div class="sl-note" id="sl-note" hidden></div>
+        <div class="sl-chips" id="sl-chips"></div>
+        <div class="table-scroll-container">
+          <table class="car-data-table sl-table">
+            <thead>
+              <tr><th>เวลา</th><th>ประเภท</th><th>ผู้ทำ</th><th>รายการ</th><th>IP</th></tr>
+            </thead>
+            <tbody id="sl-tbody"><tr><td colspan="5" class="sl-empty">กำลังโหลด...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="sl-pager" id="sl-pager"></div>
+      </div>
+
       <div id="reports-tab" class="tab-content">
         <div class="rp-head">
-          <h1 class="page-title" style="margin: 0">
-            รายงาน <span>สรุปข้อมูลระบบ</span>
-            <span class="fx-live-dot" title="อัปเดตอัตโนมัติ"><i class="fa-solid fa-circle"></i> Live</span>
-          </h1>
+          <span class="fx-live-dot" title="อัปเดตอัตโนมัติ"><i class="fa-solid fa-circle"></i> Live</span>
           <button type="button" class="rp-export" onclick="exportAllReports()">
             <i class="fa-solid fa-file-excel"></i> Export ทั้งหมด (Excel)
           </button>
@@ -490,6 +444,17 @@
           </section>
         </div>
 
+        <!-- ความรับผิดชอบรายบุคคล: ใครค้างคืน/คืนช้า/ไม่ได้ใช้รถ -->
+        <section class="rp-card" style="margin-bottom:20px">
+          <header><h3><i class="fa-solid fa-user-clock"></i> ความรับผิดชอบรายบุคคล <small>เฉพาะคนที่ค้างคืน/คืนช้า (เกิน 60 นาที)/ไม่ได้ใช้รถ ในช่วงที่เลือก</small></h3></header>
+          <div class="table-scroll-container">
+            <table class="car-data-table rp-table">
+              <thead><tr><th>#</th><th>ชื่อ</th><th>เที่ยวทั้งหมด</th><th>ยังไม่คืน</th><th>คืนช้า</th><th>ช้ารวม</th><th>ไม่ได้ใช้รถ</th><th>ไม่มาใช้</th><th>เช็คอินอัตโนมัติ</th></tr></thead>
+              <tbody id="rp-t-acc"></tbody>
+            </table>
+          </div>
+        </section>
+
         <!-- ความคิดเห็น + ปัญหา -->
         <div class="rp-grid rp-g-2">
           <section class="rp-card">
@@ -531,10 +496,30 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="../Car/ui-dialog.js?v=3"></script>
-    <script src="dashboard.js?v=4"></script>
-    <script src="reports.js?v=3"></script>
+    <script src="admin-toast.js?v=1"></script>
+    <script src="status-badge.js?v=2"></script>
+    <script src="dashboard.js?v=6"></script>
+    <script src="reports.js?v=5"></script>
+    <script src="system-log.js?v=1"></script>
+    <script>
+      // 📱 เมนูซ้ายแบบลิ้นชักบนจอเล็ก (≤ 900px): กดปุ่ม ☰ เปิด / กดพื้นหลังหรือเลือกเมนูแล้วปิด
+      (function () {
+        const b = document.getElementById("adm-burger");
+        const bd = document.getElementById("nav-backdrop");
+        if (!b || !bd) return;
+        const set = (open) => {
+          document.body.classList.toggle("nav-open", open);
+          b.setAttribute("aria-expanded", String(open));
+        };
+        b.addEventListener("click", () => set(!document.body.classList.contains("nav-open")));
+        bd.addEventListener("click", () => set(false));
+        document.querySelectorAll(".sidebar .menu-link").forEach((l) => l.addEventListener("click", () => set(false)));
+        document.addEventListener("keydown", (e) => e.key === "Escape" && set(false));
+      })();
+    </script>
+
     <script src="admin-datepicker.js"></script>
-    <script src="app.js?v=6"></script>
+    <script src="app.js?v=13"></script>
     <script src="../Car/notify-bell.js?v=6"></script>
     <script>
       // เปิดแท็บตามลิงก์ #ชื่อแท็บ (ใช้จากหน้า "จุดตรวจพิกัด" และปุ่มย้อนกลับของเบราว์เซอร์)
@@ -549,6 +534,10 @@
       }
       window.addEventListener("load", openTabFromHash);
       window.addEventListener("hashchange", openTabFromHash);
+      document.addEventListener("DOMContentLoaded", () => {
+        const el = document.getElementById("st-legend-items");
+        if (el && window.statusLegendHtml) el.innerHTML = window.statusLegendHtml();
+      });
     </script>
   </body>
 </html>

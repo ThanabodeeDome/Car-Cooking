@@ -12,16 +12,13 @@ function fetchDashboardStats() {
       } catch (e) {
         // PHP fatal error มักตอบเป็น HTML ไม่ใช่ JSON — โชว์ raw response ให้เห็นเลยแทนพังเงียบๆ
         console.error("Dashboard: response ไม่ใช่ JSON:", text);
-        showDashboardError(
-          "เซิร์ฟเวอร์ตอบกลับไม่ใช่ JSON (มักเป็น PHP error) — " +
-            text.replace(/<[^>]*>/g, " ").slice(0, 300),
-        );
+        showDashboardError("โหลดข้อมูลไม่สำเร็จ กรุณารีเฟรชหน้าอีกครั้ง");
         return;
       }
 
       if (!data.success) {
         console.error("Dashboard error:", data.message);
-        showDashboardError(data.message || "โหลดข้อมูล Dashboard ไม่สำเร็จ");
+        showDashboardError("โหลดข้อมูล Dashboard ไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
         return;
       }
 
@@ -39,11 +36,12 @@ function fetchDashboardStats() {
       renderFleetStatusList(data.cars);
       renderWeekTimeline(data.cars, data.week_start, data.week_bookings);
       renderRecentBookings(data.recent);
-      renderAlerts(data.alerts, data.maint_due, data.overdue_returns, data.backup);
+      renderOverduePanel(data.overdue_returns);
+      renderAlerts(data.alerts, data.maint_due, [], data.backup); // รถค้างคืนย้ายไปแผงของมันเองด้านบนแล้ว
     })
     .catch((err) => {
       console.error("Error Dashboard:", err);
-      showDashboardError("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้: " + err.message);
+      showDashboardError("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่อีกครั้ง");
     });
 }
 
@@ -88,7 +86,7 @@ function renderFleetStatusList(cars) {
           <strong>${escapeHtml(c.Plate)}</strong>
           <span>${escapeHtml(c.Brand) || ""} ${escapeHtml(c.Model) || ""}</span>
         </div>
-        <span class="status-badge ${badgeClass[c.RealStatus] || ""}">${c.RealStatus}</span>
+        ${statusBadge(c.RealStatus, { type: "car" })}
       </div>`,
     )
     .join("");
@@ -195,13 +193,132 @@ function renderRecentBookings(list) {
             <strong>${escapeHtml(bk.DriverName) || "-"}</strong>
             <span>${escapeHtml(bk.CarPlate) || "-"} • ${bk.BookingDate || "-"} (${dashTimeRange(bk)})</span>
           </div>
-          <span class="status-badge ${cls}">${bk.BookingStatus || "-"}</span>
+          ${statusBadge(bk.BookingStatus)}
         </div>`;
     })
     .join("");
 }
 
 // ---------- 4) แจ้งเตือนสำคัญ (ค้างคืนรถ / ประกัน / พ.ร.บ. / เช็คระยะ ใกล้หมด) ----------
+/**
+ * 🚗 แผง "รถที่ยังไม่ได้คืน" — ขึ้นบนสุดของ Dashboard ตอนมีรถค้างเท่านั้น
+ * แอดมินปิดงานแทนผู้ขับ (ต้องกรอกเลขไมล์คืน) หรือกด "ไม่ได้ใช้รถ" เพื่อปล่อยรถโดยไม่ต้องมีไมล์
+ */
+let overdueList = [];
+function renderOverduePanel(list) {
+  const box = document.getElementById("overdue-panel");
+  if (!box) return;
+  overdueList = list || [];
+  box.hidden = overdueList.length === 0;
+  if (!overdueList.length) {
+    box.innerHTML = "";
+    return;
+  }
+  const rows = overdueList
+    .map(
+      (o, i) => `
+      <div class="od-row${o.stale ? " od-stale" : ""}">
+        <div class="od-plate">${escapeHtml(o.plate)}</div>
+        <div class="od-info">
+          <b>${escapeHtml(o.driver_name) || "-"}${o.employee_id ? ` <small>#${escapeHtml(o.employee_id)}</small>` : ""}</b>
+          <span>กำหนดคืน ${escapeHtml(o.due_at)} น. • ${escapeHtml(o.booking_number)}</span>
+        </div>
+        <div class="od-late"><i class="fa-regular fa-clock"></i> เกิน ${escapeHtml(o.late_text)}</div>
+        <div class="od-actions">
+          <button type="button" class="od-btn primary" data-act="close" data-i="${i}"><i class="fa-solid fa-flag-checkered"></i> ปิดงาน (คืนแล้ว)</button>
+          <button type="button" class="od-btn" data-act="unused" data-i="${i}"><i class="fa-solid fa-key"></i> ไม่ได้ใช้รถ</button>
+        </div>
+      </div>`,
+    )
+    .join("");
+  box.innerHTML = `
+    <h2 class="panel-title od-title"><i class="fa-solid fa-car-burst"></i> รถที่ยังไม่ได้คืน <span class="od-count">${overdueList.length}</span></h2>
+    <p class="od-hint">ผู้ใช้ทุกคนเห็นรายการนี้เป็นป้ายประกาศอยู่แล้ว • รถคันนี้ยังถูกล็อกไม่ให้คนอื่นจอง — ติดต่อผู้ขับ ปิดงานแทนเมื่อได้เลขไมล์ หรือกด "ไม่ได้ใช้รถ" ถ้ารถไม่ได้ออกไปจริง</p>
+    <div class="od-list">${rows}</div>`;
+  if (!box.__bound) {
+    box.__bound = true;
+    box.addEventListener("click", (e) => {
+      const btn = e.target.closest(".od-btn");
+      if (!btn) return;
+      const o = overdueList[Number(btn.dataset.i)];
+      if (!o) return;
+      if (btn.dataset.act === "close") openOverdueCloseModal(o);
+      else releaseOverdueUnused(o);
+    });
+  }
+}
+
+function adminUpdateBooking(body) {
+  return fetch("admin_update_booking.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).then((r) => r.json());
+}
+
+async function releaseOverdueUnused(o) {
+  const ok = await AppDialog.confirm({
+    title: "ปล่อยรถ: ไม่ได้ใช้รถ?",
+    message: `รถ ${o.plate} (${o.driver_name || "-"}) จะถูกบันทึกเป็น "ยกเลิก (ไม่ได้ใช้รถ)" และว่างให้คนอื่นจองทันที — ไม่ต้องกรอกเลขไมล์`,
+    confirmText: "ปล่อยรถ",
+    cancelText: "กลับ",
+    danger: true,
+  });
+  if (!ok) return;
+  const r = await adminUpdateBooking({ booking_id: o.booking_id, booking_status: "ยกเลิก (ไม่ได้ใช้รถ)" }).catch(() => null);
+  if (r && r.success) fetchDashboardStats();
+  else AppDialog.alert((r && r.message) || "ทำรายการไม่สำเร็จ", { type: "error" });
+}
+
+function openOverdueCloseModal(o) {
+  const ov = document.createElement("div");
+  ov.className = "od-modal";
+  ov.innerHTML = `
+    <div class="od-modal-card" role="dialog" aria-label="ปิดงานคืนรถ">
+      <h3><i class="fa-solid fa-flag-checkered"></i> ปิดงานคืนรถแทนผู้ขับ</h3>
+      <p><b>${escapeHtml(o.plate)}</b> • ${escapeHtml(o.driver_name) || "-"}<br><small>เลขไมล์ตอนออก ${Number(o.start_mileage).toLocaleString("th-TH")} กม.</small></p>
+      <label for="od-end-mile">เลขไมล์ตอนคืน (กม.)</label>
+      <input id="od-end-mile" type="number" inputmode="numeric" min="${Number(o.start_mileage) + 1}" placeholder="ต้องมากกว่า ${Number(o.start_mileage).toLocaleString("th-TH")}" />
+      <div class="od-modal-err" id="od-modal-err"></div>
+      <div class="od-modal-btns">
+        <button type="button" class="od-btn" id="od-cancel">ยกเลิก</button>
+        <button type="button" class="od-btn primary" id="od-save">บันทึกคืนรถ</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  const input = ov.querySelector("#od-end-mile");
+  input.focus();
+  const close = () => ov.remove();
+  ov.addEventListener("click", (e) => e.target === ov && close());
+  ov.querySelector("#od-cancel").addEventListener("click", close);
+  const save = async () => {
+    const mile = parseInt(input.value, 10);
+    const err = ov.querySelector("#od-modal-err");
+    if (!mile || mile <= Number(o.start_mileage)) {
+      err.textContent = "เลขไมล์ตอนคืนต้องมากกว่าเลขไมล์ตอนออก (" + Number(o.start_mileage).toLocaleString("th-TH") + ")";
+      return;
+    }
+    const btn = ov.querySelector("#od-save");
+    btn.disabled = true;
+    const r = await adminUpdateBooking({ booking_id: o.booking_id, booking_status: "คืนแล้ว", end_mileage: mile }).catch(() => null);
+    if (r && r.success) {
+      close();
+      fetchDashboardStats();
+    } else {
+      btn.disabled = false;
+      err.textContent = (r && r.message) || "บันทึกไม่สำเร็จ";
+    }
+  };
+  ov.querySelector("#od-save").addEventListener("click", save);
+  input.addEventListener("keydown", (e) => e.key === "Enter" && save());
+  document.addEventListener("keydown", function esc(e) {
+    if (e.key === "Escape") {
+      close();
+      document.removeEventListener("keydown", esc);
+    }
+  });
+}
+
 function renderAlerts(alerts, maintDue, overdueReturns, backup) {
   const wrap = document.getElementById("alerts-list");
   if (!wrap) return;

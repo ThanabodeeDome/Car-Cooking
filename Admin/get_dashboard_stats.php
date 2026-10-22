@@ -99,7 +99,7 @@ try {
         require_once __DIR__ . '/../Car/notify_lib.php';
         $nowTh = nt_now();
         $stmtOverdue = $conn->prepare(
-            "SELECT BookingID, BookingNumber, CarPlate, DriverName, EmployeeID,
+            "SELECT BookingID, BookingNumber, CarPlate, DriverName, EmployeeID, StartMileage,
                     CONVERT(varchar(10), BookingDate, 23) AS BookingDate, OutTime,
                     CONVERT(varchar(5), PlannedReturnTime, 108) AS PlannedReturnTime
              FROM CarBookings
@@ -117,6 +117,7 @@ try {
                 'plate'          => $b['CarPlate'],
                 'driver_name'    => $b['DriverName'],
                 'employee_id'    => $b['EmployeeID'],
+                'start_mileage'  => (int)$b['StartMileage'],
                 'due_at'         => $range[1]->format('d/m/Y H:i'),
                 'late_text'      => nt_fmt_duration($minLate),
                 'minutes_late'   => $minLate,

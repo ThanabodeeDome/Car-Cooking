@@ -16,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 $in = json_decode(file_get_contents('php://input'), true) ?: [];
 $sites = geo_sites();
+$sitesBefore = $sites; // ไว้ใช้เขียน log ตอนลบ/แก้ไข
 
 if (($in['action'] ?? '') === 'add') {
     $lat = $in['lat'] ?? null; $lng = $in['lng'] ?? null;
@@ -61,4 +62,26 @@ if (file_put_contents($file, json_encode(array_values($sites), JSON_UNESCAPED_UN
     echo json_encode(['success' => false, 'message' => 'บันทึกไฟล์ไม่ได้ (สิทธิ์เขียนโฟลเดอร์ Car)']);
     exit;
 }
+// 📝 บันทึกระบบ: จัดการจุดตรวจพิกัด
+try {
+    require_once __DIR__ . '/../Car/db_connect.php';
+    require_once __DIR__ . '/../Car/log_lib.php';
+    $act = $in['action'] ?? '';
+    $i = (int)($in['index'] ?? -1);
+    if ($act === 'add') {
+        $s = end($sites);
+        sl_log($conn, 'geo_add', 'เพิ่มจุดตรวจพิกัด "' . $s['name'] . '" รัศมี ' . $s['radius'] . ' ม.', ['target_type' => 'geo', 'target' => $s['name'], 'detail' => ['lat' => $s['lat'], 'lng' => $s['lng'], 'radius' => $s['radius']]]);
+    } elseif ($act === 'update' && isset($sites[$i])) {
+        $b = $sitesBefore[$i] ?? [];
+        sl_log($conn, 'geo_update', 'แก้ไขจุดตรวจพิกัด "' . $sites[$i]['name'] . '" รัศมี ' . ($b['radius'] ?? '?') . ' → ' . $sites[$i]['radius'] . ' ม.', [
+            'target_type' => 'geo', 'target' => $sites[$i]['name'],
+            'detail' => ['จาก' => $b, 'เป็น' => $sites[$i]],
+        ]);
+    } elseif ($act === 'delete' && isset($sitesBefore[$i])) {
+        sl_log($conn, 'geo_delete', 'ลบจุดตรวจพิกัด "' . $sitesBefore[$i]['name'] . '"', ['target_type' => 'geo', 'target' => $sitesBefore[$i]['name'], 'detail' => $sitesBefore[$i]]);
+    }
+} catch (Throwable $e) {
+    error_log('geo_sites_api log: ' . $e->getMessage());
+}
+
 echo json_encode(['success' => true, 'sites' => $sites], JSON_UNESCAPED_UNICODE);

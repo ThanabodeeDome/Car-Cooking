@@ -10,6 +10,7 @@ const RP_STATUS_COLOR = {
   จองแล้ว: RP_COLORS.amber,
   ยกเลิก: RP_COLORS.red,
   "ยกเลิก (ไม่มาใช้งาน)": RP_COLORS.violet,
+  "ยกเลิก (ไม่ได้ใช้รถ)": RP_COLORS.slate,
 };
 const rpCharts = {};
 let rpData = null;
@@ -123,6 +124,7 @@ function renderReports(d, start, end) {
   renderBar("rp-c-repair", (d.repair_cost || []).map((r) => r.Plate), (d.repair_cost || []).map((r) => Number(r.totalCost || 0)), RP_COLORS.red, "ค่าซ่อม (บาท)");
   renderCarTable(d.per_car || []);
   renderDrivers(d.top_drivers || []);
+  renderAccountability(d.accountability || []);
   renderFeed("rp-comments", d.comments || [], "ยังไม่มีความคิดเห็นในช่วงนี้", true);
   renderFeed("rp-problems", d.problems || [], "ไม่มีการแจ้งปัญหาในช่วงนี้ 🎉", false);
   renderCancel(d.cancellations || {});
@@ -181,6 +183,7 @@ function mkChart(id, cfg) {
   const ctx = document.getElementById(id);
   if (!ctx || typeof Chart === "undefined") return;
   if (rpCharts[id]) rpCharts[id].destroy();
+  if (window.Chart) Chart.defaults.font.family = '"Prompt", "Sarabun", sans-serif';
   rpCharts[id] = new Chart(ctx, cfg);
 }
 function emptyState(id, on) {
@@ -266,6 +269,25 @@ function renderDrivers(list) {
   tb.innerHTML = list.length
     ? list.map((r, i) => `<tr><td><span class="rp-rank r${i + 1}">${i + 1}</span></td><td>${rpEsc(r.name)}</td><td>${rpNum(r.trips)}</td><td>${rpNum(r.km)}</td></tr>`).join("")
     : '<tr><td colspan="4" class="rp-td-empty">ไม่มีข้อมูลในช่วงนี้</td></tr>';
+}
+
+function rpDur(m) {
+  m = Number(m) || 0;
+  if (m >= 1440) return Math.floor(m / 1440) + " วัน " + Math.floor((m % 1440) / 60) + " ชม.";
+  return m >= 60 ? Math.floor(m / 60) + " ชม. " + (m % 60) + " นาที" : m ? m + " นาที" : "-";
+}
+
+function renderAccountability(list) {
+  const tb = document.getElementById("rp-t-acc");
+  if (!tb) return;
+  const tag = (n, cls) => (n ? `<span class="rp-tag ${cls}">${rpNum(n)}</span>` : "-");
+  tb.innerHTML = list.length
+    ? list
+        .map(
+          (r, i) => `<tr><td><span class="rp-rank r${i + 1}">${i + 1}</span></td><td>${rpEsc(r.name)}${r.employee_id ? ` <small>#${rpEsc(r.employee_id)}</small>` : ""}</td><td>${rpNum(r.trips)}</td><td>${tag(r.not_returned, "red")}</td><td>${tag(r.late_returns, "amber")}</td><td>${rpDur(r.late_minutes)}</td><td>${tag(r.unused, "slate")}</td><td>${tag(r.noshow, "violet")}</td><td>${r.auto_checkin ? rpNum(r.auto_checkin) : "-"}</td></tr>`,
+        )
+        .join("")
+    : '<tr><td colspan="9" class="rp-td-empty">ไม่มีใครค้างคืน/คืนช้า/ไม่ได้ใช้รถในช่วงนี้ 🎉</td></tr>';
 }
 
 function renderFeed(id, list, emptyText, isComment) {
