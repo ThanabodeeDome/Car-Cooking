@@ -1065,3 +1065,17 @@ body {
     justify-content: center;
   }
 }
+
+/* ปุ่มอันตราย (ยกเลิกการจอง / ปล่อยรถ) แยกโซนออกห่างจากปุ่มหลัก กันกดผิด */
+.detail-actions-row { justify-content: stretch; }
+.detail-actions-row .btn-action-checkin,
+.detail-actions-row .btn-action-return { flex: 1; justify-content: center; min-height: 48px; font-size: 0.98rem; }
+.detail-danger-zone { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 40px; padding-top: 14px; border-top: 1px dashed var(--border-medium); }
+.detail-danger-zone span { font-size: 0.8rem; color: var(--text-dim); }
+.detail-danger-zone .btn-cancel-booking,
+.detail-danger-zone .btn-release { padding: 6px 12px; font-size: 0.8rem; font-weight: 500; }
+@media (max-width: 768px) {
+  .detail-actions-row { flex-direction: column; }
+  .detail-danger-zone { flex-direction: column; align-items: flex-start; }
+  .detail-danger-zone .btn-cancel-booking, .detail-danger-zone .btn-release { width: auto; }
+}

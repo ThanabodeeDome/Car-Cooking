@@ -15,21 +15,35 @@ if (empty($plate)) {
 }
 
 try {
+    // ดึงทุกรายการของรถคันนี้ที่ยังไม่จบ (กำลังใช้งาน/รอเช็คอิน) แล้วแยกว่าอันไหน "เป็นของคนที่สแกน"
+    // (เดิมเลือกรายการที่กำลังใช้งานอยู่ของ "ใครก็ได้" ก่อน ทำให้คนที่มีคิวถัดไปสแกนแล้วเห็นรายการของคนที่ใช้รถอยู่)
     $stmt = $conn->prepare(
-        "SELECT TOP 1 BookingStatus" . (geo_columns_ok($conn) ? ", CheckInGeo" : "") . " FROM CarBookings
+        "SELECT BookingStatus, EmployeeID, BookedByUserID" . (geo_columns_ok($conn) ? ", CheckInGeo" : "") . " FROM CarBookings
          WHERE REPLACE(CarPlate, ' ', '') = REPLACE(:plate, ' ', '') AND BookingStatus IN (N'จองแล้ว', N'ขาไป')
-         ORDER BY CASE WHEN BookingStatus = N'ขาไป' THEN 0 ELSE 1 END, ABS(DATEDIFF(MINUTE, GETDATE(), CAST(BookingDate AS DATETIME) + CASE WHEN ISDATE(OutTime) = 1 THEN CAST(OutTime AS DATETIME) ELSE CAST('00:00' AS DATETIME) END)), BookingID ASC"
+         ORDER BY CASE WHEN BookingStatus = N'ขาไป' THEN 0 ELSE 1 END, ABS(DATEDIFF(MINUTE, GETDATE(), CAST(BookingDate AS DATETIME) + CASE WHEN ISDATE(OutTime) = 1 THEN CAST(OutTime AS DATETIME) ELSE CAST('00:00' AS DATETIME) END)), BookingID"
     );
     $stmt->execute([':plate' => $plate]);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    if ($row && $row['BookingStatus'] === 'จองแล้ว') {
-        header('Location: checkin.html?plate=' . urlencode($plate));
-    } elseif ($row && $row['BookingStatus'] === 'ขาไป' && ($row['CheckInGeo'] ?? '') === 'auto') {
-        // ระบบเช็คอินให้อัตโนมัติไปแล้วตามเวลาจอง: คนสแกนอาจกำลังรับรถ (ยังไม่ได้ยืนยันที่รถ) หรือกำลังคืนรถ -> ให้เลือกบนหน้าเดียว
+    $me = (string)($_SESSION['employee_id'] ?? '');
+    $uid = (int)($_SESSION['user_id'] ?? 0);
+    $isAdmin = strtolower((string)($_SESSION['role'] ?? '')) === 'admin';
+    $mine = fn($r) => $isAdmin || ($me !== '' && (string)$r['EmployeeID'] === $me) || ($uid > 0 && (int)($r['BookedByUserID'] ?? 0) === $uid);
+
+    $mineOut = null; $minePending = null; $anyOut = false; $anyPending = false;
+    foreach ($rows as $r) {
+        if ($r['BookingStatus'] === 'ขาไป') { $anyOut = true; if (!$mineOut && $mine($r)) $mineOut = $r; }
+        else { $anyPending = true; if (!$minePending && $mine($r)) $minePending = $r; }
+    }
+
+    if ($mineOut && ($mineOut['CheckInGeo'] ?? '') === 'auto') {
+        // ระบบเช็คอินให้อัตโนมัติไปแล้วตามเวลาจอง: คนสแกนอาจกำลังรับรถจริง หรือกำลังจะคืน
         header('Location: checkin.html?plate=' . urlencode($plate) . '&picked=1');
-    } elseif ($row && $row['BookingStatus'] === 'ขาไป') {
+    } elseif ($mineOut) {
         header('Location: return_scan.html?plate=' . urlencode($plate));
+    } elseif ($minePending || $anyOut || $anyPending) {
+        // คิวของตัวเอง (หรือรถกำลังถูกคนอื่นใช้อยู่) -> หน้าเช็คอิน ซึ่งจะบอกเองว่ารถว่างไหม/ใครใช้อยู่/ถึงเวลาหรือยัง
+        header('Location: checkin.html?plate=' . urlencode($plate));
     } else {
         // ไม่มี booking ค้างเลยสำหรับรถคันนี้ (อาจสแกนผิดคัน หรือคืนไปแล้ว)
         header('Location: homepage.html?msg=no_active_booking&plate=' . urlencode($plate));

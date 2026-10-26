@@ -33,7 +33,19 @@ try {
     $stmt->execute([':plate' => $plate, ':status' => $status, ':emp' => (string)($_SESSION['employee_id'] ?? ''), ':uid' => (int)($_SESSION['user_id'] ?? 0)]);
     $booking = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    // รถคันนี้กำลังถูกใช้งานอยู่ (ขาไป) โดยใคร กำหนดคืนกี่โมง — ใช้เตือนคนที่มาเช็คอินรับรถว่ายังรับไม่ได้
+    $inUse = null;
+    if ($status === 'จองแล้ว') {
+        $u = $conn->prepare("SELECT TOP 1 DriverName, EmployeeID, CONVERT(varchar(5), PlannedReturnTime, 108) AS DueHM FROM CarBookings WHERE REPLACE(CarPlate, ' ', '') = REPLACE(:plate, ' ', '') AND BookingStatus = N'ขาไป' ORDER BY BookingID DESC");
+        $u->execute([':plate' => $plate]);
+        $inUse = $u->fetch(PDO::FETCH_ASSOC) ?: null;
+    }
+
     if (!$booking) {
+        if ($inUse) {
+            echo json_encode(['success' => false, 'message' => 'รถคันนี้กำลังถูกใช้งานโดย ' . trim((string)$inUse['DriverName']) . ' (กำหนดคืน ' . $inUse['DueHM'] . ' น.) ยังไม่มีรายการจองที่เช็คอินได้ตอนนี้']);
+            exit;
+        }
         $msg = $status === 'จองแล้ว'
             ? 'ไม่พบรายการจองที่รอเช็คอินสำหรับรถคันนี้'
             : 'ไม่พบรายการที่กำลังใช้งานอยู่สำหรับรถคันนี้ (อาจคืนไปแล้ว)';
@@ -43,6 +55,7 @@ try {
 
     // เช็คอินอัตโนมัติตามเวลาไปแล้ว แต่ยังไม่มีใครกดยืนยันรับรถที่รถ (CheckInGeo ยังเป็น 'auto')
     $booking['AutoCheckin'] = (($booking['CheckInGeo'] ?? '') === 'auto');
+    $booking['InUse'] = $inUse ? ['driver' => trim((string)$inUse['DriverName']), 'due' => (string)$inUse['DueHM']] : null;
     echo json_encode([
         'success' => true,
         'mode' => $status === 'จองแล้ว' ? 'checkin' : 'return',

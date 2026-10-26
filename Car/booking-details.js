@@ -208,20 +208,26 @@ function applyFilterAndRender(highlightPlate) {
         bk.BookingStatus === "ขาไป"
           ? /* ระบบเช็คอินให้ตามเวลาจองแล้ว: ถ้าไม่ได้ใช้รถจริงให้กดปล่อยรถเอง (ไม่งั้นรถจะค้างสถานะกำลังใช้งาน) */
             `<div class="detail-actions-row">
-          <button type="button" class="btn-release" onclick="markUnused(${Number(bk.BookingID)})">
-            <i class="fa-solid fa-key"></i> ไม่ได้ใช้รถ (ปล่อยรถ)
-          </button>
           <a href="scan.php?plate=${plateQ}" class="btn-action-return">
             <i class="fa-solid fa-flag-checkered"></i> คืนรถ (ถ่ายรูปเลขไมล์)
           </a>
+        </div>
+        <div class="detail-danger-zone">
+          <span>ไม่ได้ใช้รถคันนี้จริงๆ?</span>
+          <button type="button" class="btn-release" onclick="markUnused(${Number(bk.BookingID)})">
+            <i class="fa-solid fa-key"></i> ไม่ได้ใช้รถ (ปล่อยรถ)
+          </button>
         </div>`
           : `<div class="detail-actions-row">
-          <button type="button" class="btn-cancel-booking" onclick="cancelBooking(${Number(bk.BookingID)})">
-            <i class="fa-solid fa-xmark"></i> ยกเลิกการจองนี้
-          </button>
           <a href="scan.php?plate=${plateQ}" class="btn-action-checkin">
             <i class="fa-solid fa-qrcode"></i> เช็คอินรับรถ (สแกน QR)
           </a>
+        </div>
+        <div class="detail-danger-zone">
+          <span>ไม่ไปแล้ว? ยกเลิกเพื่อปล่อยคิวให้คนอื่น</span>
+          <button type="button" class="btn-cancel-booking" onclick="cancelBooking(${Number(bk.BookingID)})">
+            <i class="fa-solid fa-xmark"></i> ยกเลิกการจองนี้
+          </button>
         </div>`;
     }
 
@@ -469,7 +475,7 @@ function resetFilters() {
 async function cancelBooking(bookingId) {
   const ok = await AppDialog.confirm({
     title: "ยกเลิกการจองนี้?",
-    message: "เมื่อยกเลิกแล้ว คิวรถช่วงนี้จะถูกปล่อยให้คนอื่นจองได้ทันที",
+    message: "เมื่อยกเลิกแล้ว คิวรถช่วงนี้จะถูกปล่อยให้คนอื่นจองได้ทันที และคุณจะไม่มีสิทธิ์ใช้รถคันนี้ตามเวลานี้อีก (ถ้ากดมาเพื่อเช็คอิน ให้กด \"ไม่ยกเลิก\")",
     confirmText: "ยกเลิกการจอง",
     cancelText: "ไม่ยกเลิก",
     danger: true,

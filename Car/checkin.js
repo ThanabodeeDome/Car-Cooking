@@ -73,6 +73,15 @@ function renderCheckinMode(b) {
 
   document.getElementById("mode-checkin").classList.remove("hidden");
 
+  // รถยังถูกใช้อยู่โดยคนอื่น (ยังไม่คืน) -> แจ้งชัดๆ และปิดปุ่ม ไม่ให้เช็คอินซ้อน
+  const busy = document.getElementById("ci-busy");
+  if (b.InUse && busy) {
+    busy.textContent = "รถคันนี้กำลังถูกใช้งานโดย " + (b.InUse.driver || "ผู้ใช้อื่น") + " (กำหนดคืน " + (b.InUse.due || "-") + " น.) ยังเช็คอินรับรถไม่ได้ จนกว่าจะมีการคืนรถ";
+    busy.classList.remove("hidden");
+    const cbtn = document.getElementById("ci-confirm-btn");
+    if (cbtn) { cbtn.disabled = true; cbtn.textContent = "รอรถคืนก่อน"; }
+  }
+
   document.getElementById("ci-photo-input").addEventListener("change", function () {
     selectedCheckinPhoto = this.files[0] || null;
     if (selectedCheckinPhoto) previewPhoto(selectedCheckinPhoto, "ci-photo-preview");
