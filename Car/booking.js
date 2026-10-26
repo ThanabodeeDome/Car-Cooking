@@ -157,15 +157,16 @@ function loadAvailableCars(dateVal) {
       // ก็ยังว่างช่วง 13:00-17:00 ได้ แต่ถูกกรองออกจากดรอปดาวน์ไปทั้งวันเงียบๆ
       // ตัดชนเวลาจริงเช็คที่ server (save_booking.php) + เตือนช่วงที่ถูกจองแล้วผ่าน
       // updateAvailableTimeSlots() อยู่แล้ว ฝั่งนี้เลยกรองแค่สถานะที่ใช้ไม่ได้จริงๆ พอ
-      const data = allData.filter(
-        (car) => car.RealStatus !== "งดให้บริการ" && car.RealStatus !== "กำลังใช้งาน",
-      );
+      // 🩹 FIX: เดิมซ่อนรถที่ "กำลังใช้งาน" (รถที่ออกไปแล้วยังไม่คืน) ทั้งคัน ทำให้ถ้าทุกคันกำลังใช้อยู่ จะ "ไม่มีตัวเลือก"
+      // ทั้งที่จองเวลาหลังจากที่เขาคืนได้ (เช่นตอนนี้ 14:30 รถคืน 17:00 จอง 17:00–18:00 ได้)
+      // ตอนนี้ซ่อนเฉพาะ "งดให้บริการ" ส่วนการชนเวลา server (save_booking.php) เช็คช่วงของรายการ ขาไป/จองแล้ว ให้อยู่แล้ว
+      const data = allData.filter((car) => car.RealStatus !== "งดให้บริการ");
       dbCarData = data;
       if (plateSelect) {
         const prevSelected = plateSelect.value;
         plateSelect.innerHTML = '<option value="" disabled selected>เลือกทะเบียนรถ</option>';
         data.forEach((car) => {
-          const opt = new Option(`${car.Plate} (${car.Brand})`, car.Plate);
+          const opt = new Option(`${car.Plate} (${car.Brand})${car.RealStatus === "กำลังใช้งาน" ? " · กำลังใช้งานอยู่" : ""}`, car.Plate);
           if (car.image) opt.dataset.image = car.image;
           plateSelect.add(opt);
         });
