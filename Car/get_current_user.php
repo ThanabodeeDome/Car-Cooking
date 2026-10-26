@@ -11,7 +11,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 try {
-    $stmt = $conn->prepare("SELECT employee_id, first_name, AvatarPath FROM Users WHERE id = :id");
+    $stmt = $conn->prepare("SELECT employee_id, first_name, AvatarPath, role FROM Users WHERE id = :id");
     $stmt->execute([':id' => $_SESSION['user_id']]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -20,7 +20,7 @@ try {
         exit;
     }
 
-    echo json_encode(["success" => true, "employee_id" => $user['employee_id'], "first_name" => $user['first_name'], "avatar_path" => $user['AvatarPath'] ?? null]);
+    echo json_encode(["success" => true, "employee_id" => $user['employee_id'], "first_name" => $user['first_name'], "is_admin" => strtolower((string)($user['role'] ?? '')) === 'admin', "avatar_path" => $user['AvatarPath'] ?? null]);
 } catch (PDOException $e) {
     error_log('get_current_user DB error: ' . $e->getMessage());
     echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"]);

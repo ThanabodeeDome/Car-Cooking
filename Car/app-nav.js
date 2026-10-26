@@ -313,6 +313,37 @@
         }
       };
       window.setNavAvatar(u.avatar_path);
+      // ป้าย Admin: ให้รู้ทันทีว่าหน้านี้กำลังใช้บัญชีแอดมิน ไม่ใช่บัญชีพนักงานทั่วไป
+      if (u.is_admin) {
+        const bd = document.createElement("span");
+        bd.textContent = "Admin";
+        bd.setAttribute("style", "margin-right:6px;padding:2px 9px;border-radius:999px;background:#e5252a;color:#fff;font:600 11px Prompt,sans-serif;letter-spacing:.04em");
+        av.parentNode.insertBefore(bd, av);
+      }
+      // 🔒 เบราว์เซอร์หนึ่งมี session เดียวต่อเว็บ: ถ้าแท็บอื่นล็อกอินเป็นอีกบัญชี แท็บนี้จะกลายเป็นบัญชีนั้นเงียบๆ
+      //    จำรหัสพนักงานตอนเปิดหน้า แล้วเช็คซ้ำเมื่อกลับมาที่แท็บ/ทุก 2 นาที ถ้าเปลี่ยนให้แจ้งทันที
+      const whoNow = String(u.employee_id || "");
+      let warned = false;
+      const checkWho = () => {
+        if (warned || document.hidden) return;
+        fetch("get_current_user.php", { cache: "no-store" })
+          .then((r) => r.json())
+          .then((n) => {
+            const now = n && n.success ? String(n.employee_id || "") : "";
+            if (now === whoNow) return;
+            warned = true;
+            const ov = document.createElement("div");
+            ov.setAttribute("role", "alertdialog");
+            ov.setAttribute("style", "position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(4,6,10,.85);font-family:Prompt,sans-serif");
+            ov.innerHTML = '<div style="width:min(380px,100%);box-sizing:border-box;padding:24px;border-radius:20px;background:#14161f;border:1px solid rgba(255,255,255,.12);color:#e8eaf2;text-align:center"><h2 style="margin:0 0 8px;font-size:19px;color:#fff">บัญชีที่ล็อกอินเปลี่ยนไปแล้ว</h2><p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#aab0c0">มีการล็อกอินบัญชีอื่นจากแท็บหรือหน้าต่างอื่นในเบราว์เซอร์นี้ หน้านี้จึงใช้บัญชีใหม่แทนบัญชีเดิม กดปุ่มเพื่อโหลดหน้าใหม่</p><button type="button" style="width:100%;padding:13px;border:none;border-radius:14px;background:linear-gradient(135deg,#ff5a5f,#e5252a);color:#fff;font:600 15px Prompt,sans-serif;cursor:pointer">โหลดหน้าใหม่</button></div>';
+            ov.querySelector("button").addEventListener("click", () => location.reload());
+            document.body.appendChild(ov);
+          })
+          .catch(() => {});
+      };
+      document.addEventListener("visibilitychange", checkWho);
+      window.addEventListener("focus", checkWho);
+      setInterval(checkWho, 120000);
       menu.querySelector("#an-name").textContent = name;
       menu.querySelector("#an-emp").textContent = u.employee_id ? "รหัส " + u.employee_id : "";
     })

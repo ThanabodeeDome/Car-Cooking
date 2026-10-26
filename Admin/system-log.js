@@ -60,20 +60,20 @@ function fetchSystemLog(page) {
   slPage = page || 1;
   const body = document.getElementById("sl-tbody");
   if (!body) return;
-  body.innerHTML = `<tr><td colspan="5" class="sl-empty">กำลังโหลด...</td></tr>`;
+  body.innerHTML = `<tr><td colspan="4" class="sl-empty">กำลังโหลด...</td></tr>`;
 
   fetch("get_system_log.php?" + slParams(slPage).toString(), { cache: "no-store" })
     .then((r) => r.json())
     .then((d) => {
       const note = document.getElementById("sl-note");
       if (!d.success) {
-        body.innerHTML = `<tr><td colspan="5" class="sl-empty" style="color:#dc2626">${slEsc(d.message || "โหลดไม่สำเร็จ")}</td></tr>`;
+        body.innerHTML = `<tr><td colspan="4" class="sl-empty" style="color:#dc2626">${slEsc(d.message || "โหลดไม่สำเร็จ")}</td></tr>`;
         return;
       }
       if (d.ready === false) {
         note.hidden = false;
         note.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${slEsc(d.message)}`;
-        body.innerHTML = `<tr><td colspan="5" class="sl-empty">ยังไม่มีข้อมูล</td></tr>`;
+        body.innerHTML = `<tr><td colspan="4" class="sl-empty">ยังไม่มีข้อมูล</td></tr>`;
         document.getElementById("sl-chips").innerHTML = "";
         document.getElementById("sl-pager").innerHTML = "";
         return;
@@ -84,7 +84,7 @@ function fetchSystemLog(page) {
       renderSlPager(d);
     })
     .catch(() => {
-      body.innerHTML = `<tr><td colspan="5" class="sl-empty" style="color:#dc2626">เชื่อมต่อเซิร์ฟเวอร์ไม่ได้</td></tr>`;
+      body.innerHTML = `<tr><td colspan="4" class="sl-empty" style="color:#dc2626">เชื่อมต่อเซิร์ฟเวอร์ไม่ได้</td></tr>`;
     });
 }
 
@@ -119,7 +119,7 @@ function slDetailHtml(r) {
 function renderSlRows(d) {
   const body = document.getElementById("sl-tbody");
   if (!d.rows.length) {
-    body.innerHTML = `<tr><td colspan="5" class="sl-empty">ไม่พบบันทึกในช่วงที่เลือก</td></tr>`;
+    body.innerHTML = `<tr><td colspan="4" class="sl-empty">ไม่พบบันทึกในช่วงที่เลือก</td></tr>`;
     return;
   }
   body.innerHTML = d.rows
@@ -130,9 +130,8 @@ function renderSlRows(d) {
         <td><span class="sl-type c-${SL_CAT_COLOR[r.category] || "slate"}${r.type === "login_fail" ? " bad" : ""}">${slEsc(r.label)}</span></td>
         <td class="sl-actor">${r.actor ? `<b>${slEsc(r.actor)}</b>${r.emp ? `<small>#${slEsc(r.emp)}</small>` : ""}` : '<span class="sl-none">-</span>'}</td>
         <td class="sl-sum">${slEsc(r.summary)}${r.target ? `<small>${slEsc(r.target)}</small>` : ""}</td>
-        <td class="sl-ip">${slEsc(r.ip) || "-"}</td>
       </tr>
-      <tr class="sl-detail" hidden><td colspan="5"><div class="sl-detail-box">${slDetailHtml(r)}</div></td></tr>`,
+      <tr class="sl-detail" hidden><td colspan="4"><div class="sl-detail-box">${slDetailHtml(r)}</div></td></tr>`,
     )
     .join("");
 }
