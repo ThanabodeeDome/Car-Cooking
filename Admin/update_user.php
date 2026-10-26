@@ -5,6 +5,8 @@ header('Content-Type: application/json; charset=utf-8');
 require_once '../Car/db_connect.php';
 
 require_once __DIR__ . '/../require_admin.php';
+
+require_once __DIR__ . '/../db_error_text.php'; // แปล error ฐานข้อมูลให้คนอ่านรู้เรื่อง
 requireAdminAccess();
 $allowed_admin_ids = require __DIR__ . '/../admin_whitelist.php';
 
@@ -97,8 +99,14 @@ try {
         ]);
     }
 
+    // 📝 บันทึกระบบ: แก้ไขผู้ใช้ — บันทึกเพียงว่า "มีการตั้งรหัสผ่านใหม่" ไม่เก็บตัวรหัสผ่านเด็ดขาด
+    require_once __DIR__ . '/../Car/log_lib.php';
+    sl_log($conn, 'user_edit', 'แก้ไขผู้ใช้ ' . $username . ' (รหัสพนักงาน ' . $employeeId . ', สิทธิ์ ' . ($role === 'admin' ? 'Admin' : 'พนักงาน') . ')' . (!empty($newPassword) ? ' + ตั้งรหัสผ่านใหม่' : ''), [
+        'target_type' => 'user', 'target' => $username,
+        'detail' => ['employee_id' => $employeeId, 'role' => $role, 'password_changed' => !empty($newPassword)],
+    ]);
     echo json_encode(["success" => true]);
 } catch (PDOException $e) {
     error_log('update_user DB error: ' . $e->getMessage());
-    echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด ไม่สามารถบันทึกข้อมูลได้"]);
+    echo json_encode(["success" => false, "message" => cb_db_error_message($e, "เกิดข้อผิดพลาด ไม่สามารถบันทึกข้อมูลได้")]);
 }

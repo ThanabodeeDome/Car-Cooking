@@ -5,6 +5,8 @@
    - จำลอง pipeline เดียวกับหน้าเว็บ: ย่อรูปด้านยาวสุด <=1000px, JPEG q80 แล้วส่ง base64
    - เรียก OCR.space ครั้งเดียวต่อรูป/engine แล้ว cache ข้อความดิบไว้ (รันซ้ำไม่กินโควตา)
    - ใช้ odometerDecide() ตัวจริงจาก Car/ocr_odometer.php (ดึง source มา eval ไม่ก๊อปโค้ด) */
+
+if (PHP_SAPI !== 'cli') { http_response_code(403); exit; } // 🔒 เครื่องมือบรรทัดคำสั่งเท่านั้น ห้ามยิงผ่านเว็บ
 $ROOT = str_replace('\\', '/', dirname(__DIR__, 2)); // รากโปรเจกต์ (tools/ocr/..)
 $CACHE = __DIR__ . '/raw_cache.json';
 

@@ -4,6 +4,7 @@ cb_session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once '../Car/db_connect.php';
 require_once __DIR__ . '/../require_admin.php';
+require_once __DIR__ . '/../db_error_text.php'; // แปล error ฐานข้อมูลให้คนอ่านรู้เรื่อง
 
 requireAdminAccess();
 
@@ -24,7 +25,7 @@ if ((int)$id === (int)$_SESSION['user_id']) {
 try {
     // 🌟 กันลบ admin ผ่านแอปเด็ดขาด (ต้องลบผ่าน Database โดยตรงเท่านั้น
     // สอดคล้องกับกฎเดียวกับตอนเพิ่ม/แก้ role — ลด single point of failure จากหน้าเว็บ)
-    $targetStmt = $conn->prepare("SELECT role FROM Users WHERE id = :id");
+    $targetStmt = $conn->prepare("SELECT role, username, employee_id FROM Users WHERE id = :id");
     $targetStmt->execute([':id' => $id]);
     $target = $targetStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -40,8 +41,12 @@ try {
     }
     $stmt = $conn->prepare("DELETE FROM Users WHERE id = :id");
     $stmt->execute([':id' => $id]);
+    if ($stmt->rowCount() > 0 && $target) {
+        require_once __DIR__ . '/../Car/log_lib.php';
+        sl_log($conn, 'user_delete', 'ลบผู้ใช้ ' . $target['username'] . ' (รหัสพนักงาน ' . $target['employee_id'] . ')', ['target_type' => 'user', 'target' => (string)$target['username']]);
+    }
     echo json_encode(["success" => true]);
 } catch (PDOException $e) {
     error_log('delete_user DB error: ' . $e->getMessage());
-    echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด ไม่สามารถลบผู้ใช้ได้"]);
+    echo json_encode(["success" => false, "message" => cb_db_error_message($e, "เกิดข้อผิดพลาด ไม่สามารถลบผู้ใช้ได้")]);
 }

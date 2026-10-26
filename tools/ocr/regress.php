@@ -1,5 +1,6 @@
 <?php
 /* เทสย่อยกันบั๊กเก่ากลับมา (ไม่เรียก API) — ข้อความ OCR จำลองจากเคสที่เคยแก้ไปแล้ว */
+if (PHP_SAPI !== 'cli') { http_response_code(403); exit; } // 🔒 เครื่องมือบรรทัดคำสั่งเท่านั้น ห้ามยิงผ่านเว็บ
 $ROOT = str_replace('\\', '/', dirname(__DIR__, 2)); // รากโปรเจกต์ (tools/ocr/..)
 $src = file_get_contents($ROOT . '/Car/ocr_odometer.php');
 $from = strpos($src, 'function isScaleNumber');

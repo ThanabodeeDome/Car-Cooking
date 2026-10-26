@@ -11,6 +11,8 @@
 
    ขั้นตอน: BACKUP -> RESTORE VERIFYONLY (ตรวจว่าไฟล์ใช้กู้ได้จริง) -> ลบไฟล์เก่าตามอายุ */
 
+if (PHP_SAPI !== 'cli') { http_response_code(403); exit; } // 🔒 เครื่องมือบรรทัดคำสั่งเท่านั้น ห้ามยิงผ่านเว็บ
+
 const BK_DEFAULT_DIR    = 'D:\\CarBooking\\Backup';
 const BK_DEFAULT_KEEP   = 30;  // เก็บย้อนหลังกี่วัน
 const BK_MIN_KEEP_FILES = 7;   // ต่อให้เก่าเกินกำหนด ก็ต้องเหลืออย่างน้อยเท่านี้เสมอ

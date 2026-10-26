@@ -13,51 +13,8 @@ require_same_origin();
 require_once 'db_connect.php';
 require_once 'Car/remember_helpers.php';
 
-// 🩹 FIX: ระบบนี้รันอยู่หลัง Cloudflare Tunnel — REMOTE_ADDR ที่เซิร์ฟเวอร์เห็นจะเป็น
-// IP ของตัว tunnel เอง "เหมือนกันหมดทุกเครื่อง" ไม่ใช่ IP ของผู้ใช้แต่ละคนจริงๆ
-// เดิมใช้ $_SERVER['REMOTE_ADDR'] ตรงๆ เลยทำให้คนเดียวกรอกรหัสผิด 5 ครั้ง
-// -> ไฟล์ lock ใช้ md5(IP) เดียวกันทุกเครื่อง -> ล็อกทุกคนพร้อมกันหมดทั้งที่คนละเครื่อง
-// แก้โดยอ่าน IP จริงจาก header ที่ Cloudflare ใส่มาให้แทน (เชื่อถือได้ เพราะ Cloudflare
-// เขียนทับ header นี้เสมอ client ปลอมไม่ได้ ตราบใด traffic ต้องผ่าน Cloudflare เท่านั้น)
-function getClientIp(): string {
-    $remote = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-    // 🔒 เชื่อ header จาก proxy เฉพาะเมื่อ request มาจาก tunnel/proxy ในเครื่องหรือวง LAN เท่านั้น
-    // ถ้ายิงตรงเข้า IIS จาก IP สาธารณะ คนร้ายปลอม header นี้เปลี่ยน IP ทุกครั้งเพื่อหลบ rate limit ได้
-    $fromProxy = filter_var($remote, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
-    if ($fromProxy) {
-        if (!empty($_SERVER['HTTP_CF_CONNECTING_IP']) && filter_var(trim($_SERVER['HTTP_CF_CONNECTING_IP']), FILTER_VALIDATE_IP)) {
-            return trim($_SERVER['HTTP_CF_CONNECTING_IP']);
-        }
-        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            // อาจมีหลาย IP คั่นด้วยจุลภาคถ้าผ่านหลายชั้น proxy เอาตัวแรกสุด (client จริง)
-            $first = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
-            if (filter_var($first, FILTER_VALIDATE_IP)) return $first;
-        }
-    }
-    return $remote;
-}
-
-// 🌟 Rate Limit กันเดารหัสผ่าน (brute-force) — ล็อกตาม IP จริงของผู้ใช้ ไม่ใช่ IP ของ tunnel
-$ip = getClientIp();
-$lockDir = sys_get_temp_dir() . '/login_attempts';
-if (!is_dir($lockDir)) mkdir($lockDir, 0700, true);
-$lockFile = $lockDir . '/' . md5($ip) . '.json';
-
-$maxAttempts = 5;
-$lockoutSeconds = 900; // 15 นาที
-
-$attemptData = ['count' => 0, 'first_attempt' => time()];
-if (file_exists($lockFile)) {
-    $attemptData = json_decode(file_get_contents($lockFile), true) ?: $attemptData;
-}
-if (time() - $attemptData['first_attempt'] > $lockoutSeconds) {
-    $attemptData = ['count' => 0, 'first_attempt' => time()]; // หมดเวลาล็อก รีเซ็ตนับใหม่
-}
-if ($attemptData['count'] >= $maxAttempts) {
-    $waitMin = ceil(($lockoutSeconds - (time() - $attemptData['first_attempt'])) / 60);
-    echo json_encode(['success' => false, 'message' => "ลองผิดเกินกำหนด กรุณารออีกประมาณ $waitMin นาทีแล้วลองใหม่ครับ"]);
-    exit;
-}
+require_once __DIR__ . '/rate_limit.php';
+require_once __DIR__ . '/Car/log_lib.php';
 
 $username = isset($_POST['username']) ? trim($_POST['username']) : '';
 $password = isset($_POST['password']) ? trim($_POST['password']) : '';
@@ -66,6 +23,26 @@ $redirectParam = isset($_POST['redirect']) ? trim($_POST['redirect']) : '';
 
 if (empty($username) || empty($password)) {
     echo json_encode(['success' => false, 'message' => 'กรุณากรอกชื่อผู้ใช้และรหัสผ่านด้วยครับเพื่อน!']);
+    exit;
+}
+
+// 🌟 Rate Limit กันเดารหัสผ่าน (brute-force) — รายละเอียดการนับดูที่ rate_limit.php
+// นับแยกตาม "บัญชี + IP" คนพิมพ์รหัสผิดจึงล็อกแค่บัญชีตัวเอง เพื่อนร่วมออฟฟิศที่ออกเน็ต
+// ผ่าน IP เดียวกันยังล็อกอินได้ปกติ
+$ip          = getClientIp();
+$acctBucket  = 'acct:' . mb_strtolower($username) . '|' . $ip;
+$ipBucket    = 'ip:' . $ip;
+$maxAttempts = 5;   // ต่อบัญชีต่อ IP
+$maxPerIp    = 30;  // รวมทุกบัญชีจาก IP เดียว (เผื่อถูกยิงเดารหัสหลายบัญชีจริงๆ)
+
+$waitIp = rl_retry_after('login_attempts', $ipBucket, $maxPerIp);
+if ($waitIp > 0) {
+    echo json_encode(['success' => false, 'message' => 'มีการลองรหัสผิดจากเครือข่ายนี้มากเกินไป กรุณารอ ' . rl_wait_text($waitIp) . ' แล้วลองใหม่ครับ']);
+    exit;
+}
+$waitAcct = rl_retry_after('login_attempts', $acctBucket, $maxAttempts);
+if ($waitAcct > 0) {
+    echo json_encode(['success' => false, 'message' => 'ใส่รหัสผิดหลายครั้งเกินไป กรุณารอ ' . rl_wait_text($waitAcct) . ' แล้วลองใหม่ครับ']);
     exit;
 }
 
@@ -89,8 +66,9 @@ try {
     // 1. ตรวจสอบว่าเจอชื่อผู้ใช้ไหม และตรวจสอบรหัสผ่านว่าตรงกับที่ Hash ไว้ในฐานข้อมูลหรือไม่
     if ($user && password_verify($password, $user['password'])) {
 
-        // ✅ login สำเร็จ -> เคลียร์ตัวนับ rate limit ของ IP นี้
-        if (file_exists($lockFile)) unlink($lockFile);
+        // ✅ login สำเร็จ -> เคลียร์ตัวนับ rate limit ทั้งของบัญชีนี้และของ IP นี้
+        rl_clear('login_attempts', $acctBucket);
+        rl_clear('login_attempts', $ipBucket);
 
         // 🌟 สร้าง session id ใหม่ทุกครั้งที่ login สำเร็จ กัน session fixation attack
         session_regenerate_id(true);
@@ -105,6 +83,12 @@ try {
         // 🔒 ประทับเวลา login + ลายนิ้วมือเครื่อง ไว้ให้ cb_enforce_session_policy() ใช้คุมอายุ
         //    และผูก session นี้กับเบราว์เซอร์ที่กรอกรหัสผ่านจริงๆ เท่านั้น
         cb_session_mark_login();
+
+        // 📝 บันทึกระบบ: เข้าสู่ระบบสำเร็จ
+        sl_log($conn, 'login_ok', 'เข้าสู่ระบบ (' . ($user['role'] === 'admin' ? 'แอดมิน' : 'พนักงาน') . ')', [
+            'actor' => ['id' => (int)$user['id'], 'name' => (string)$user['first_name'], 'emp' => (string)$user['employee_id']],
+            'target_type' => 'user', 'target' => (string)$user['username'],
+        ]);
 
         // 🌟 Remember-me 90 วัน เฉพาะผู้ใช้ทั่วไป (ไม่ใช่ admin) — ตามที่ตกลงกันไว้
         // แก้ปัญหา login บ่อยของพนักงาน โดยไม่ยืด session ฝั่ง admin ที่คุมข้อมูลทั้งระบบ
@@ -131,12 +115,23 @@ try {
         ]);
 
     } else {
-        // ❌ login ผิด -> นับเพิ่ม 1 ครั้ง เก็บลง lock file
-        $attemptData['count']++;
-        file_put_contents($lockFile, json_encode($attemptData));
+        // ❌ login ผิด -> นับเพิ่ม 1 ครั้ง ทั้งชั้นบัญชีและชั้น IP
+        $fails = rl_fail('login_attempts', $acctBucket);
+        rl_fail('login_attempts', $ipBucket);
+        $left = $maxAttempts - $fails;
+
+        // 📝 บันทึกระบบ: เข้าสู่ระบบไม่สำเร็จ (บันทึกเฉพาะชื่อผู้ใช้ที่ลอง — ไม่เก็บรหัสผ่านที่พิมพ์)
+        sl_log($conn, 'login_fail', 'เข้าสู่ระบบไม่สำเร็จ (ลองครั้งที่ ' . $fails . ')' . ($user ? '' : ' — ไม่พบชื่อผู้ใช้นี้'), [
+            'actor' => ['id' => $user ? (int)$user['id'] : null, 'name' => $user ? (string)$user['first_name'] : null, 'emp' => $user ? (string)$user['employee_id'] : null],
+            'target_type' => 'user', 'target' => mb_substr($username, 0, 60),
+        ]);
 
         // หากชื่อหรือรหัสไม่ตรง ห้ามบอกตรงๆ ว่าอะไรผิด (หลัก Security) ให้บอกรวมๆ ครับ
-        echo json_encode(['success' => false, 'message' => 'ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้องครับเพื่อน']);
+        // แต่บอกจำนวนครั้งที่เหลือได้ ให้ผู้ใช้รู้ตัวก่อนโดนล็อก
+        $msg = 'ชื่อผู้ใช้งานหรือรหัสผ่านไม่ถูกต้องครับเพื่อน';
+        if ($left <= 2 && $left > 0) $msg .= " (เหลือโอกาสลองอีก $left ครั้ง)";
+        if ($left <= 0) $msg .= ' กรุณารอ ' . rl_wait_text(rl_retry_after('login_attempts', $acctBucket, $maxAttempts)) . ' แล้วลองใหม่ หรือกด "ลืมรหัสผ่าน"';
+        echo json_encode(['success' => false, 'message' => $msg]);
     }
 
 } catch (PDOException $e) {
@@ -144,4 +139,4 @@ try {
     // log ไว้ฝั่ง server แทน ดูย้อนหลังได้จาก error_log ปกติ
     error_log('Login DB error: ' . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'ระบบฐานข้อมูลขัดข้อง กรุณาลองใหม่อีกครั้งครับ']);
-}
+}

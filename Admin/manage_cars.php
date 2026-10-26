@@ -6,6 +6,7 @@ include_once "../db_connect.php";
 
 // 🌟 ไฟล์นี้ไม่มี auth check เลยมาก่อน! ใครก็ยิง action=delete/save ได้โดยไม่ต้อง login
 require_once __DIR__ . '/../require_admin.php';
+require_once __DIR__ . '/../db_error_text.php'; // แปล error ฐานข้อมูลให้คนอ่านรู้เรื่อง
 requireAdminAccess();
 
 $action = $_GET['action'] ?? '';
@@ -48,7 +49,7 @@ if ($action === 'delete') {
         echo json_encode(["success" => true]);
     } catch (PDOException $e) {
         error_log('manage_cars delete DB error: ' . $e->getMessage());
-        echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด ไม่สามารถลบข้อมูลรถได้"]);
+        echo json_encode(["success" => false, "message" => cb_db_error_message($e, "เกิดข้อผิดพลาด ไม่สามารถลบข้อมูลรถได้")]);
     }
     exit;
 }
@@ -161,7 +162,7 @@ if ($action === 'save') {
         echo json_encode(["success" => true]);
     } catch (PDOException $e) {
         error_log('manage_cars save DB error: ' . $e->getMessage());
-        echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด ไม่สามารถบันทึกข้อมูลรถได้"]);
+        echo json_encode(["success" => false, "message" => cb_db_error_message($e, "เกิดข้อผิดพลาด ไม่สามารถบันทึกข้อมูลรถได้")]);
     }
     exit;
 }

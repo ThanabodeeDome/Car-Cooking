@@ -3,47 +3,7 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/same_origin.php';
 require_same_origin();
 require_once 'db_connect.php';
-
-// 🩹 FIX: ปัญหาเดียวกันกับ login_process.php — ระบบรันหลัง Cloudflare Tunnel
-// REMOTE_ADDR ที่เซิร์ฟเวอร์เห็นเป็น IP ของตัว tunnel เอง เหมือนกันหมดทุกเครื่อง
-// แก้โดยอ่าน IP จริงจาก header ที่ Cloudflare ใส่มาให้แทน
-function getClientIp(): string {
-    $remote = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-    // 🔒 เชื่อ header จาก proxy เฉพาะเมื่อ request มาจาก tunnel/proxy ในเครื่องหรือวง LAN (กันปลอม IP หลบ rate limit)
-    $fromProxy = filter_var($remote, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
-    if ($fromProxy) {
-        if (!empty($_SERVER['HTTP_CF_CONNECTING_IP']) && filter_var(trim($_SERVER['HTTP_CF_CONNECTING_IP']), FILTER_VALIDATE_IP)) {
-            return trim($_SERVER['HTTP_CF_CONNECTING_IP']);
-        }
-        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-            $first = trim(explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]);
-            if (filter_var($first, FILTER_VALIDATE_IP)) return $first;
-        }
-    }
-    return $remote;
-}
-
-// 🌟 Rate Limit กันเดา employee_id/username (brute-force account takeover)
-$ip = getClientIp();
-$lockDir = sys_get_temp_dir() . '/reset_attempts';
-if (!is_dir($lockDir)) mkdir($lockDir, 0700, true);
-$lockFile = $lockDir . '/' . md5($ip) . '.json';
-
-$maxAttempts = 5;
-$lockoutSeconds = 900; // 15 นาที
-
-$attemptData = ['count' => 0, 'first_attempt' => time()];
-if (file_exists($lockFile)) {
-    $attemptData = json_decode(file_get_contents($lockFile), true) ?: $attemptData;
-}
-if (time() - $attemptData['first_attempt'] > $lockoutSeconds) {
-    $attemptData = ['count' => 0, 'first_attempt' => time()];
-}
-if ($attemptData['count'] >= $maxAttempts) {
-    $waitMin = ceil(($lockoutSeconds - (time() - $attemptData['first_attempt'])) / 60);
-    echo json_encode(['success' => false, 'message' => "ลองผิดเกินกำหนด กรุณารออีกประมาณ $waitMin นาทีแล้วลองใหม่ครับ"]);
-    exit;
-}
+require_once __DIR__ . '/rate_limit.php';
 
 $username     = isset($_POST['username']) ? trim($_POST['username']) : '';
 $employee_id  = isset($_POST['employee_id']) ? trim($_POST['employee_id']) : '';
@@ -58,6 +18,23 @@ if (empty($username) || empty($employee_id) || ($action === 'finish' && empty($n
     exit;
 }
 
+// 🌟 Rate Limit กันเดา username/employee_id + กันยิงอีเมล OTP รัวๆ (brute-force account takeover)
+// 🩹 นับแยกตาม "บัญชี + IP" เหมือน login_process.php — เดิมนับตาม IP เพียวๆ ทำให้คนที่ออกเน็ต
+// ผ่าน IP สาธารณะเดียวกัน (ทั้งออฟฟิศ/เน็ตมือถือ) ถูกล็อกยกวงตามคนที่กรอกผิดคนเดียว
+$ip          = getClientIp();
+$acctBucket  = 'acct:' . mb_strtolower($username) . '|' . $ip;
+$ipBucket    = 'ip:' . $ip;
+$maxAttempts = 5;   // ต่อบัญชีต่อ IP
+$maxPerIp    = 20;  // รวมทุกบัญชีจาก IP เดียว
+
+foreach ([[$ipBucket, $maxPerIp, 'มีการลองผิดจากเครือข่ายนี้มากเกินไป'], [$acctBucket, $maxAttempts, 'ลองผิดเกินกำหนด']] as [$bucket, $max, $head]) {
+    $wait = rl_retry_after('reset_attempts', $bucket, $max);
+    if ($wait > 0) {
+        echo json_encode(['success' => false, 'message' => $head . ' กรุณารอ ' . rl_wait_text($wait) . ' แล้วลองใหม่ครับ']);
+        exit;
+    }
+}
+
 try {
     // 1. ตรวจสอบก่อนว่ามี User ชื่อนี้ และรหัสพนักงานตรงกันจริงไหม
     $check_sql = "SELECT COUNT(*) FROM Users WHERE username = :username AND employee_id = :employee_id";
@@ -69,8 +46,8 @@ try {
 
     // ถ้าไม่พบข้อมูลที่ตรงกัน (กรอกข้อมูลมั่ว หรือแอบมาแฮกไอดีคนอื่น)
     if ($stmt->fetchColumn() == 0) {
-        $attemptData['count']++;
-        file_put_contents($lockFile, json_encode($attemptData));
+        rl_fail('reset_attempts', $acctBucket);
+        rl_fail('reset_attempts', $ipBucket);
         echo json_encode(['success' => false, 'message' => 'ข้อมูลยืนยันตัวตนไม่ถูกต้อง ชื่อผู้ใช้หรือรหัสพนักงานไม่ตรงกับในระบบครับ']);
         exit;
     }
@@ -102,8 +79,8 @@ try {
                  ->execute([':h' => password_hash($code, PASSWORD_DEFAULT), ':username' => $username, ':employee_id' => $employee_id]);
             $sentOk = sendAppMail($row['email'], 'รหัสยืนยันการตั้งรหัสผ่านใหม่',
                 mail_layout('รหัสยืนยัน (OTP)', '<p>รหัสของคุณคือ</p><p style="font-size:28px;letter-spacing:6px"><b>' . $code . '</b></p><p>ใช้ได้ภายใน 10 นาที ถ้าคุณไม่ได้ขอ ให้ไม่ต้องสนใจอีเมลนี้</p>'));
-            $attemptData['count']++; // นับการขอ OTP ด้วย กันยิงอีเมลรัว
-            file_put_contents($lockFile, json_encode($attemptData));
+            rl_fail('reset_attempts', $acctBucket); // นับการขอ OTP ด้วย กันยิงอีเมลรัว
+            rl_fail('reset_attempts', $ipBucket);
             if (!$sentOk) {
                 echo json_encode(['success' => false, 'message' => 'ส่งอีเมลไม่สำเร็จ กรุณาลองใหม่หรือติดต่อแอดมิน']);
                 exit;
@@ -121,9 +98,9 @@ try {
         $valid = !empty($row['ResetOTP'])
               && !empty($row['otp_alive']) && password_verify($otp, $row['ResetOTP']);
         if (!$valid) {
-            $attemptData['count']++;
-            file_put_contents($lockFile, json_encode($attemptData));
-            $left = max(0, $maxAttempts - $attemptData['count']);
+            $fails = rl_fail('reset_attempts', $acctBucket);
+            rl_fail('reset_attempts', $ipBucket);
+            $left = max(0, $maxAttempts - $fails);
             echo json_encode(['success' => false, 'message' => "รหัสยืนยัน (OTP) ไม่ถูกต้องหรือหมดอายุ (เหลือโอกาสลองอีก $left ครั้ง) ตรวจให้แน่ใจว่าใช้รหัสจากอีเมลฉบับล่าสุด"]);
             exit;
         }
@@ -151,7 +128,8 @@ try {
     ]);
 
     if ($result) {
-        if (file_exists($lockFile)) unlink($lockFile);
+        rl_clear('reset_attempts', $acctBucket); // ตั้งรหัสใหม่สำเร็จ เคลียร์ตัวนับ
+        rl_clear('reset_attempts', $ipBucket);
         // 🔒 เปลี่ยนรหัสแล้วต้องเตะ remember-me ทุกเครื่องทิ้ง (ไม่งั้นคนที่ขโมย cookie ไปยังเข้าได้ต่อ 90 วัน)
         try {
             $conn->prepare("DELETE rt FROM RememberTokens rt JOIN Users u ON u.id = rt.user_id WHERE u.username = :username AND u.employee_id = :employee_id")
@@ -167,4 +145,4 @@ try {
 } catch (PDOException $e) {
     error_log('reset_password_process.php error: ' . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'ระบบฐานข้อมูลขัดข้อง กรุณาลองใหม่อีกครั้งครับ']);
-}
+}
