@@ -30,6 +30,17 @@ if (!isset($_SESSION['user_id'])) {
         $safeRedirect = substr($safeRedirect, 4);
     }
 
+    // 🌟 URL สะอาด (/booking, /queue ...) -> แปลงกลับเป็นชื่อไฟล์จริงก่อนส่งไปหน้า login (login_process.php รับเฉพาะ .html/.php)
+    $cleanToFile = ['booking' => 'booking.html', 'queue' => 'car-status.html', 'history' => 'booking-details.html', 'cars' => 'car-details.html',
+                    'checkin' => 'checkin.html', 'return' => 'return_scan.html', 'profile' => 'profile.html', 'scan' => 'scan.php'];
+    $pathOnly = trim((string)parse_url('/' . $safeRedirect, PHP_URL_PATH), '/');
+    $queryOnly = (string)parse_url('/' . $safeRedirect, PHP_URL_QUERY);
+    if ($pathOnly === '') {
+        $safeRedirect = 'homepage.html' . ($queryOnly !== '' ? '?' . $queryOnly : '');
+    } elseif (isset($cleanToFile[$pathOnly])) {
+        $safeRedirect = $cleanToFile[$pathOnly] . ($queryOnly !== '' ? '?' . $queryOnly : '');
+    }
+
     header("Location: index.html?redirect=" . urlencode($safeRedirect));
     exit;
 }
