@@ -274,9 +274,27 @@ function renderPassengerResults(results) {
 
   const myEmpId = document.getElementById("employee-id")?.value?.trim();
 
-  results
+  const list = results.filter((r) => r.employee_id !== myEmpId);
+  const hasFreq = list.some((r) => r.trips > 0);
+  let lastGroup = null;
+  const addHeading = (text) => {
+    const h = document.createElement("div");
+    h.className = "passenger-group-title";
+    h.textContent = text;
+    wrap.appendChild(h);
+  };
+
+  list
     .filter((r) => r.employee_id !== myEmpId) // กันเลือกตัวเองเป็นผู้ร่วมทาง (เป็นคนขับอยู่แล้ว)
     .forEach((r) => {
+      // หัวกลุ่ม: ไปด้วยกันบ่อย / พนักงานอื่น (แสดงเมื่อมีคนที่เคยไปด้วยกัน)
+      if (hasFreq) {
+        const grp = r.trips > 0 ? "freq" : "other";
+        if (grp !== lastGroup) {
+          addHeading(grp === "freq" ? "ไปด้วยกันบ่อย" : "พนักงานอื่น");
+          lastGroup = grp;
+        }
+      }
       const isChecked = selectedPassengers.has(r.employee_id);
       const row = document.createElement("div");
       row.className = "passenger-result-row" + (isChecked ? " is-selected" : "");
@@ -285,7 +303,7 @@ function renderPassengerResults(results) {
         <div class="passenger-avatar" style="background:${avatarColorFor(r.name || r.email || "?")}">${escHtml((r.name || r.email || "?").trim().charAt(0))}</div>
         <div class="passenger-result-text">
           <div class="passenger-result-name">${r.name ? escHtml(r.name) : "(ไม่มีชื่อ)"}</div>
-          <div class="passenger-result-sub">${escHtml(r.email || r.employee_id)}</div>
+          <div class="passenger-result-sub">${escHtml(r.email || r.employee_id)}${r.trips > 0 ? ` · ไปด้วยกัน ${r.trips} ครั้ง` : ""}</div>
         </div>`;
 
       const checkbox = row.querySelector('input[type="checkbox"]');
@@ -305,6 +323,8 @@ function renderPassengerResults(results) {
     });
 
   updatePassengerSelectedCount();
+  // เลื่อนให้เห็นรายชื่อที่เพิ่งเปิด (ในมือถือรายชื่ออยู่ใต้ช่องค้นหา อาจถูกปุ่มยืนยัน/คีย์บอร์ดบัง)
+  try { wrap.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) {}
 }
 
 function onPassengerSearchBlur() {

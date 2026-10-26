@@ -1771,3 +1771,8 @@ input[type="date"] {
 .cal-hlabel.is-last {
   transform: translateY(-100%);
 }
+
+/* รายชื่อผู้ร่วมเดินทาง: กล่องสูงขึ้น เห็นหลายคนต่อครั้ง + หัวกลุ่ม */
+.passenger-search-results { max-height: 340px; }
+#booking-modal-overlay .passenger-search-results { max-height: 340px; }
+.passenger-group-title { position: sticky; top: 0; z-index: 1; padding: 7px 12px; font-size: 11.5px; font-weight: 600; letter-spacing: .03em; color: #9aa0b3; background: #15161d; border-bottom: 1px solid rgba(255,255,255,.08); }
