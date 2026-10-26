@@ -12,7 +12,9 @@
     { href: "car-status.html", label: "เช็กคิว", match: ["car-status"] },
     { href: "booking-details.html", label: "การจองของฉัน", match: ["booking-details"] },
   ];
-  const page = (location.pathname.split("/").pop() || "").replace(/\.(html|php)$/, "");
+  const rawPage = (location.pathname.split("/").pop() || "").replace(/\.(html|php)$/, "");
+  const PAGE_ALIAS = { "": "homepage", queue: "car-status", history: "booking-details", cars: "car-details", return: "return_scan", login: "index", scan: "checkin" };
+  const page = PAGE_ALIAS[rawPage] || rawPage;
   const isOn = (l) => l.match.includes(page);
   const profileActive = page === "profile" || page === "car-details";
 
@@ -293,6 +295,67 @@
         document.body.appendChild(ov);
         ov.querySelector(".an-odp-ok").focus({ preventScroll: true });
     }
+  }
+
+  // ✓ ป้ายแจ้ง: ระบบเช็คอินให้อัตโนมัติแล้ว (ของฉัน) — ยังไม่ยืนยันรับรถ/ไม่ได้ปล่อยรถ จะขึ้นให้เห็นทุกหน้า (ปิดได้ต่อรอบเปิดแท็บ)
+  if (!["checkin", "return_scan", "index"].includes(page)) {
+    const ACK = "ac-dismissed";
+    let dismissed = [];
+    try { dismissed = JSON.parse(sessionStorage.getItem(ACK) || "[]") || []; } catch (e) {}
+    const acStyle = document.createElement("style");
+    acStyle.textContent = `
+    .an-ac{position:fixed;top:78px;left:50%;transform:translateX(-50%);z-index:900;width:min(520px,calc(100% - 24px));box-sizing:border-box;display:grid;gap:10px;font-family:"Prompt","Sarabun",sans-serif}
+    .an-ac-card{position:relative;padding:14px 44px 14px 16px;border-radius:16px;background:#10281d;border:1px solid rgba(34,197,94,.55);color:#d1fae5;box-shadow:0 14px 34px -12px rgba(0,0,0,.7);animation:acIn .35s cubic-bezier(.2,.9,.3,1.2)}
+    .an-ac-card b{display:block;color:#4ade80;font-size:15px;font-weight:600}
+    .an-ac-card p{margin:3px 0 10px;font-size:13px;line-height:1.5;color:#bbf7d0}
+    .an-ac-x{position:absolute;top:8px;right:8px;width:30px;height:30px;border:none;border-radius:50%;background:rgba(0,0,0,.25);color:#d1fae5;cursor:pointer;font-size:18px;line-height:1}
+    .an-ac-btns{display:flex;flex-wrap:wrap;gap:8px}
+    .an-ac-btns a,.an-ac-btns button{padding:8px 14px;border-radius:12px;font:600 13px "Prompt",sans-serif;text-decoration:none;cursor:pointer;border:1px solid transparent}
+    .an-ac-ok{background:#16a34a;color:#fff}
+    .an-ac-no{background:transparent;color:#cbd5e1;border-color:rgba(203,213,225,.4)!important}
+    @keyframes acIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+    @media (max-width:768px){.an-ac{top:70px}}
+    @media (prefers-reduced-motion:reduce){.an-ac-card{animation:none}}`;
+    document.head.appendChild(acStyle);
+    const acEsc = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+    fetch("get_auto_checkins.php", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        const items = ((d && d.items) || []).filter((o) => !dismissed.includes(String(o.BookingID)));
+        if (!items.length) return;
+        const box = document.createElement("div");
+        box.className = "an-ac";
+        box.setAttribute("role", "status");
+        items.slice(0, 3).forEach((o) => {
+          const card = document.createElement("div");
+          card.className = "an-ac-card";
+          const q = encodeURIComponent(o.CarPlate || "");
+          card.innerHTML = '<button type="button" class="an-ac-x" aria-label="ปิด">&times;</button>' +
+            "<b>✓ ระบบเช็คอินให้อัตโนมัติแล้ว</b>" +
+            "<p>รถ " + acEsc(o.CarPlate) + " (" + acEsc(o.DriverName || "-") + ") เมื่อ " + acEsc(o.CheckinHM || "-") + " น. ตามเวลาที่จอง · กำหนดคืน " + acEsc(o.DueHM || "-") + " น.</p>" +
+            '<div class="an-ac-btns"><a class="an-ac-ok" href="checkin.html?plate=' + q + '&picked=1">ยืนยันรับรถ</a>' +
+            '<button type="button" class="an-ac-no">ไม่ได้ใช้รถ (ปล่อยรถ)</button></div>';
+          card.querySelector(".an-ac-x").addEventListener("click", () => {
+            dismissed.push(String(o.BookingID));
+            try { sessionStorage.setItem(ACK, JSON.stringify(dismissed)); } catch (e) {}
+            card.remove();
+            if (!box.children.length) box.remove();
+          });
+          card.querySelector(".an-ac-no").addEventListener("click", async () => {
+            const ok = window.AppDialog
+              ? await window.AppDialog.confirm({ title: "ไม่ได้ใช้รถคันนี้จริงใช่ไหม?", message: "ระบบจะปล่อยรถให้คนอื่นจองได้ทันที", confirmText: "ไม่ได้ใช้รถ", cancelText: "กลับ", danger: true })
+              : confirm("ไม่ได้ใช้รถคันนี้จริงใช่ไหม?");
+            if (!ok) return;
+            fetch("cancel_booking.php", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ booking_id: Number(o.BookingID), unused: true }) })
+              .then((r) => r.json())
+              .then((res) => { if (res && res.success) { card.remove(); if (!box.children.length) box.remove(); } })
+              .catch(() => {});
+          });
+          box.appendChild(card);
+        });
+        document.body.appendChild(box);
+      })
+      .catch(() => {});
   }
 
   fetch("get_current_user.php", { cache: "no-store" })
