@@ -36,3 +36,13 @@
     font-size: 16px !important;
   }
 }
+
+/* iOS เท่านั้น (-webkit-touch-callout มีเฉพาะ iOS Safari): บังคับ 16px ทุกความกว้างจอ — กันกรณีเปิดแบบ "ขอเว็บเดสก์ท็อป"
+   ที่ความกว้างเกิน 1024px แล้วกฎด้านบนไม่ทำงาน และรวม date/time ที่กฎด้านบนยกเว้นไว้ */
+@supports (-webkit-touch-callout: none) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="color"]):not([type="hidden"]),
+  select:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="color"]):not([type="hidden"]),
+  textarea:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="color"]):not([type="hidden"]) {
+    font-size: 16px !important;
+  }
+}

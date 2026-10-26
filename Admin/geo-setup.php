@@ -18,7 +18,7 @@
     />
     <link rel="stylesheet" href="style.css?v=14" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
-    <link rel="stylesheet" href="../Car/form-ios-zoom.css?v=2" />
+    <link rel="stylesheet" href="../Car/form-ios-zoom.css?v=3" />
     <style>
       .gs-intro { display: flex; gap: 14px; align-items: flex-start; padding: 14px 18px; margin-bottom: 18px; background: #fff; border: 1px solid #e8eaf1; border-radius: 16px; box-shadow: 0 2px 10px rgba(21, 25, 38, 0.05); }
       .gs-intro i { flex: none; width: 38px; height: 38px; border-radius: 12px; background: #fee2e2; color: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 17px; }

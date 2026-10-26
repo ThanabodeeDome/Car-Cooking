@@ -1,6 +1,13 @@
 /* Add-to-home-screen support: injects the manifest + registers the (no-cache) service worker. */
 (function () {
   "use strict";
+  // 📱 iOS: กัน Safari ซูมเข้าเองตอนแตะช่องกรอก — ตั้ง maximum-scale=1 เฉพาะ iPhone/iPad
+  //    (iOS ไม่นำค่านี้ไปห้ามผู้ใช้บีบนิ้วซูมเอง จึงยังซูมขยายเองได้ตามต้องการ; Android/คอม ไม่ถูกแตะ)
+  try {
+    const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    const vp = document.querySelector('meta[name="viewport"]');
+    if (ios && vp && !/maximum-scale/.test(vp.content)) vp.content += ", maximum-scale=1";
+  } catch (e) {}
   if (!document.querySelector('link[rel="manifest"]')) {
     const l = document.createElement("link");
     l.rel = "manifest";
