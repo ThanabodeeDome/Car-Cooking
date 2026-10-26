@@ -3,10 +3,10 @@
 #       powershell -ExecutionPolicy Bypass -File tools\make-deploy.ps1 -From abc123
 # ผลลัพธ์: โฟลเดอร์ ..\car-booking_deploy  -> ก๊อปทั้งโฟลเดอร์ไปวางทับบนเซิร์ฟเวอร์ (หรือ zip แล้วแตกทับ) จบ
 # ไม่ใส่: db_connect.php / uploads / ไฟล์ตั้งค่าที่เป็นความลับ  (ไม่มีวันทับของเว็บจริง)
-param([string]$From = "54f12ab")
+param([string]$From = "54f12ab", [string]$Name = "car-booking_deploy")
 
 $root = Split-Path -Parent $PSScriptRoot
-$out = Join-Path (Split-Path -Parent $root) "car-booking_deploy"
+$out = Join-Path (Split-Path -Parent $root) $Name
 Set-Location $root
 
 if (Test-Path $out) { Remove-Item $out -Recurse -Force }
