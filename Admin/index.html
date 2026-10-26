@@ -16,7 +16,7 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
-    <link rel="stylesheet" href="style.css?v=19" />
+    <link rel="stylesheet" href="style.css?v=21" />
     <link rel="stylesheet" href="admin-datepicker.css" />
     <link rel="stylesheet" href="../Car/form-ios-zoom.css?v=2" />
   </head>
@@ -446,10 +446,10 @@
 
         <!-- ความรับผิดชอบรายบุคคล: ใครค้างคืน/คืนช้า/ไม่ได้ใช้รถ -->
         <section class="rp-card" style="margin-bottom:20px">
-          <header><h3><i class="fa-solid fa-user-clock"></i> ความรับผิดชอบรายบุคคล <small>เฉพาะคนที่ค้างคืน/คืนช้า (เกิน 60 นาที)/ไม่ได้ใช้รถ ในช่วงที่เลือก</small></h3></header>
+          <header><h3><i class="fa-solid fa-user-clock"></i> ใครไม่คืนรถบ่อยที่สุด <small>เรียงตามจำนวนครั้งที่ไม่คืนรถ/คืนช้าเกิน 60 นาที ในช่วงที่เลือก (ฝ่าย/แผนก/หน่วยงานเก็บตอนจอง)</small></h3></header>
           <div class="table-scroll-container">
             <table class="car-data-table rp-table">
-              <thead><tr><th>#</th><th>ชื่อ</th><th>เที่ยวทั้งหมด</th><th>ยังไม่คืน</th><th>คืนช้า</th><th>ช้ารวม</th><th>ไม่ได้ใช้รถ</th><th>ไม่มาใช้</th><th>เช็คอินอัตโนมัติ</th></tr></thead>
+              <thead><tr><th>#</th><th>รหัส</th><th>ชื่อ</th><th>ฝ่าย</th><th>แผนก</th><th>หน่วยงาน</th><th>ไม่คืนรถ (ครั้ง)</th><th>เลยเวลาคืน</th><th>คืนช้า</th><th>ช้ารวม</th><th>ไม่ได้ใช้รถ</th><th>ไม่มาใช้</th><th>เที่ยวทั้งหมด</th></tr></thead>
               <tbody id="rp-t-acc"></tbody>
             </table>
           </div>
@@ -497,9 +497,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="../Car/ui-dialog.js?v=3"></script>
     <script src="admin-toast.js?v=1"></script>
-    <script src="status-badge.js?v=2"></script>
-    <script src="dashboard.js?v=6"></script>
-    <script src="reports.js?v=5"></script>
+    <script src="status-badge.js?v=6"></script>
+    <script src="dashboard.js?v=8"></script>
+    <script src="reports.js?v=6"></script>
     <script src="system-log.js?v=1"></script>
     <script>
       // 📱 เมนูซ้ายแบบลิ้นชักบนจอเล็ก (≤ 900px): กดปุ่ม ☰ เปิด / กดพื้นหลังหรือเลือกเมนูแล้วปิด
@@ -519,7 +519,7 @@
     </script>
 
     <script src="admin-datepicker.js"></script>
-    <script src="app.js?v=13"></script>
+    <script src="app.js?v=15"></script>
     <script src="../Car/notify-bell.js?v=6"></script>
     <script>
       // เปิดแท็บตามลิงก์ #ชื่อแท็บ (ใช้จากหน้า "จุดตรวจพิกัด" และปุ่มย้อนกลับของเบราว์เซอร์)

@@ -193,7 +193,7 @@ function renderRecentBookings(list) {
             <strong>${escapeHtml(bk.DriverName) || "-"}</strong>
             <span>${escapeHtml(bk.CarPlate) || "-"} • ${bk.BookingDate || "-"} (${dashTimeRange(bk)})</span>
           </div>
-          ${statusBadge(bk.BookingStatus)}
+          ${statusBadge(bk.BookingStatus, { due: bookingDue(bk.BookingDate, bk.OutTime, bk.PlannedReturnTime) })}
         </div>`;
     })
     .join("");
@@ -232,7 +232,7 @@ function renderOverduePanel(list) {
     )
     .join("");
   box.innerHTML = `
-    <h2 class="panel-title od-title"><i class="fa-solid fa-car-burst"></i> รถที่ยังไม่ได้คืน <span class="od-count">${overdueList.length}</span></h2>
+    <h2 class="panel-title od-title"><i class="fa-solid fa-car-burst"></i> รถที่เลยเวลาคืน <span class="od-count">${overdueList.length}</span></h2>
     <p class="od-hint">ผู้ใช้ทุกคนเห็นรายการนี้เป็นป้ายประกาศอยู่แล้ว • รถคันนี้ยังถูกล็อกไม่ให้คนอื่นจอง — ติดต่อผู้ขับ ปิดงานแทนเมื่อได้เลขไมล์ หรือกด "ไม่ได้ใช้รถ" ถ้ารถไม่ได้ออกไปจริง</p>
     <div class="od-list">${rows}</div>`;
   if (!box.__bound) {

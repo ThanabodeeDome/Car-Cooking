@@ -312,7 +312,7 @@ function applyFilterAndRender(highlightPlate) {
           </div>
         </div>
 
-        <div class="bk-st">${statusBadge(rawStatus)}</div>
+        <div class="bk-st">${statusBadge(rawStatus, { due: bookingDue(bk.OutDate, bk.OutTime, bk.PlannedReturn), returned: bookingReturned(bk.ReturnDate, bk.ReturnTime) })}</div>
 
         <div class="arrow-icon-wrap">
           <i class="fa-solid fa-chevron-down"></i>

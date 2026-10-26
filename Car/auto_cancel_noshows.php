@@ -23,6 +23,31 @@ function bookingTimesSql(string $statusLiteral): string {
             ) z WHERE StartAt IS NOT NULL";
 }
 
+// เวลาที่ระบบกฎใหม่ "เริ่มทำงานจริง" — บันทึกไว้ในไฟล์ตอนเรียกครั้งแรกหลังอัปโหลดขึ้นเว็บจริง
+// กฎปล่อยคิว/เช็คอินอัตโนมัติจะแตะเฉพาะการจองที่จบ/เริ่มหลังเวลานี้ ไม่ไปแก้ของเก่าที่ค้างมาก่อนอัปโหลด
+// (กันการจองเก่าถูกเปลี่ยนสถานะพรวดเดียว โดยที่แอดมินไม่ต้องตามแก้) ลบไฟล์ auto_rules_start.txt เพื่อตั้งใหม่ได้
+function autoRulesStart() {
+    static $cut = null;
+    if ($cut !== null) return $cut;
+    $cut = '1970-01-01 00:00:00'; // ถ้าเขียนไฟล์ไม่ได้ = ไม่มีเส้นแบ่ง (ทำงานเหมือนเดิมทุกอย่าง)
+    try {
+        require_once __DIR__ . '/../session_policy.php';
+        $dir = cb_state_dir();
+        if ($dir) {
+            $file = $dir . DIRECTORY_SEPARATOR . 'auto_rules_start.txt';
+            $v = is_file($file) ? trim((string)@file_get_contents($file)) : '';
+            if (!preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $v)) {
+                $v = date('Y-m-d H:i:s');
+                @file_put_contents($file, $v, LOCK_EX);
+            }
+            $cut = $v;
+        }
+    } catch (Throwable $e) {
+        error_log('autoRulesStart: ' . $e->getMessage());
+    }
+    return $cut;
+}
+
 function autoCancelNoShows($conn) {
     autoReleaseNoShows($conn);
     autoCheckInByTime($conn);
@@ -34,7 +59,7 @@ function autoReleaseNoShows($conn) {
         $where = "FROM CarBookings b
              JOIN (" . bookingTimesSql("N'จองแล้ว'") . ") t ON t.BookingID = b.BookingID
              WHERE b.BookingStatus = N'จองแล้ว' AND b.CheckInTime IS NULL
-               AND t.EndAt IS NOT NULL AND t.EndAt <= GETDATE()";
+               AND t.EndAt IS NOT NULL AND t.EndAt <= GETDATE() AND t.EndAt >= '" . autoRulesStart() . "'";
         // รายชื่อที่กำลังจะถูกปล่อย (ไว้เขียน log) — ไม่มีก็ไม่ต้อง UPDATE
         $due = $conn->query("SELECT b.BookingID, b.BookingNumber, b.CarPlate, b.DriverName $where")->fetchAll(PDO::FETCH_ASSOC);
         if (!$due) return;
@@ -61,7 +86,7 @@ function autoCheckInByTime($conn) {
              JOIN (SELECT BookingID, StartAt,
                           ROW_NUMBER() OVER (PARTITION BY REPLACE(CarPlate, ' ', '') ORDER BY StartAt, BookingID) AS rn
                    FROM (" . bookingTimesSql("N'จองแล้ว'") . ") t
-                   WHERE StartAt <= GETDATE() AND (EndAt IS NULL OR EndAt > GETDATE())) d
+                   WHERE StartAt <= GETDATE() AND StartAt >= '" . autoRulesStart() . "' AND (EndAt IS NULL OR EndAt > GETDATE())) d
                ON d.BookingID = b.BookingID AND d.rn = 1
              WHERE b.BookingStatus = N'จองแล้ว' AND b.CheckInTime IS NULL
                AND NOT EXISTS (SELECT 1 FROM CarBookings o

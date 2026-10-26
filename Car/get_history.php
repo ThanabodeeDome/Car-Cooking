@@ -21,7 +21,11 @@ try {
                    CONVERT(varchar, cb.ReturnTime, 8) AS return_time,
                    cb.Passengers AS passengers, 
                    cb.PassengerIDs AS passenger_ids,
-                   cb.BookingStatus AS booking_status
+                   cb.BookingStatus AS booking_status,
+                   CONVERT(varchar(10), cb.BookingDate, 23) AS booking_date,
+                   CONVERT(varchar(10), cb.ReturnDate, 23) AS return_date,
+                   CONVERT(varchar(5), cb.OutTime, 108) AS out_time,
+                   CONVERT(varchar(5), cb.PlannedReturnTime, 108) AS planned_return
             FROM CarBookings cb
             ORDER BY cb.BookingID DESC";
 

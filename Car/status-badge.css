@@ -12,6 +12,8 @@
 /* อนิเมชั่น: ทุกแบบเบาและวนช้า ปิดอัตโนมัติถ้าผู้ใช้ตั้งลดการเคลื่อนไหว */
 .st { animation: st-pop .45s cubic-bezier(.2,.9,.3,1.3) both; }
 .st-night { --c: #8b5cf6; --fg: #b79cff; }
+.st-late { --c: #f97316; --fg: #fdba74; }
+.st-lateret { --c: #ec4899; --fg: #f9a8d4; }
 @keyframes st-pop { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
 @keyframes st-ring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 55%, transparent); } 70%, 100% { box-shadow: 0 0 0 8px transparent; } }
 @keyframes st-drive { 0%, 100% { transform: translateX(-1px); } 50% { transform: translateX(1.5px); } }
@@ -21,8 +23,8 @@
 .st-use i { animation: st-ring 1.8s ease-out infinite; }
 .st-use i::before { display: inline-block; animation: st-drive 1.2s ease-in-out infinite; }
 .st-wait i::before { display: inline-block; animation: st-flip 3s ease-in-out infinite; }
-.st-bad i { animation: st-ring 1.4s ease-out infinite; }
-.st-bad i::before { display: inline-block; animation: st-shake 3s ease-in-out infinite; }
+.st-bad i, .st-late i { animation: st-ring 1.4s ease-out infinite; }
+.st-bad i::before, .st-late i::before { display: inline-block; animation: st-shake 3s ease-in-out infinite; }
 .st-night i { animation: st-moon 2.6s ease-in-out infinite; }
 /* ลูกเล่นให้ทุกสี: แสงวิ่งผ่านป้าย + วงแหวนหายใจ (เขียว/เหลือง/ฟ้า/ม่วง/แดงมีจังหวะต่างกัน) */
 .st { position: relative; overflow: hidden; }

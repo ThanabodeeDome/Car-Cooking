@@ -25,7 +25,8 @@ try {
 
     $sql = "SELECT BookingID, BookingNumber, DriverName, Department, Destination, CarPlate, 
                    StartMileage, Passengers, OutDate, OutTime, JobDetail, OutRemark, BookingStatus,
-                   CheckInTime, ReturnDate, ReturnTime, EndMileage, ReturnRemark
+                   CheckInTime, ReturnDate, ReturnTime, EndMileage, ReturnRemark,
+                   CONVERT(varchar(5), PlannedReturnTime, 108) AS PlannedReturn
             FROM CarBookings
             WHERE EmployeeID = :emp_id OR BookedByUserID = :uid -- รวมคิวที่เราจองให้คนอื่นด้วย (จองแทนกัน)
             ORDER BY BookingID DESC";

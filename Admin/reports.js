@@ -284,10 +284,10 @@ function renderAccountability(list) {
   tb.innerHTML = list.length
     ? list
         .map(
-          (r, i) => `<tr><td><span class="rp-rank r${i + 1}">${i + 1}</span></td><td>${rpEsc(r.name)}${r.employee_id ? ` <small>#${rpEsc(r.employee_id)}</small>` : ""}</td><td>${rpNum(r.trips)}</td><td>${tag(r.not_returned, "red")}</td><td>${tag(r.late_returns, "amber")}</td><td>${rpDur(r.late_minutes)}</td><td>${tag(r.unused, "slate")}</td><td>${tag(r.noshow, "violet")}</td><td>${r.auto_checkin ? rpNum(r.auto_checkin) : "-"}</td></tr>`,
+          (r, i) => `<tr><td><span class="rp-rank r${i + 1}">${i + 1}</span></td><td>${rpEsc(r.employee_id) || "-"}</td><td>${rpEsc(r.name)}</td><td>${rpEsc(r.division) || "-"}</td><td>${rpEsc(r.dept) || "-"}</td><td>${rpEsc(r.unit) || "-"}</td><td><b>${tag(r.late_total, "red")}</b></td><td>${tag(r.not_returned, "red")}</td><td>${tag(r.late_returns, "amber")}</td><td>${rpDur(r.late_minutes)}</td><td>${tag(r.unused, "slate")}</td><td>${tag(r.noshow, "violet")}</td><td>${rpNum(r.trips)}</td></tr>`,
         )
         .join("")
-    : '<tr><td colspan="9" class="rp-td-empty">ไม่มีใครค้างคืน/คืนช้า/ไม่ได้ใช้รถในช่วงนี้ 🎉</td></tr>';
+    : '<tr><td colspan="13" class="rp-td-empty">ไม่มีใครค้างคืน/คืนช้า/ไม่ได้ใช้รถในช่วงนี้ 🎉</td></tr>';
 }
 
 function renderFeed(id, list, emptyText, isComment) {

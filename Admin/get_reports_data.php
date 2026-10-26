@@ -124,7 +124,7 @@ try {
         require_once '../Car/geo_lib.php';
         $hasGeo = geo_columns_ok($conn);
         $hasFb = (int)$conn->query("SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID('CarBookings') AND name = 'SystemFeedback'")->fetchColumn() > 0;
-        $cols = "BookingID, CarPlate, DriverName, EmployeeID, CONVERT(varchar(10), BookingDate, 23) AS BookingDate, OutTime,
+        $cols = "BookingID, CarPlate, DriverName, EmployeeID, Department, CONVERT(varchar(10), BookingDate, 23) AS BookingDate, OutTime,
                  CONVERT(varchar(5), PlannedReturnTime, 108) AS PlannedReturnTime, StartMileage, EndMileage, BookingStatus, ReturnRemark,
                  CONVERT(varchar(10), ReturnDate, 23) AS ReturnDate, CONVERT(varchar(8), ReturnTime, 108) AS ReturnTime"
               . ($hasFb ? ", SystemFeedback" : "")
@@ -151,7 +151,11 @@ try {
 
             // --- ความรับผิดชอบรายบุคคล ---
             $accKey = (string)$r['EmployeeID'] !== '' ? (string)$r['EmployeeID'] : trim((string)$r['DriverName']);
-            if (!isset($acc[$accKey])) $acc[$accKey] = ['name' => trim((string)$r['DriverName']) ?: $accKey, 'employee_id' => (string)$r['EmployeeID'], 'trips' => 0, 'auto_checkin' => 0, 'unused' => 0, 'noshow' => 0, 'late_returns' => 0, 'not_returned' => 0, 'late_minutes' => 0];
+            if (!isset($acc[$accKey])) {
+            $org = array_map('trim', explode('/', (string)($r['Department'] ?? ''))); // เก็บตอนจอง: ฝ่าย / แผนก / หน่วยงาน
+            $acc[$accKey] = ['name' => trim((string)$r['DriverName']) ?: $accKey, 'employee_id' => (string)$r['EmployeeID'],
+                'division' => $org[0] ?? '', 'dept' => $org[1] ?? '', 'unit' => $org[2] ?? '', 'trips' => 0, 'auto_checkin' => 0, 'unused' => 0, 'noshow' => 0, 'late_returns' => 0, 'not_returned' => 0, 'late_minutes' => 0];
+            }
             if ($cancelled) {
                 if (strpos($st, 'ไม่ได้ใช้รถ') !== false) $acc[$accKey]['unused']++;
                 elseif (strpos($st, 'ไม่มาใช้งาน') !== false) $acc[$accKey]['noshow']++;
@@ -212,9 +216,12 @@ try {
         }
 
         // คนที่มีปัญหามากสุดขึ้นก่อน (ไม่คืนรถ/คืนช้าหนักสุด) — เอาเฉพาะคนที่มีอย่างน้อย 1 เรื่อง
-        $accScore = fn($x) => $x['not_returned'] * 3 + $x['late_returns'] * 2 + $x['noshow'] + $x['unused'];
-        $accList = array_values(array_filter($acc, fn($x) => $accScore($x) > 0));
-        usort($accList, fn($x, $y) => $accScore($y) <=> $accScore($x));
+        // เรียงตามจำนวนครั้งที่ไม่คืนรถ (ยังไม่คืน + คืนช้าเกิน 60 นาที) มากสุดก่อน แล้วดูเวลาที่เลยกำหนดรวม
+        $accScore = fn($x) => $x['not_returned'] + $x['late_returns'];
+        $accList = array_values(array_filter($acc, fn($x) => $accScore($x) > 0 || $x['noshow'] > 0 || $x['unused'] > 0));
+        foreach ($accList as &$__a) $__a['late_total'] = $accScore($__a);
+        unset($__a);
+        usort($accList, fn($x, $y) => [$accScore($y), $y['late_minutes'], $y['noshow'] + $y['unused']] <=> [$accScore($x), $x['late_minutes'], $x['noshow'] + $x['unused']]);
         $extra['accountability'] = array_slice($accList, 0, 20);
 
         // repair cost per plate (already computed above as $repairCost)

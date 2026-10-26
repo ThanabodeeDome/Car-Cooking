@@ -178,8 +178,32 @@
     .an-odp .meta{display:flex;flex-wrap:wrap;gap:2px 10px;align-items:center;font-size:12.5px;color:#9aa0b3}
     .an-odp .late{display:inline-flex;align-items:center;gap:5px;color:#ff8a8a;font-weight:600}
     .an-odp .late svg{width:14px;height:14px}
+    .an-odp .ct{grid-column:1/-1;display:flex;align-items:center;gap:10px;margin-top:6px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07)}
+    .an-odp .av{flex:none;width:34px;height:34px;border-radius:50%;overflow:hidden;background:rgba(229,37,42,.16);border:1px solid #e5252a;color:#ff8a8a;display:flex;align-items:center;justify-content:center;font:500 14px "Prompt",sans-serif}
+    .an-odp .av img{width:100%;height:100%;object-fit:cover;display:block}
+    .an-odp .ct-t{flex:1;min-width:0;font-size:12px;color:#9aa0b3;line-height:1.4}
+    .an-odp .ct-t b{display:block;color:#e8eaf2;font-size:13.5px;font-weight:500}
+    .an-odp .tel{flex:none;display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.5);color:#4ade80;font-size:13.5px;font-weight:600;text-decoration:none;white-space:nowrap}
+    .an-odp .tel svg{width:15px;height:15px}
     .an-odp-ok{display:block;width:calc(100% - 32px);margin:14px 16px 0;padding:13px;border:none;border-radius:14px;background:linear-gradient(135deg,#ff5a5f,#e5252a);box-shadow:0 10px 22px -10px rgba(229,37,42,.8);color:#fff;font:600 15px "Prompt",sans-serif;cursor:pointer}
     .an-odp-hint{margin-top:9px;text-align:center;font-size:12px;color:#6f7589}
+    .an-odp-card{display:flex;flex-direction:column;overflow:hidden;max-height:86vh}
+    .an-odp-hd{flex:none}
+    .an-odp ul{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.22) transparent}
+    .an-odp ul::-webkit-scrollbar{width:6px}.an-odp ul::-webkit-scrollbar-thumb{background:rgba(255,255,255,.22);border-radius:6px}
+    .an-odp-ok,.an-odp-hint{flex:none}
+    .an-odp .ct{margin-top:4px;padding-top:9px}
+    .an-odp .ct-lb{flex:1;min-width:0;display:flex;align-items:center;gap:8px;font-size:12.5px;color:#9aa0b3}
+    .an-odp .ct .av{width:28px;height:28px;font-size:12px}
+    .an-odp.multi .an-odp-hd{padding:20px 20px 14px}
+    .an-odp.multi .an-odp-ic{width:96px;margin-bottom:2px}
+    .an-odp.multi .an-odp-hd p{display:none}
+    .an-odp.multi h2{font-size:19px}
+    .an-odp.multi ul{padding:12px 12px 4px;gap:8px}
+    .an-odp.multi li{padding:10px 12px;border-radius:14px}
+    .an-odp.multi .plate{min-width:78px;font-size:15px;padding:5px 8px}
+    .an-odp.multi .who{font-size:14px}
+    .an-odp.multi .tel{padding:6px 12px;font-size:13px}
     @keyframes odpFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}@keyframes odpBadge{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
     @keyframes odpFade{from{opacity:0}to{opacity:1}}
     @keyframes odpPop{0%{opacity:0;transform:scale(.86) translateY(18px)}100%{opacity:1;transform:none}}
@@ -192,46 +216,83 @@
       const same = t.slice(0, 10) === new Date().toLocaleDateString("sv-SE");
       return "กำหนดคืน " + (same ? "" : t.slice(8, 10) + "/" + t.slice(5, 7) + " ") + t.slice(11, 16) + " น.";
     };
+    // แถวติดต่อ: รูปโปรไฟล์ + เบอร์โทร (ผู้ขับไม่มีบัญชี -> ใช้เบอร์ผู้จองแทน) แตะเบอร์เพื่อโทรได้ โดยไม่ปิดป้าย
+    const phoneFmt = (p) => { const d = String(p || "").replace(/\D/g, ""); return d.length === 10 ? d.slice(0, 3) + "-" + d.slice(3, 6) + "-" + d.slice(6) : String(p || ""); };
+    const telIc = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2"/></svg>';
+    const contact = (o) => {
+      const phone = o.DriverPhone || o.BookerPhone;
+      if (!phone && !o.DriverAvatar) return "";
+      const who = o.DriverPhone ? "" : o.BookerPhone ? "ผู้จอง: " + (o.BookerName || "") : "";
+      const initial = esc(Array.from(String(o.DriverName || "?"))[0] || "?");
+      const av = o.DriverAvatar ? '<img src="' + esc(o.DriverAvatar) + '" alt="" data-i="' + initial + '" onerror="this.parentNode.textContent=this.dataset.i">' : initial;
+      const tel = phone ? '<a class="tel" href="tel:' + esc(String(phone).replace(/[^\d+]/g, "")) + '" onclick="event.stopPropagation()">' + telIc + esc(phoneFmt(phone)) + "</a>" : "";
+      return '<span class="ct"><span class="av">' + av + '</span><span class="ct-lb">' + (who ? esc(who) : "ติดต่อผู้ขับ") + "</span>" + tel + "</span>";
+    };
     const KEY = "od-dismissed";
     fetch("get_overdue_returns.php", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
-        const rows = (d && d.overdue) || [];
-        if (!rows.length) return;
-        const sig = rows.map((o) => o.CarPlate + o.DueAt).join("|");
-        try {
-          const prev = JSON.parse(sessionStorage.getItem(KEY) || "null");
-          if (!/[?&]od=1(&|$)/.test(location.search) && prev && prev.sig === sig && Date.now() - prev.at < 30 * 60000) return; // ?od=1 = บังคับแสดง (ไว้ลองดู)
-        } catch (e) {}
+        const all = (d && d.overdue) || [];
+        if (!all.length) return;
+        // จัดกลุ่มตามคน: รหัสพนักงาน (ไม่มี = ใช้ชื่อ) — หนึ่งป้ายต่อหนึ่งคน ป้ายเดียวมีหลายคันได้เมื่อเป็นคนเดียวกัน
+        const groups = [];
+        const byKey = {};
+        all.forEach((o) => {
+          const k = String(o.EmployeeID || o.DriverName || o.CarPlate);
+          if (!byKey[k]) { byKey[k] = []; groups.push(byKey[k]); }
+          byKey[k].push(o);
+        });
+        const force = /[?&]od=1(&|$)/.test(location.search); // ?od=1 = บังคับแสดง (ไว้ลองดู)
+        let seen = {};
+        try { seen = JSON.parse(sessionStorage.getItem(KEY) || "{}") || {}; } catch (e) {}
+        const queue = groups.filter((g) => {
+          const sig = g.map((o) => o.CarPlate + o.DueAt).join("|");
+          g.sig = sig;
+          g.key = String(g[0].EmployeeID || g[0].DriverName || g[0].CarPlate);
+          return force || !(seen[g.key] && seen[g.key].sig === sig && Date.now() - seen[g.key].at < 30 * 60000);
+        });
+        const next = () => { const g = queue.shift(); if (g) showGroup(g, next); };
+        next();
+      })
+      .catch(() => {});
+
+    // แสดงป้ายของคนหนึ่งคน; ปิดแล้วเรียก done() เพื่อขึ้นป้ายของคนถัดไป
+    function showGroup(rows, done) {
+        const sig = rows.sig;
         const clock = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
         const ov = document.createElement("div");
-        ov.className = "an-odp";
+        ov.className = "an-odp" + (rows.length > 1 ? " multi" : "");
         ov.setAttribute("role", "alertdialog");
-        ov.setAttribute("aria-label", "ประกาศรถยังไม่ได้คืน");
+        ov.setAttribute("aria-label", "ประกาศรถเลยเวลาคืน");
         ov.innerHTML = `<div class="an-odp-card">
           <div class="an-odp-hd">
             <button type="button" class="an-odp-x" aria-label="ปิด"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
             <span class="an-odp-tag">ประกาศ</span>
             <div class="an-odp-ic" aria-hidden="true"><svg viewBox="0 0 200 100" fill="none" aria-hidden="true"><defs><linearGradient id="odb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d9dce8"/></linearGradient><linearGradient id="odw" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a5470"/><stop offset="1" stop-color="#1d2233"/></linearGradient></defs><ellipse cx="98" cy="88" rx="78" ry="6" fill="rgba(0,0,0,.28)"/><path d="M14 70 C14 59 22 54 33 52 L55 35 C59 32 64 30 70 30 H120 C128 30 135 33 140 38 L156 52 C170 54 184 58 184 69 V74 H14 Z" fill="url(#odb)"/><path d="M58 38 C60 36 63 35 67 35 H87 V52 H44 Z" fill="url(#odw)"/><path d="M93 35 H119 C124 35 128 37 131 40 L144 52 H93 Z" fill="url(#odw)"/><path d="M90 36 V72" stroke="#b9bdd0" stroke-width="2" stroke-linecap="round"/><rect x="100" y="58" width="11" height="3" rx="1.5" fill="#b0b4c6"/><path d="M176 58 H184 V65 H176 Z" fill="#ffd36b"/><path d="M14 60 H21 V67 H14 Z" fill="#ff5a5f"/><rect x="14" y="70" width="170" height="4" fill="#c3c7d8"/><circle cx="52" cy="74" r="15" fill="#171a26"/><circle cx="52" cy="74" r="7" fill="#cfd3e0"/><circle cx="52" cy="74" r="2.5" fill="#171a26"/><circle cx="146" cy="74" r="15" fill="#171a26"/><circle cx="146" cy="74" r="7" fill="#cfd3e0"/><circle cx="146" cy="74" r="2.5" fill="#171a26"/><g class="bd"><circle cx="162" cy="26" r="20" fill="#fff" stroke="#ffb347" stroke-width="4"/><circle cx="162" cy="26" r="20" stroke="#e5252a" stroke-width="2" stroke-dasharray="4 4" opacity=".55"/><path d="M162 14 V26 L170 31" stroke="#e5252a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/></g></svg></div>
-            <h2>รถยังไม่ได้คืน ${rows.length} คัน</h2>
+            <h2>${rows.length > 1 ? "รถเลยเวลาคืน " + rows.length + " คัน" : "รถเลยเวลาคืน"}</h2>
             <p>เลยกำหนดคืนแล้ว ผู้ขับกรุณาถ่ายรูปเลขไมล์<br>และกดคืนรถในระบบ เพื่อให้คนถัดไปใช้รถได้</p>
           </div>
-          <ul>${rows.map((o) => `<li><span class="plate">${esc(o.CarPlate)}</span><span class="who">${esc(o.DriverName || "-")}</span><span class="meta"><span>${esc(due(o.DueAt))}</span><span class="late">${clock}เกิน ${dur(Number(o.OverdueMin) || 0)}</span></span></li>`).join("")}</ul>
+          <ul>${rows.map((o) => `<li><span class="plate">${esc(o.CarPlate)}</span><span class="who">${esc(o.DriverName || "-")}</span><span class="meta"><span>${esc(due(o.DueAt))}</span><span class="late">${clock}เกิน ${dur(Number(o.OverdueMin) || 0)}</span></span>${contact(o)}</li>`).join("")}</ul>
           <button type="button" class="an-odp-ok">รับทราบ</button>
           <div class="an-odp-hint">แตะที่ไหนก็ได้เพื่อปิด</div>
         </div>`;
         const close = () => {
           ov.remove();
           document.removeEventListener("keydown", onKey);
-          try { sessionStorage.setItem(KEY, JSON.stringify({ sig, at: Date.now() })); } catch (e) {}
+          try {
+            let m = {};
+            try { m = JSON.parse(sessionStorage.getItem(KEY) || "{}") || {}; } catch (e2) {}
+            m[rows.key] = { sig, at: Date.now() };
+            sessionStorage.setItem(KEY, JSON.stringify(m));
+          } catch (e) {}
+          if (done) setTimeout(done, 250);
         };
         const onKey = (e) => e.key === "Escape" && close();
         ov.addEventListener("click", close);
         document.addEventListener("keydown", onKey);
         document.body.appendChild(ov);
         ov.querySelector(".an-odp-ok").focus({ preventScroll: true });
-      })
-      .catch(() => {});
+    }
   }
 
   fetch("get_current_user.php", { cache: "no-store" })

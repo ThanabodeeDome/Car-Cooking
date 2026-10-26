@@ -10,11 +10,16 @@ autoCancelNoShows($conn); // เช็คอินตามเวลาให้
 $graceMinutes = 60;
 try {
     $st = $conn->prepare(
-        "SELECT b.CarPlate, b.DriverName,
+        "SELECT b.CarPlate, b.DriverName, b.EmployeeID, b.Department,
                 CONVERT(varchar(16), t.EndAt, 120) AS DueAt,
-                DATEDIFF(MINUTE, t.EndAt, GETDATE()) AS OverdueMin
+                DATEDIFF(MINUTE, t.EndAt, GETDATE()) AS OverdueMin,
+                du.phone AS DriverPhone, du.AvatarPath AS DriverAvatar,
+                CASE WHEN du.id IS NULL THEN bu.first_name END AS BookerName,
+                CASE WHEN du.id IS NULL THEN bu.phone END AS BookerPhone
          FROM CarBookings b
          JOIN (" . bookingTimesSql("N'ขาไป'") . ") t ON t.BookingID = b.BookingID
+         LEFT JOIN Users du ON du.employee_id = b.EmployeeID
+         LEFT JOIN Users bu ON bu.id = b.BookedByUserID
          WHERE b.BookingStatus = N'ขาไป' AND t.EndAt IS NOT NULL
            AND DATEADD(MINUTE, :g, t.EndAt) < GETDATE()
          ORDER BY t.EndAt"

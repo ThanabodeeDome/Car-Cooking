@@ -654,7 +654,7 @@ function loadAdminBookings() {
               <td>${escapeHtml(bk.CarPlate)}</td>
               <td>${bk.BookingDate || "-"}</td>
               <td>${formatBookingTimeRange(bk)}</td>
-              <td class="status-cell">${statusBadge(bk.BookingStatus, { overdue: !!overdueText })}${
+              <td class="status-cell">${statusBadge(bk.BookingStatus, { overdue: !!overdueText, due: bookingDue(bk.BookingDate, bk.OutTime, bk.PlannedReturnTime), returned: bookingReturned(bk.ReturnDate, bk.ReturnTime) })}${
                 overdueText
                   ? `<div style="margin-top:4px; color:#ef4444; font-size:11px; font-weight:600;">⚠️ ${escapeHtml(overdueText)}</div>`
                   : ""

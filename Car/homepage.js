@@ -74,7 +74,7 @@ function updateHistoryTable() {
           <td>${escHtml(item.out_date || "-")}</td>
           <td>${escHtml(formatThaiTime(item.checkin_time))}</td>
           <td>${escHtml(item.return_time || "-")}</td>
-          <td>${statusBadge(rawStatus)}</td>
+          <td>${statusBadge(rawStatus, { due: bookingDue(item.booking_date || item.out_date, item.out_time, item.planned_return), returned: bookingReturned(item.return_date, item.return_time) })}</td>
           <td>${escHtml(item.car_plate || "-")}</td>
           <td>${escHtml(item.driver_name || "-")}</td>
           <td>${escHtml(item.employeeId || "-")}</td>
