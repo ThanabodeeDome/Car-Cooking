@@ -52,13 +52,13 @@
   @media (max-width:768px){
     .an-links{display:none}
     .an-top{padding:0 6px 0 16px}
-    body{padding-bottom:88px}
-    .an-bottom{display:flex;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom));width:min(520px,calc(100% - 20px));height:56px;box-sizing:border-box;align-items:center;justify-content:space-around;padding:0 6px;background:rgba(23,26,36,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:.5px solid rgba(255,255,255,.12);border-radius:999px;z-index:1000;font-family:"Prompt","Sarabun",sans-serif}
-    .an-tab{display:flex;flex-direction:column;align-items:center;gap:1px;width:56px;color:#9aa0b3;font-size:11px;text-decoration:none;background:none;border:none;padding:4px 0;cursor:pointer;font-family:inherit}
-    .an-tab svg{width:22px;height:22px}
+    body{padding-bottom:108px}
+    .an-bottom{display:flex;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom));width:min(560px,calc(100% - 16px));height:70px;box-sizing:border-box;align-items:center;justify-content:space-around;padding:0 6px;background:rgba(23,26,36,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:.5px solid rgba(255,255,255,.12);border-radius:999px;z-index:1000;font-family:"Prompt","Sarabun",sans-serif}
+    .an-tab{display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:56px;color:#9aa0b3;font-size:12.5px;font-weight:500;text-decoration:none;background:none;border:none;padding:6px 0;cursor:pointer;font-family:inherit}
+    .an-tab svg{width:27px;height:27px}
     .an-tab.on{color:#ff6b6b}
-    .an-mid{width:52px;height:52px;margin-top:-24px;border-radius:50%;background:#7c3aed;color:#fff;border:4px solid #0d0f16;box-sizing:content-box;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;text-decoration:none}
-    .an-mid svg{width:26px;height:26px}
+    .an-mid{width:62px;height:62px;margin-top:-30px;flex:none;margin-left:2px;margin-right:2px;border-radius:50%;background:#7c3aed;color:#fff;border:4px solid #0d0f16;box-sizing:content-box;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;text-decoration:none}
+    .an-mid svg{width:32px;height:32px}
     .an-mid:active{transform:scale(.95)}
     #fab-add{display:none!important}
     .an-menu{right:12px}

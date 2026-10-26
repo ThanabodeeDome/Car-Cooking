@@ -71,15 +71,15 @@ function updateHistoryTable() {
           const rawStatus = isCancelled || isReturned ? status : item.checkin_time ? "ขาไป" : "จองแล้ว";
           return `
       <tr>
-          <td>${escHtml(item.out_date || "-")}</td>
-          <td>${escHtml(formatThaiTime(item.checkin_time))}</td>
-          <td>${escHtml(item.return_time || "-")}</td>
-          <td>${statusBadge(rawStatus, { due: bookingDue(item.booking_date || item.out_date, item.out_time, item.planned_return), returned: bookingReturned(item.return_date, item.return_time) })}</td>
-          <td>${escHtml(item.car_plate || "-")}</td>
-          <td>${escHtml(item.driver_name || "-")}</td>
-          <td>${escHtml(item.employeeId || "-")}</td>
-          <td>${escHtml(item.passengers || "-")}</td>
-          <td>${escHtml(item.passenger_ids || "-")}</td>
+          <td data-label="วันที่">${escHtml(item.out_date || "-")}</td>
+          <td data-label="เวลาเช็คอิน">${escHtml(formatThaiTime(item.checkin_time))}</td>
+          <td data-label="เวลาคืนรถ">${escHtml(item.return_time || "-")}</td>
+          <td data-label="สถานะ">${statusBadge(rawStatus, { due: bookingDue(item.booking_date || item.out_date, item.out_time, item.planned_return), returned: bookingReturned(item.return_date, item.return_time) })}</td>
+          <td data-label="ทะเบียน">${escHtml(item.car_plate || "-")}</td>
+          <td data-label="คนขับ">${escHtml(item.driver_name || "-")}</td>
+          <td data-label="รหัสพนักงานคนขับ">${escHtml(item.employeeId || "-")}</td>
+          <td data-label="ผู้ร่วมเดินทาง">${escHtml(item.passengers || "-")}</td>
+          <td data-label="รหัสพนักงานผู้ร่วมเดินทาง">${escHtml(item.passenger_ids || "-")}</td>
       </tr>`;
         })
         .join("");

@@ -16,7 +16,7 @@ $sessionEmployeeId = $_SESSION['employee_id'];
 $json = file_get_contents('php://input');
 $data = json_decode($json, true);
 
-if (!$data || empty($data['booking_id'])) {
+if (!$data || empty($data['booking_id']) || !is_scalar($data['booking_id']) || !ctype_digit((string)$data['booking_id'])) {
     echo json_encode(["success" => false, "message" => "ไม่พบรายการที่จะยกเลิก"]);
     exit;
 }

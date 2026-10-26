@@ -75,6 +75,12 @@ function renderCheckinMode(b) {
 
   // รถยังถูกใช้อยู่โดยคนอื่น (ยังไม่คืน) -> แจ้งชัดๆ และปิดปุ่ม ไม่ให้เช็คอินซ้อน
   const busy = document.getElementById("ci-busy");
+  if (b.TooEarly && busy && !b.InUse) {
+    busy.textContent = "ยังไม่ถึงเวลารับรถ เช็คอินได้ตั้งแต่ " + (b.OpenAt || "-") + " น. (หรือรอระบบเช็คอินให้อัตโนมัติเมื่อถึงเวลาจอง)";
+    busy.classList.remove("hidden");
+    const ebtn = document.getElementById("ci-confirm-btn");
+    if (ebtn) { ebtn.disabled = true; ebtn.textContent = "ยังไม่ถึงเวลา"; }
+  }
   if (b.InUse && busy) {
     busy.textContent = "รถคันนี้กำลังถูกใช้งานโดย " + (b.InUse.driver || "ผู้ใช้อื่น") + " (กำหนดคืน " + (b.InUse.due || "-") + " น.) ยังเช็คอินรับรถไม่ได้ จนกว่าจะมีการคืนรถ";
     busy.classList.remove("hidden");

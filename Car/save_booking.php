@@ -63,6 +63,11 @@ function rangesOverlap($startA, $endA, $startB, $endB) {
 }
 
 // 🌟 กันจองช่วงเวลาที่ผ่านมาแล้ว (validate ฝั่ง server กันเคส bypass frontend)
+require_once __DIR__ . '/checkin_rules.php';
+if ($newStart > (new DateTime())->modify('+' . BOOKING_MAX_DAYS_AHEAD . ' days')) {
+    echo json_encode(["success" => false, "message" => "จองล่วงหน้าได้ไม่เกิน " . BOOKING_MAX_DAYS_AHEAD . " วัน กรุณาเลือกวันที่ใหม่"]);
+    exit;
+}
 if ($newEnd < new DateTime()) {
     echo json_encode(["success" => false, "message" => "ช่วงเวลานี้ผ่านไปแล้ว กรุณาเลือกวันที่หรือเวลาใหม่"]);
     exit;

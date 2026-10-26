@@ -64,7 +64,8 @@ try {
 
     // 🔒 เช็คอินล่วงหน้าได้ไม่เกิน 2 ชม. ก่อนเวลาออก — เดิมสแกนวันนี้เช็คอินคิวของสัปดาห์หน้าได้
     // รถจะขึ้น "กำลังใช้งาน" ทันทีและคิวคนอื่นระหว่างนั้นเช็คอินไม่ได้ (แอดมินยังเช็คอินแทนได้เสมอ)
-    $earlyMinutes = 120;
+    require_once __DIR__ . '/checkin_rules.php';
+    $earlyMinutes = CHECKIN_EARLY_MINUTES;
     if (strtolower($sessionRole) !== 'admin' && !empty($booking['StartAt'])
         && time() < strtotime($booking['StartAt']) - $earlyMinutes * 60) {
         $openAt = strtotime($booking['StartAt']) - $earlyMinutes * 60;

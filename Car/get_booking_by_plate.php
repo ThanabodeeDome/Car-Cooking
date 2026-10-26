@@ -53,6 +53,18 @@ try {
         exit;
     }
 
+    // ยังไม่ถึงเวลาเปิดเช็คอิน (ล่วงหน้าไม่เกิน CHECKIN_EARLY_MINUTES) — ผู้ใช้ทั่วไปเท่านั้น แอดมินเช็คอินแทนได้เสมอ
+    $booking['TooEarly'] = false;
+    if ($status === 'จองแล้ว' && strtolower((string)($_SESSION['role'] ?? '')) !== 'admin' && !empty($booking['OutTime'])) {
+        require_once __DIR__ . '/checkin_rules.php';
+        $startTs = strtotime($booking['BookingDate'] . ' ' . $booking['OutTime']);
+        $openTs = $startTs ? $startTs - CHECKIN_EARLY_MINUTES * 60 : 0;
+        if ($openTs && time() < $openTs) {
+            $booking['TooEarly'] = true;
+            $booking['OpenAt'] = date('d/m H:i', $openTs);
+        }
+    }
+
     // เช็คอินอัตโนมัติตามเวลาไปแล้ว แต่ยังไม่มีใครกดยืนยันรับรถที่รถ (CheckInGeo ยังเป็น 'auto')
     $booking['AutoCheckin'] = (($booking['CheckInGeo'] ?? '') === 'auto');
     $booking['InUse'] = $inUse ? ['driver' => trim((string)$inUse['DriverName']), 'due' => (string)$inUse['DueHM']] : null;
