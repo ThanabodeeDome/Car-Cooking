@@ -12,9 +12,9 @@ Set-Location $root
 if (Test-Path $out) { Remove-Item $out -Recurse -Force }
 New-Item -ItemType Directory -Path $out | Out-Null
 
-$skip = @('db_connect.php', 'mail_config.php', 'ocr_config.php')
+$skip = @('db_connect.php', 'mail_config.php', 'ocr_config.php', 'router.php', 'start-server.bat')
 $files = git diff --name-only --diff-filter=AMR "$From" HEAD |
-    Where-Object { $_ -and ($_ -notmatch '(^|/)uploads/') -and ($skip -notcontains (Split-Path $_ -Leaf)) -and ($_ -notmatch '^(tools|\.claude)/') }
+    Where-Object { $_ -and ($_ -notmatch '(^|/)uploads/') -and ($skip -notcontains (Split-Path $_ -Leaf)) -and ($_ -notmatch '^(tools|\.claude|migrations)/') }
 
 foreach ($f in $files) {
     $dest = Join-Path $out $f
