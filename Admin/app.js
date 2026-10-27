@@ -841,8 +841,9 @@ function openMaintenanceModal(carId, plate) {
   overlay.id = "maint-modal-overlay";
   overlay.innerHTML = `
     <div class="modal-content" style="width: 820px; max-width: 95vw; max-height: 92vh; overflow: hidden; display: flex; flex-direction: column;">
-      <h2 style="margin-top:0; margin-bottom:14px;">
-        <i class="fa-solid fa-screwdriver-wrench"></i> ประวัติซ่อม — ${escapeHtml(plate)}
+      <h2 style="margin-top:0; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <span><i class="fa-solid fa-screwdriver-wrench"></i> ประวัติซ่อม — ${escapeHtml(plate)}</span>
+        <button type="button" onclick="closeMaintenanceModal()" aria-label="ปิด" style="border:none; background:#f1f5f9; width:36px; height:36px; border-radius:50%; font-size:20px; line-height:1; cursor:pointer;">&times;</button>
       </h2>
 
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; overflow: hidden;">
@@ -853,7 +854,7 @@ function openMaintenanceModal(carId, plate) {
           </div>
         </div>
 
-        <div>
+        <div style="overflow-y: auto; max-height: 70vh; padding-right: 6px;">
           <h3 style="margin-top:0;">+ เพิ่มรายการซ่อม/เช็คระยะ</h3>
           <form id="maint-add-form" style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;">
             <div style="grid-column: span 2;">
@@ -905,6 +906,7 @@ function openMaintenanceModal(carId, plate) {
   `;
   document.body.appendChild(overlay);
 
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) closeMaintenanceModal(); });
   document.getElementById("maint-hold").addEventListener("change", (e) => {
     document.getElementById("maint-end-label").textContent = e.target.checked ? "คาดว่าเสร็จ" : "วันที่เสร็จ";
   });
