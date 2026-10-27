@@ -216,6 +216,13 @@ function nt_collect_admin(PDO $conn): array {
             }
         }
     } catch (Throwable $e) { error_log('nt admin geo: ' . $e->getMessage()); }
+    try { // คำขอคืนรถนอกจุดที่รอแอดมินอนุมัติ
+        require_once __DIR__ . '/return_request_lib.php';
+        foreach (rr_pending($conn, 20) as $rq) {
+            $items[] = nt_item("a_rr:{$rq['log_id']}", 'danger', "ขอคืนรถนอกจุด: รถ {$rq['plate']}",
+                "{$rq['driver_name']}: {$rq['reason']} (รออนุมัติ)", '../Admin/index.html');
+        }
+    } catch (Throwable $e) { error_log('nt admin return requests: ' . $e->getMessage()); }
     try { // scheduled maintenance (date based; no schema change) + cars with no maintenance record at all
         $stmt = $conn->query("SELECT Plate, CONVERT(varchar(10), NextMaintenance, 23) AS nxt, CONVERT(varchar(10), LastMaintenance, 23) AS lst FROM Cars");
         $noRecord = [];

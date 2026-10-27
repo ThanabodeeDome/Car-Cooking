@@ -92,3 +92,64 @@ function geo_user_note(array $ev, string $what): string {
         default:     return '';
     }
 }
+
+// ===================== นโยบาย "คืนรถต้องอยู่ในจุดบริษัท" =====================
+// ใช้กับการคืนรถ (save_return.php / confirm_return.php): ผู้ใช้ทั่วไปต้องได้ตำแหน่งที่อยู่ในจุดบริษัทและไม่ผิดปกติถึงจะคืนได้
+// ถ้าไม่ผ่าน -> บล็อก แล้วให้ขออนุมัติแอดมิน (ดู return_request_lib.php) แอดมินคืนแทนได้เสมอ
+// ไม่บังคับถ้ายังไม่ได้ตั้งจุดบริษัทในหน้าพิกัด (geo_sites.json ว่าง)
+//
+// ข้อจำกัดที่ต้องรู้: เว็บกันการปลอมตำแหน่ง (Fake GPS) ไม่ได้ 100% ตรวจได้แค่ค่าที่ "ดูผิดปกติ" เท่านั้น
+// จึงบังคับถ่ายรูปรถ/เลขไมล์ตอนคืนควบคู่ และเก็บตำแหน่ง/IP ไว้ให้แอดมินตรวจย้อนหลังได้
+
+const GEO_MAX_ACC_M = 250;    // ค่าคลาดเคลื่อนที่ยอมรับได้ (เมตร) เกินนี้ยืนยันตำแหน่งไม่ได้
+const GEO_MAX_AGE_S = 300;    // ตำแหน่งที่เก่ากว่านี้ (เทียบกับตอนกดส่ง) ถือว่าไม่ใช่ตำแหน่งปัจจุบัน
+
+function geo_decimals($n): int {
+    $s = rtrim(rtrim(sprintf('%.10F', (float)$n), '0'), '.');
+    $p = strpos($s, '.');
+    return $p === false ? 0 : strlen($s) - $p - 1;
+}
+
+// เหตุผลที่ค่าตำแหน่ง "ดูเหมือนปลอม" (ว่าง = ปกติ) — ตรวจจากค่าที่หน้าเว็บส่งมา
+function geo_suspicion($geo): array {
+    $why = [];
+    if (!is_array($geo)) return $why;
+    $acc = isset($geo['acc']) && is_numeric($geo['acc']) ? (float)$geo['acc'] : null;
+    if ($acc !== null && $acc <= 0) $why[] = 'ความแม่นยำเป็น 0 (GPS จริงไม่ส่งค่านี้)';
+    if (isset($geo['ts'], $geo['sent']) && is_numeric($geo['ts']) && is_numeric($geo['sent'])
+        && abs(((float)$geo['sent'] - (float)$geo['ts']) / 1000) > GEO_MAX_AGE_S) {
+        $why[] = 'ตำแหน่งเก่าเกินไป';
+    }
+    if (isset($geo['lat'], $geo['lng']) && is_numeric($geo['lat']) && is_numeric($geo['lng'])
+        && geo_decimals($geo['lat']) <= 3 && geo_decimals($geo['lng']) <= 3) {
+        $why[] = 'พิกัดกลมผิดธรรมชาติ (เหมือนพิมพ์ค่าเอง)';
+    }
+    return $why;
+}
+
+// ['allow'=>bool, 'code'=>nosite|ok|none|far|lowacc|suspect, 'ev'=>geo_evaluate(), 'message'=>string, 'why'=>[...]]
+function geo_return_policy($geo): array {
+    $ev = geo_evaluate($geo);
+    if ($ev['geo'] === 'nosite') {
+        return ['allow' => true, 'code' => 'nosite', 'ev' => $ev, 'message' => '', 'why' => []];
+    }
+    if ($ev['geo'] === 'none') {
+        return ['allow' => false, 'code' => 'none', 'ev' => $ev, 'why' => [],
+            'message' => 'ไม่ได้รับตำแหน่งของคุณ กรุณาเปิด GPS และอนุญาตให้เว็บใช้ตำแหน่ง แล้วกดตรวจตำแหน่งใหม่ (ต้องคืนรถในจุดบริษัทเท่านั้น)'];
+    }
+    if ($ev['geo'] === 'far') {
+        return ['allow' => false, 'code' => 'far', 'ev' => $ev, 'why' => [],
+            'message' => 'ตำแหน่งของคุณอยู่นอกจุดบริษัท (ห่างประมาณ ' . number_format((int)$ev['dist']) . ' ม.) ต้องคืนรถในจุดบริษัทเท่านั้น'];
+    }
+    $acc = isset($geo['acc']) && is_numeric($geo['acc']) ? (float)$geo['acc'] : 0;
+    if ($acc > GEO_MAX_ACC_M) {
+        return ['allow' => false, 'code' => 'lowacc', 'ev' => $ev, 'why' => [],
+            'message' => 'สัญญาณ GPS ไม่แม่นพอ (คลาดเคลื่อนประมาณ ' . number_format((int)$acc) . ' ม.) ลองย้ายไปที่โล่งแจ้งแล้วกดตรวจตำแหน่งใหม่'];
+    }
+    $why = geo_suspicion($geo);
+    if ($why) {
+        return ['allow' => false, 'code' => 'suspect', 'ev' => $ev, 'why' => $why,
+            'message' => 'ระบบยืนยันตำแหน่งของคุณไม่ได้ (ค่าตำแหน่งผิดปกติ) กรุณาปิดแอปที่ปลอมตำแหน่ง/รีเฟรชแล้วลองใหม่ หรือขออนุมัติจากแอดมิน'];
+    }
+    return ['allow' => true, 'code' => 'ok', 'ev' => $ev, 'message' => '', 'why' => []];
+}

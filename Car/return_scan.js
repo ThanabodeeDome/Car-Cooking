@@ -751,7 +751,7 @@ function bumpEndMile(delta) {
 
 if (window.prefetchGeo) window.prefetchGeo(); // ขอสิทธิ์ตำแหน่งตั้งแต่เปิดหน้า
 
-function confirmReturn() {
+function confirmReturn(requestReason) {
   const endMile = Number(document.getElementById("rt-end-mile").value);
   const remark = document.getElementById("rt-remark").value || "-";
 
@@ -773,9 +773,9 @@ function confirmReturn() {
   btn.innerText = "กำลังบันทึกการคืนรถ...";
 
   Promise.all([
-    uploadReturnPhoto(odometerFile, "odometer"),
-    uploadReturnPhoto(conditionFile, "condition"),
-    window.getGeo ? window.getGeo() : Promise.resolve(null),
+    uploadReturnPhotoCached(odometerFile, "odometer"),
+    uploadReturnPhotoCached(conditionFile, "condition"),
+    window.getGeo ? window.getGeo(true) : Promise.resolve(null), // ขอตำแหน่งสดใหม่ทุกครั้งที่กดคืน
   ])
     .then(([odometerPath, conditionPath, geo]) => {
       const now = new Date();
@@ -798,11 +798,23 @@ function confirmReturn() {
           odometer_photo_path: odometerPath,
           condition_photo_path: conditionPath,
           geo,
+          request_approval: !!requestReason,
+          request_reason: requestReason || undefined,
         }),
       });
     })
     .then((res) => res.json())
     .then((result) => {
+      if (result.code === "geo_blocked") {
+        showGeoBlock(result); // ไม่ได้อยู่ในจุดบริษัท/ยืนยันตำแหน่งไม่ได้ -> แสดงกล่องเหตุผล + ปุ่มลองใหม่/ขออนุมัติ
+        btn.disabled = false;
+        btn.innerText = "ยืนยันการคืนรถ";
+        return;
+      }
+      if (result.success && result.pending) {
+        showGeoPending(result.message);
+        return;
+      }
       if (result.success) {
         showToast("success", result.message || "บันทึกการคืนรถสำเร็จ!"); if (window.fxCelebrate) window.fxCelebrate();
         setTimeout(() => {
@@ -860,6 +872,44 @@ function compressImage(file, maxDim = 1600, quality = 0.75) {
     reader.onerror = () => resolve(file);
     reader.readAsDataURL(file);
   });
+}
+
+// อัปโหลดรูปครั้งเดียวต่อไฟล์ — กดลองใหม่/ขออนุมัติซ้ำไม่ต้องอัปโหลดซ้ำ (ไม่เพิ่มรูปขยะบนเซิร์ฟเวอร์)
+const uploadedPhotoCache = new Map();
+function uploadReturnPhotoCached(file, type) {
+  const hit = uploadedPhotoCache.get(file);
+  if (hit) return Promise.resolve(hit);
+  return uploadReturnPhoto(file, type).then((p) => {
+    uploadedPhotoCache.set(file, p);
+    return p;
+  });
+}
+
+function showGeoBlock(result) {
+  const box = document.getElementById("rt-block");
+  if (!box) return showToast("error", result.message || "คืนรถนอกจุดบริษัทไม่ได้");
+  document.getElementById("rt-block-msg").textContent = result.message || "คืนรถนอกจุดบริษัทไม่ได้";
+  box.classList.remove("hidden");
+  box.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function showGeoPending(msg) {
+  const box = document.getElementById("rt-block");
+  if (box) box.classList.add("hidden");
+  const done = document.getElementById("rt-pending");
+  if (done) {
+    document.getElementById("rt-pending-msg").textContent = msg || "ส่งคำขอให้แอดมินแล้ว";
+    done.classList.remove("hidden");
+    done.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  const btn = document.getElementById("rt-confirm-btn");
+  if (btn) { btn.disabled = true; btn.innerText = "รอแอดมินอนุมัติ"; }
+}
+
+function submitReturnRequest() {
+  const reason = (document.getElementById("rt-block-reason").value || "").trim();
+  if (reason.length < 5) return showToast("warning", "กรุณาระบุเหตุผลที่ต้องคืนนอกจุดบริษัท (อย่างน้อย 5 ตัวอักษร)");
+  confirmReturn(reason);
 }
 
 function uploadReturnPhoto(file, type) {

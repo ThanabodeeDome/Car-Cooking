@@ -6,7 +6,7 @@
   let cached = null; // {pos, at}
   let inflight = null;
 
-  function ask(timeoutMs) {
+  function ask(timeoutMs, fresh) {
     return new Promise((resolve) => {
       if (!navigator.geolocation) return resolve(null);
       let done = false;
@@ -18,19 +18,21 @@
       };
       setTimeout(() => fin(null), timeoutMs + 500);
       navigator.geolocation.getCurrentPosition(
-        (p) => fin({ lat: p.coords.latitude, lng: p.coords.longitude, acc: Math.round(p.coords.accuracy || 0) }),
+        (p) => fin({ lat: p.coords.latitude, lng: p.coords.longitude, acc: Math.round(p.coords.accuracy || 0), ts: p.timestamp, sent: Date.now() }),
         () => fin(null),
-        { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 60000 },
+        { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: fresh ? 0 : 60000 },
       );
     });
   }
 
-  window.getGeo = function () {
-    if (cached && Date.now() - cached.at < 120000) return Promise.resolve(cached.pos);
+  // force = true: ไม่ใช้ค่าเก่า ขอตำแหน่งสดใหม่ทุกครั้ง (ใช้ตอนคืนรถ ที่ต้องยืนยันว่าอยู่ในจุดบริษัท "ตอนนี้")
+  window.getGeo = function (force) {
+    if (!force && cached && Date.now() - cached.at < 120000) return Promise.resolve(cached.pos);
+    if (force) { cached = null; inflight = null; }
     if (!inflight) {
-      inflight = ask(8000).then((pos) => {
+      inflight = ask(force ? 12000 : 8000, !!force).then((pos) => {
         inflight = null;
-        if (pos) cached = { pos, at: Date.now() };
+        if (pos) cached = { pos: Object.assign({}, pos), at: Date.now() };
         return pos;
       });
     }

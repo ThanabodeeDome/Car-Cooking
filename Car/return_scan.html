@@ -12,7 +12,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="toast.css" />
-    <link rel="stylesheet" href="scan.css?v=6" />
+    <link rel="stylesheet" href="scan.css?v=8" />
     <link rel="stylesheet" href="form-ios-zoom.css?v=3" />
     <!-- 🌟 เลิกใช้ Tesseract.js แล้ว เปลี่ยนเป็น seven-segment digit reader ที่เขียนเองใน return_scan.js
          (แม่นกว่าสำหรับจอ LCD 7-segment + ทำงาน offline ไม่ต้องพึ่ง CDN ภายนอก) -->
@@ -86,6 +86,22 @@
           <textarea id="rt-remark" rows="2" class="sc-input" placeholder="เช่น ไฟเตือนติด เสียงดัง รอยขีดข่วน"></textarea>
         </section>
 
+        <!-- คืนรถต้องอยู่ในจุดบริษัท: ถ้าไม่ผ่านจะขึ้นกล่องนี้ (ลองตรวจตำแหน่งใหม่ หรือขออนุมัติแอดมิน) -->
+        <section class="rt-block hidden" id="rt-block" role="alert">
+          <h3>คืนรถยังไม่ได้</h3>
+          <p id="rt-block-msg"></p>
+          <button type="button" class="rt-block-retry" onclick="confirmReturn()">ตรวจตำแหน่งใหม่แล้วคืนรถ</button>
+          <details class="rt-block-req">
+            <summary>ต้องคืนนอกจุดบริษัทจริงๆ? ขออนุมัติจากแอดมิน</summary>
+            <textarea id="rt-block-reason" rows="2" class="sc-input" placeholder="เหตุผล เช่น รถเสียระหว่างทาง คืนที่อู่ซ่อม"></textarea>
+            <button type="button" class="rt-block-send" onclick="submitReturnRequest()">ส่งคำขอให้แอดมิน</button>
+          </details>
+        </section>
+        <section class="rt-pending hidden" id="rt-pending" role="status">
+          <h3>ส่งคำขอแล้ว</h3>
+          <p id="rt-pending-msg"></p>
+        </section>
+
         <div class="rt-submit-bar">
           <button type="button" class="sc-big rt-confirm wait" id="rt-confirm-btn" onclick="confirmReturn()">ยืนยันการคืนรถ</button>
         </div>
@@ -93,8 +109,8 @@
     </div>
 
     <script src="toast.js?v=6"></script>
-    <script src="geo.js?v=1"></script>
-    <script src="return_scan.js?v=11"></script>
+    <script src="geo.js?v=2"></script>
+    <script src="return_scan.js?v=12"></script>
     <script src="return-ui.js?v=1"></script>
     <script src="app-nav.js?v=19"></script>
     <script src="notify-bell.js?v=6"></script>

@@ -575,13 +575,18 @@ function submitReturn() {
     return_remark: document.getElementById("return-remark").value || "-",
   };
 
-  fetch("save_return.php", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  })
+  // 📍 คืนรถต้องอยู่ในจุดบริษัท: ขอตำแหน่งสดใหม่แล้วส่งไปด้วย (ไม่ผ่าน = ใช้หน้า "คืนรถ" ที่สแกน QR เพื่อขออนุมัติแอดมิน)
+  (window.getGeo ? window.getGeo(true) : Promise.resolve(null))
+    .then((geo) => fetch("save_return.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...data, geo }),
+    }))
     .then((res) => res.json())
     .then((result) => {
+      if (result.code === "geo_blocked") {
+        return showToast("error", (result.message || "คืนรถนอกจุดบริษัทไม่ได้") + " — ถ้าต้องคืนนอกจุด ให้สแกน QR ที่รถแล้วเลือกขออนุมัติแอดมิน");
+      }
       if (result.success) {
         showToast("success", "บันทึกการคืนรถสำเร็จ!"); if (window.fxCelebrate) window.fxCelebrate();
         setTimeout(() => {

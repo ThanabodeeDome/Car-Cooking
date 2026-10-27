@@ -68,6 +68,17 @@ try {
         exit;
     }
 
+    // 📍 คืนรถต้องอยู่ในจุดบริษัท (แอดมินคืนแทนได้ทุกที่) — ทางนี้ไม่มีฟอร์มขออนุมัติ ให้ไปหน้า "คืนรถ" (สแกน QR) เพื่อขออนุมัติ
+    require_once __DIR__ . '/geo_lib.php';
+    if (strtolower($sessionRole) !== 'admin') {
+        $policy = geo_return_policy($data['geo'] ?? null);
+        if (!$policy['allow']) {
+            echo json_encode(['success' => false, 'code' => 'geo_blocked', 'geo' => $policy['code'],
+                'message' => $policy['message'] . ' — ถ้าต้องคืนนอกจุด ให้ใช้หน้าคืนรถ (สแกน QR ที่รถ) เพื่อขออนุมัติแอดมิน'], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+
     $conn->beginTransaction();
 
     // 🌟 บันทึก OdometerPhotoPath = รูปเลขไมล์ที่ถ่ายตอนคืน (คนละคอลัมน์กับ CheckinPhotoPath
@@ -104,6 +115,7 @@ try {
     $updateCar->execute([':mileage' => $endMile, ':plate' => $booking['CarPlate']]);
 
     $conn->commit();
+    if (isset($policy)) geo_store($conn, (int)$booking['BookingID'], 'Return', $policy['ev']);
 
     require_once __DIR__ . '/log_lib.php';
     $bi = sl_booking_info($conn, (int)$booking['BookingID']);

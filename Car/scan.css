@@ -362,3 +362,17 @@
 /* แถบเตือนบนหน้าเช็คอิน: รถยังถูกใช้งานอยู่ */
 .sc-busy { margin: 0 0 14px; padding: 12px 16px; border-radius: 14px; background: rgba(249, 115, 22, 0.13); border: 1px solid rgba(249, 115, 22, 0.55); color: #fdba74; font-size: 13.5px; line-height: 1.6; text-align: center; }
 .sc-busy.hidden { display: none; }
+
+/* กล่องแจ้งเมื่อคืนรถนอกจุดบริษัท + ขออนุมัติแอดมิน */
+.rt-block, .rt-pending { margin: 0 0 12px; padding: 16px; border-radius: 18px; }
+.rt-block { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.55); }
+.rt-pending { background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.55); }
+.rt-block.hidden, .rt-pending.hidden { display: none; }
+.rt-block h3, .rt-pending h3 { margin: 0 0 6px; font-size: 16px; font-weight: 600; color: #fff; }
+.rt-block p, .rt-pending p { margin: 0 0 12px; font-size: 13.5px; line-height: 1.6; color: #fecaca; }
+.rt-pending p { margin: 0; color: #bbf7d0; }
+.rt-block-retry { width: 100%; min-height: 46px; border: none; border-radius: 12px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: #fff; font: 600 15px "Prompt", sans-serif; cursor: pointer; }
+.rt-block-req { margin-top: 12px; font-size: 13px; color: #cbd5e1; }
+.rt-block-req summary { cursor: pointer; padding: 6px 0; color: #fca5a5; }
+.rt-block-req .sc-input { margin: 8px 0; }
+.rt-block-send { width: 100%; min-height: 42px; border: 1px solid rgba(252, 165, 165, 0.6); border-radius: 12px; background: transparent; color: #fca5a5; font: 600 14px "Prompt", sans-serif; cursor: pointer; }

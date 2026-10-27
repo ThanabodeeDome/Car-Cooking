@@ -102,6 +102,41 @@ try {
         exit;
     }
 
+    // 📍 คืนรถต้องอยู่ในจุดบริษัท (แอดมินคืนแทนได้ทุกที่) — ไม่ผ่านให้บล็อก แล้วขออนุมัติแอดมิน (request_approval) ได้
+    //    ไม่บังคับถ้ายังไม่ได้ตั้งจุดบริษัท (geo_return_policy คืน nosite)
+    $policy = strtolower($sessionRole) === 'admin' ? ['allow' => true, 'code' => 'admin', 'ev' => ['geo' => 'nosite', 'dist' => null, 'lat' => null, 'lng' => null, 'acc' => null], 'message' => '', 'why' => []]
+                                                  : geo_return_policy($data['geo'] ?? null);
+    if (!$policy['allow']) {
+        if (empty($data['request_approval'])) {
+            echo json_encode(["success" => false, "code" => "geo_blocked", "geo" => $policy['code'], "message" => $policy['message'], "can_request" => true], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $reason = isset($data['request_reason']) && is_string($data['request_reason']) ? fit_nvarchar(trim($data['request_reason']), 300) : '';
+        if (mb_strlen($reason) < 5) {
+            echo json_encode(["success" => false, "message" => "กรุณาระบุเหตุผลที่ต้องคืนนอกจุดบริษัท (อย่างน้อย 5 ตัวอักษร)"], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        require_once __DIR__ . '/return_request_lib.php';
+        if (!sl_ready($conn)) {
+            echo json_encode(["success" => false, "message" => "ระบบขอคืนนอกจุดยังไม่พร้อมใช้งาน กรุณาติดต่อแอดมิน"], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+        $g = $policy['ev'];
+        $bi = sl_booking_info($conn, (int)$booking['BookingID']);
+        sl_log($conn, 'return_request', 'ขอคืนรถนอกจุด ' . trim($bi['plate'] . ' ' . $bi['driver']) . ' เหตุผล: ' . mb_substr($reason, 0, 120), [
+            'target_type' => 'booking', 'target' => $bi['no'],
+            'detail' => [
+                'end_mile' => $endMile, 'remark' => $remark, 'reason' => $reason,
+                'return_date' => $returnDate, 'return_time' => $returnTime,
+                'odometer_photo_path' => $photoPaths['odometer_photo_path'], 'condition_photo_path' => $photoPaths['condition_photo_path'],
+                'geo' => ['lat' => $g['lat'], 'lng' => $g['lng'], 'acc' => $g['acc'], 'geo' => $g['geo'], 'dist' => $g['dist']],
+                'geo_code' => $policy['code'], 'geo_why' => $policy['why'],
+            ],
+        ]);
+        echo json_encode(["success" => true, "pending" => true, "message" => "ส่งคำขอคืนรถนอกจุดให้แอดมินแล้ว รถจะถูกบันทึกว่าคืนเมื่อแอดมินอนุมัติ"], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     $conn->beginTransaction();
 
     $update = $conn->prepare(
@@ -155,9 +190,9 @@ try {
         // log ไม่ได้ก็ช่างมัน ห้ามทำให้การคืนรถพัง
     }
 
-    // แท็บคืนรถมือใน booking.js ไม่ส่ง geo มา (ไม่ใช่การสแกนที่รถ) = ไม่ติดธง
-    $ev = array_key_exists('geo', $data) ? geo_evaluate($data['geo']) : ['geo' => 'nosite', 'dist' => null, 'lat' => null, 'lng' => null, 'acc' => null];
-    if (array_key_exists('geo', $data)) geo_store($conn, (int)$booking['BookingID'], 'Return', $ev);
+    // เก็บผลตรวจตำแหน่งตอนคืน (ผ่านนโยบายมาแล้ว = ok/nosite/แอดมิน)
+    $ev = $policy['ev'];
+    if (strtolower($sessionRole) !== 'admin') geo_store($conn, (int)$booking['BookingID'], 'Return', $ev);
 
     require_once __DIR__ . '/log_lib.php';
     $bi = sl_booking_info($conn, (int)$booking['BookingID']);

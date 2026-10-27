@@ -37,6 +37,7 @@ function fetchDashboardStats() {
       renderWeekTimeline(data.cars, data.week_start, data.week_bookings);
       renderRecentBookings(data.recent);
       renderOverduePanel(data.overdue_returns);
+      fetchReturnRequests();
       renderAlerts(data.alerts, data.maint_due, [], data.backup); // รถค้างคืนย้ายไปแผงของมันเองด้านบนแล้ว
     })
     .catch((err) => {
@@ -439,4 +440,79 @@ function dashTimeRange(bk) {
   const out = (bk.OutTime || "").slice(0, 5);
   const ret = (bk.PlannedReturnTime || "").slice(0, 5);
   return out && ret ? `${out}-${ret} น.` : bk.TimeSlot || "-";
+}
+
+// ---------- คำขอคืนรถนอกจุดบริษัท (รอแอดมินอนุมัติ) ----------
+let rrList = [];
+function fetchReturnRequests() {
+  fetch("admin_return_requests.php")
+    .then((r) => r.json())
+    .then((d) => renderReturnRequests(d && d.success ? d.requests : []))
+    .catch(() => renderReturnRequests([]));
+}
+
+function renderReturnRequests(list) {
+  const box = document.getElementById("rr-panel");
+  if (!box) return;
+  rrList = list || [];
+  box.hidden = rrList.length === 0;
+  if (!rrList.length) {
+    box.innerHTML = "";
+    return;
+  }
+  const codeText = { none: "ไม่ได้ส่งตำแหน่ง", far: "อยู่นอกจุดบริษัท", lowacc: "GPS ไม่แม่น", suspect: "ตำแหน่งผิดปกติ" };
+  const photo = (p, t) => (p ? `<a href="../Car/${escapeHtml(p)}" target="_blank" rel="noopener">${t}</a>` : "");
+  const rows = rrList
+    .map((o, i) => {
+      const g = o.geo || {};
+      const map = g.lat && g.lng ? `<a href="https://maps.google.com/?q=${encodeURIComponent(g.lat + "," + g.lng)}" target="_blank" rel="noopener">ดูแผนที่</a>` : "";
+      const dist = g.dist != null ? ` ห่าง ${Number(g.dist).toLocaleString("th-TH")} ม.` : "";
+      return `
+      <div class="od-row">
+        <div class="od-plate">${escapeHtml(o.plate)}</div>
+        <div class="od-info">
+          <b>${escapeHtml(o.driver_name) || "-"}${o.employee_id ? ` <small>#${escapeHtml(o.employee_id)}</small>` : ""}</b>
+          <span>เหตุผล: ${escapeHtml(o.reason)} • ไมล์คืน ${Number(o.end_mileage).toLocaleString("th-TH")} (ออก ${Number(o.start_mileage).toLocaleString("th-TH")})</span>
+          <span>${escapeHtml(codeText[o.geo_code] || o.geo_code)}${dist} • IP ${escapeHtml(o.ip)} • ${escapeHtml(o.requested_at)} ${map} ${photo(o.odometer_photo, "รูปไมล์")} ${photo(o.condition_photo, "รูปสภาพรถ")}</span>
+        </div>
+        <div class="od-actions">
+          <button type="button" class="od-btn primary" data-act="approve" data-i="${i}"><i class="fa-solid fa-check"></i> อนุมัติ (คืนแล้ว)</button>
+          <button type="button" class="od-btn" data-act="reject" data-i="${i}"><i class="fa-solid fa-xmark"></i> ปฏิเสธ</button>
+        </div>
+      </div>`;
+    })
+    .join("");
+  box.innerHTML = `
+    <h2 class="panel-title od-title"><i class="fa-solid fa-location-crosshairs"></i> คำขอคืนรถนอกจุดบริษัท <span class="od-count">${rrList.length}</span></h2>
+    <p class="od-hint">ผู้ขับคืนรถในจุดบริษัทไม่ได้ จึงส่งคำขอพร้อมรูปไมล์/สภาพรถ — ตรวจรูปและตำแหน่งก่อนอนุมัติ อนุมัติแล้วระบบบันทึกคืนรถให้ทันที</p>
+    <div class="od-list">${rows}</div>`;
+  if (!box.__bound) {
+    box.__bound = true;
+    box.addEventListener("click", async (e) => {
+      const btn = e.target.closest(".od-btn");
+      if (!btn) return;
+      const o = rrList[Number(btn.dataset.i)];
+      if (!o) return;
+      const approve = btn.dataset.act === "approve";
+      const ok = await AppDialog.confirm({
+        title: approve ? "อนุมัติคืนรถนอกจุด?" : "ปฏิเสธคำขอ?",
+        message: approve
+          ? `บันทึกรถ ${o.plate} เป็น "คืนแล้ว" ไมล์คืน ${Number(o.end_mileage).toLocaleString("th-TH")} กม. ตามที่ผู้ขับส่งมา`
+          : `ปฏิเสธคำขอของ ${o.driver_name || "-"} (รถ ${o.plate}) — ผู้ขับต้องคืนรถในจุดบริษัท`,
+        confirmText: approve ? "อนุมัติ" : "ปฏิเสธ",
+        cancelText: "กลับ",
+        danger: !approve,
+      });
+      if (!ok) return;
+      const r = await fetch("admin_return_requests.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: approve ? "approve" : "reject", log_id: o.log_id }),
+      })
+        .then((x) => x.json())
+        .catch(() => null);
+      if (r && r.success) fetchDashboardStats();
+      else AppDialog.alert((r && r.message) || "ทำรายการไม่สำเร็จ", { type: "error" });
+    });
+  }
 }
