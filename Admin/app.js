@@ -842,66 +842,47 @@ function openMaintenanceModal(carId, plate) {
   const overlay = document.getElementById("svc-inline");
   if (!overlay) return;
   overlay.innerHTML = `
-    <div style="width:100%; max-width:760px;">
-      <h2 style="margin-top:0; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
-        <span><i class="fa-solid fa-screwdriver-wrench"></i> เช็คระยะ / ซ่อม — ${escapeHtml(plate)}</span>
-        <button type="button" onclick="closeMaintenanceModal()" aria-label="ปิด" style="border:none; background:#f1f5f9; width:36px; height:36px; border-radius:50%; font-size:20px; line-height:1; cursor:pointer;">&times;</button>
-      </h2>
-
-      <div style="display:flex; gap:8px; margin-bottom:14px; background:#f1f5f9; padding:4px; border-radius:14px;">
-        <button type="button" id="mt-tab-send" onclick="showMaintTab('send')" style="flex:1; padding:10px 8px; border:none; border-radius:10px; font:600 14px inherit; cursor:pointer;">1. ส่งรถเข้าเช็ค/ซ่อม</button>
-        <button type="button" id="mt-tab-done" onclick="showMaintTab('done')" style="flex:1; padding:10px 8px; border:none; border-radius:10px; font:600 14px inherit; cursor:pointer;">2. รถเสร็จแล้ว</button>
+    <div class="mt-head">
+      <b><i class="fa-solid fa-screwdriver-wrench"></i> ${escapeHtml(plate)}</b>
+      <div class="mt-tabs">
+        <button type="button" id="mt-tab-send" onclick="showMaintTab('send')">1. ส่งรถเข้าเช็ค/ซ่อม</button>
+        <button type="button" id="mt-tab-done" onclick="showMaintTab('done')">2. รถเสร็จแล้ว</button>
       </div>
+    </div>
 
-      <form id="maint-send-form" style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;">
-        <div style="grid-column: span 2;">
-          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ทำอะไร</label>
-          <input type="text" id="ms-type" list="maint-type-list" value="เช็คระยะ" required style="margin-bottom:0;">
-          <datalist id="maint-type-list"><option value="เช็คระยะ"><option value="ซ่อม"><option value="เปลี่ยนยาง"><option value="ตรวจสภาพ/ต่อภาษี"></datalist>
-        </div>
-        <div>
-          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">วันที่ส่งรถ</label>
-          <input type="date" id="ms-start" required style="margin-bottom:0;">
-        </div>
-        <div>
-          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">คาดว่าเสร็จวันที่</label>
-          <input type="date" id="ms-end" style="margin-bottom:0;">
-        </div>
-        <div style="grid-column: span 2;">
-          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">หมายเหตุ (ไม่บังคับ)</label>
-          <input type="text" id="ms-note" style="margin-bottom:0;">
-        </div>
-        <p style="grid-column: span 2; margin:0; font-size:12px; color:#64748b;">บันทึกแล้วรถจะถูกปิดการจอง — ผู้ใช้จองล่วงหน้าได้ตั้งแต่วันคาดว่าเสร็จ</p>
-        <div style="grid-column: span 2; display:flex; justify-content:flex-end; gap:10px;">
-          <button type="button" class="btn-clear" onclick="closeMaintenanceModal()">ปิด</button>
-          <button type="submit" class="btn btn-primary">ส่งรถเข้าเช็ค/ซ่อม</button>
-        </div>
-      </form>
-
-      <form id="maint-done-form" style="display:none; grid-template-columns: 1fr 1fr; gap: 10px 12px;">
-        <div id="md-info" style="grid-column: span 2; font-size:13px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:10px 12px;"></div>
-        <div id="md-retro" style="grid-column: span 2; display:none; grid-template-columns: 1fr 1fr; gap:10px 12px;">
-          <div><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ทำอะไร</label><input type="text" id="md-type" value="เช็คระยะ" style="margin-bottom:0;"></div>
-          <div><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">วันที่เริ่ม</label><input type="date" id="md-start" style="margin-bottom:0;"></div>
-        </div>
-        <div style="grid-column: span 2;">
-          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">เสร็จเมื่อวันที่</label>
-          <input type="date" id="md-end" required style="margin-bottom:0;">
-        </div>
-        <div><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">เลขไมล์</label><input type="number" id="md-mileage" style="margin-bottom:0;"></div>
-        <div><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ค่าใช้จ่าย (บาท)</label><input type="number" step="0.01" id="md-cost" style="margin-bottom:0;"></div>
-        <div style="grid-column: span 2;"><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">กำหนดเช็คครั้งถัดไป</label><input type="date" id="md-next" style="margin-bottom:0;"></div>
-        <div style="grid-column: span 2;"><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">หมายเหตุ</label><input type="text" id="md-note" style="margin-bottom:0;"></div>
-        <div style="grid-column: span 2; display:flex; justify-content:flex-end; gap:10px;">
-          <button type="button" class="btn-clear" onclick="closeMaintenanceModal()">ปิด</button>
-          <button type="submit" class="btn btn-primary" id="md-submit">รถเสร็จแล้ว — เปิดให้จอง</button>
-        </div>
-      </form>
-
-      <h3 style="margin:18px 0 8px; font-size:15px;">ประวัติที่ผ่านมา</h3>
-      <div id="maint-history-list" style="max-height: 28vh; overflow-y: auto;">
-        <p class="empty-hint">กำลังโหลด...</p>
+    <form id="maint-send-form" class="ef-grid mt-form">
+      <label class="ef-f ef-span"><span>ทำอะไร</span>
+        <input type="text" id="ms-type" list="maint-type-list" value="เช็คระยะ" required />
+        <datalist id="maint-type-list"><option value="เช็คระยะ"><option value="ซ่อม"><option value="เปลี่ยนยาง"><option value="ตรวจสภาพ/ต่อภาษี"></datalist>
+      </label>
+      <label class="ef-f"><span>วันที่ส่งรถ</span><input type="date" id="ms-start" required /></label>
+      <label class="ef-f"><span>คาดว่าเสร็จวันที่</span><input type="date" id="ms-end" /></label>
+      <label class="ef-f ef-span"><span>หมายเหตุ (ไม่บังคับ)</span><input type="text" id="ms-note" /></label>
+      <p class="ef-note ef-span"><i class="fa-solid fa-circle-info"></i> บันทึกแล้วรถจะถูกปิดการจอง — ผู้ใช้จองล่วงหน้าได้ตั้งแต่วันคาดว่าเสร็จ</p>
+      <div class="ef-actions ef-span">
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-screwdriver-wrench"></i> <span>ส่งรถเข้าเช็ค/ซ่อม</span></button>
       </div>
+    </form>
+
+    <form id="maint-done-form" class="ef-grid mt-form" style="display:none;">
+      <div id="md-info" class="mt-info ef-span"></div>
+      <div id="md-retro" class="ef-grid ef-span" style="display:none;">
+        <label class="ef-f"><span>ทำอะไร</span><input type="text" id="md-type" value="เช็คระยะ" /></label>
+        <label class="ef-f"><span>วันที่เริ่ม</span><input type="date" id="md-start" /></label>
+      </div>
+      <label class="ef-f ef-span"><span>เสร็จเมื่อวันที่</span><input type="date" id="md-end" required /></label>
+      <label class="ef-f"><span>เลขไมล์</span><input type="number" id="md-mileage" /></label>
+      <label class="ef-f"><span>ค่าใช้จ่าย (บาท)</span><input type="number" step="0.01" id="md-cost" /></label>
+      <label class="ef-f ef-span"><span>กำหนดเช็คครั้งถัดไป</span><input type="date" id="md-next" /></label>
+      <label class="ef-f ef-span"><span>หมายเหตุ</span><input type="text" id="md-note" /></label>
+      <div class="ef-actions ef-span">
+        <button type="submit" class="btn btn-primary" id="md-submit"><i class="fa-solid fa-circle-check"></i> <span>รถเสร็จแล้ว — เปิดให้จอง</span></button>
+      </div>
+    </form>
+
+    <div class="ef-sec">ประวัติที่ผ่านมา</div>
+    <div id="maint-history-list" class="mt-history">
+      <p class="empty-hint">กำลังโหลด...</p>
     </div>
   `;
 
@@ -1221,13 +1202,10 @@ function showMaintTab(tab) {
   const sf = document.getElementById("maint-send-form");
   const df = document.getElementById("maint-done-form");
   if (!sf || !df) return;
-  sf.style.display = send ? "grid" : "none";
-  df.style.display = send ? "none" : "grid";
-  const on = "background:#fff; color:#0f172a; box-shadow:0 1px 4px rgba(0,0,0,.12);";
-  const off = "background:transparent; color:#64748b; box-shadow:none;";
-  const base = "flex:1; padding:10px 8px; border:none; border-radius:10px; font:600 14px inherit; cursor:pointer;";
-  document.getElementById("mt-tab-send").style.cssText = base + (send ? on : off);
-  document.getElementById("mt-tab-done").style.cssText = base + (send ? off : on);
+  sf.style.display = send ? "" : "none";
+  df.style.display = send ? "none" : "";
+  document.getElementById("mt-tab-send").classList.toggle("on", send);
+  document.getElementById("mt-tab-done").classList.toggle("on", !send);
   syncMaintDoneForm();
 }
 
@@ -1241,13 +1219,13 @@ function syncMaintDoneForm() {
   if (r) {
     info.innerHTML = `กำลัง<b>${escapeHtml(r.MaintenanceType) || "เช็ค/ซ่อม"}</b> ตั้งแต่ ${escapeHtml(String(r.StartDate).slice(0, 10))} — กรอกผลแล้วกดยืนยัน รถจะเปิดให้จองทันที`;
     retro.style.display = "none";
-    btn.textContent = "รถเสร็จแล้ว — เปิดให้จอง";
+    info.classList.remove("plain");
+    btn.querySelector("span").textContent = "รถเสร็จแล้ว — เปิดให้จอง";
   } else {
-    info.style.background = "#f8fafc";
-    info.style.borderColor = "#e2e8f0";
+    info.classList.add("plain");
     info.textContent = "ตอนนี้ไม่มีงานเช็ค/ซ่อมค้างอยู่ — ใช้ฟอร์มนี้บันทึกงานที่เสร็จไปแล้ว (ย้อนหลัง)";
-    retro.style.display = "grid";
-    btn.textContent = "บันทึกประวัติ";
+    retro.style.display = "";
+    btn.querySelector("span").textContent = "บันทึกประวัติ";
   }
 }
 

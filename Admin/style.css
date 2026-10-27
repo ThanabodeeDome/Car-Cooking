@@ -2615,3 +2615,15 @@ tr.clickable-row:hover td { background: #fafbff; }
 .cv-tabs button.on { background: #fff; color: #0f172a; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); }
 .svc-inline[hidden] { display: none; }
 .svc-pick { padding: 24px; text-align: center; color: #64748b; background: #f8fafc; border-radius: 12px; }
+
+.mt-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 6px 0 16px; }
+.mt-head > b { font-size: 17px; color: #151926; }
+.mt-head > b i { color: var(--accent); margin-right: 6px; }
+.mt-tabs { display: flex; gap: 4px; padding: 4px; background: #f1f5f9; border-radius: 12px; }
+.mt-tabs button { border: none; background: transparent; color: #64748b; padding: 8px 14px; border-radius: 9px; font: 600 13.5px inherit; cursor: pointer; }
+.mt-tabs button.on { background: #fff; color: #0f172a; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); }
+.mt-form { margin: 0; }
+.mt-form[style*="display: none"] { display: none !important; }
+.mt-info { font-size: 13.5px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 10px 12px; }
+.mt-info.plain { background: #f8fafc; border-color: #e2e8f0; color: #475569; }
+.mt-history { max-height: 260px; overflow-y: auto; }
