@@ -20,8 +20,15 @@ $isToday = $targetDate === date('Y-m-d');
 
 $sql = "SELECT c.CarID, c.Plate, c.Brand, c.Model, c.Color, c.Mileage, c.Carimage, c.CarStatus,
   c.InsuranceExpiry, c.ActExpiry, c.LastMaintenance, c.NextMaintenance,
+  CONVERT(varchar(10), c.MaintenanceEndDate, 23) AS ServiceUntil,
   CASE 
-    WHEN c.CarStatus = N'เช็คระยะ' THEN N'งดให้บริการ'
+    -- งดให้บริการ (เช็คระยะ/ซ่อม): วันก่อนวันที่คาดว่าเสร็จ = จองไม่ได้, ตั้งแต่วันเสร็จเป็นต้นไปจองล่วงหน้าได้
+    -- ส่วนวันนี้ ถ้าถึงกำหนดแล้วแต่แอดมินยังไม่กดยืนยันรถพร้อม ยังถือว่าไม่พร้อม (ไม่ระบุวันเสร็จ = งดจนกว่าแอดมินยืนยัน)
+    WHEN c.CarStatus = N'เช็คระยะ' AND (
+         c.MaintenanceEndDate IS NULL
+         OR :targetDate0 < c.MaintenanceEndDate
+         OR :targetDate1 <= CAST(GETDATE() AS DATE)
+    ) THEN N'งดให้บริการ'
     WHEN :isToday1 = 1 AND EXISTS (
       SELECT 1 FROM CarBookings cb 
       WHERE cb.CarPlate = c.Plate 
@@ -42,6 +49,8 @@ FROM Cars c";
 try {
     $stmt = $conn->prepare($sql);
     $stmt->execute([
+        ':targetDate0' => $targetDate,
+        ':targetDate1' => $targetDate,
         ':isToday1'    => $isToday ? 1 : 0,
         ':targetDate2' => $targetDate,
     ]);

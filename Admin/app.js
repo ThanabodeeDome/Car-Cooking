@@ -408,6 +408,10 @@ function fillWorkspaceForm(car) {
     }
     document.getElementById("form-car-status").value = statusToShow;
   }
+  const svcS = document.getElementById("MaintenanceStartDate");
+  const svcE = document.getElementById("MaintenanceEndDate");
+  if (svcS) svcS.value = (car.MaintenanceStartDate || "").slice(0, 10);
+  if (svcE) svcE.value = (car.MaintenanceEndDate || "").slice(0, 10);
 
   // 🩹 แก้บั๊ก: ช่องวันที่ 3 อันนี้ไม่มี id มีแต่ name เลยไม่เคยถูกเติมค่าตอนกด "แก้ไข"
   // ผลคือกดบันทึกทีไร ค่าเดิมของ ประกัน/พ.ร.บ./เช็คระยะ หายหมดเพราะส่งค่าว่างทับ

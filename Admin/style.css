@@ -2606,3 +2606,5 @@ tr.clickable-row:hover td { background: #fafbff; }
 .st-legend b { color: #475569; font-weight: 600; margin-right: 2px; }
 #st-legend-items { display: contents; }
 .status-cell .st + div { margin-top: 5px; }
+
+.svc-hint { margin: 4px 0 0; font-size: 12px; color: #64748b; }

@@ -38,6 +38,7 @@ function fetchDashboardStats() {
       renderRecentBookings(data.recent);
       renderOverduePanel(data.overdue_returns);
       fetchReturnRequests();
+      renderServiceDue(data.service_due);
       renderAlerts(data.alerts, data.maint_due, [], data.backup); // รถค้างคืนย้ายไปแผงของมันเองด้านบนแล้ว
     })
     .catch((err) => {
@@ -511,6 +512,46 @@ function renderReturnRequests(list) {
       })
         .then((x) => x.json())
         .catch(() => null);
+      if (r && r.success) fetchDashboardStats();
+      else AppDialog.alert((r && r.message) || "ทำรายการไม่สำเร็จ", { type: "error" });
+    });
+  }
+}
+
+// ---------- รถเช็คระยะ/ซ่อมที่ถึงกำหนดเสร็จ: รอแอดมินยืนยันรถพร้อมใช้ ----------
+function renderServiceDue(list) {
+  const box = document.getElementById("svc-panel");
+  if (!box) return;
+  list = list || [];
+  box.hidden = list.length === 0;
+  if (!list.length) {
+    box.innerHTML = "";
+    return;
+  }
+  const rows = list
+    .map(
+      (c) => `
+      <div class="od-row">
+        <div class="od-plate">${escapeHtml(c.Plate)}</div>
+        <div class="od-info"><b>${escapeHtml(c.Brand || "")} ${escapeHtml(c.Model || "")}</b><span>กำหนดเสร็จ ${escapeHtml(c.ServiceUntil)}</span></div>
+        <div class="od-actions"><button type="button" class="od-btn primary" data-id="${Number(c.CarID)}" data-plate="${escapeHtml(c.Plate)}"><i class="fa-solid fa-circle-check"></i> ยืนยันรถพร้อมใช้</button></div>
+      </div>`,
+    )
+    .join("");
+  box.innerHTML = `
+    <h2 class="panel-title od-title"><i class="fa-solid fa-screwdriver-wrench"></i> รถเช็คระยะ/ซ่อมที่ถึงกำหนดเสร็จ <span class="od-count">${list.length}</span></h2>
+    <p class="od-hint">ตรวจรถแล้วกดยืนยัน รถจะเปิดให้จองได้ทันที (วันนี้จองไม่ได้จนกว่าจะยืนยัน)</p>
+    <div class="od-list">${rows}</div>`;
+  if (!box.__bound) {
+    box.__bound = true;
+    box.addEventListener("click", async (e) => {
+      const btn = e.target.closest(".od-btn");
+      if (!btn) return;
+      const ok = await AppDialog.confirm({ title: "ยืนยันรถพร้อมใช้?", message: "รถ " + btn.dataset.plate + " จะกลับมาเปิดให้จองได้ปกติ", confirmText: "ยืนยัน", cancelText: "กลับ" });
+      if (!ok) return;
+      const fd = new FormData();
+      fd.append("CarID", btn.dataset.id);
+      const r = await fetch("manage_cars.php?action=confirm_ready", { method: "POST", body: fd }).then((x) => x.json()).catch(() => null);
       if (r && r.success) fetchDashboardStats();
       else AppDialog.alert((r && r.message) || "ทำรายการไม่สำเร็จ", { type: "error" });
     });

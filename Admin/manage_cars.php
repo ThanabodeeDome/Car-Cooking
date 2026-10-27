@@ -54,6 +54,32 @@ if ($action === 'delete') {
     exit;
 }
 
+// 2.5 แอดมินยืนยัน "รถพร้อมใช้" หลังเช็คระยะ/ซ่อมเสร็จ -> เปิดให้จองได้ปกติ
+if ($action === 'confirm_ready') {
+    $carId = (int)($_POST['CarID'] ?? 0);
+    if ($carId <= 0) {
+        echo json_encode(["success" => false, "message" => "ไม่พบรถ"]);
+        exit;
+    }
+    try {
+        $stmt = $conn->prepare("UPDATE Cars SET CarStatus = N'ว่าง', LastMaintenance = CAST(GETDATE() AS DATE), MaintenanceStartDate = NULL, MaintenanceEndDate = NULL WHERE CarID = ? AND CarStatus = N'เช็คระยะ'");
+        $stmt->execute([$carId]);
+        if ($stmt->rowCount() === 0) {
+            echo json_encode(["success" => false, "message" => "รถคันนี้ไม่ได้อยู่ในสถานะเช็คระยะ/ซ่อม (อาจยืนยันไปแล้ว)"]);
+            exit;
+        }
+        $pl = $conn->prepare("SELECT Plate FROM Cars WHERE CarID = ?");
+        $pl->execute([$carId]);
+        require_once __DIR__ . '/../Car/log_lib.php';
+        sl_log($conn, 'car_ready', 'แอดมินยืนยันรถพร้อมใช้ ' . (string)$pl->fetchColumn(), ['target_type' => 'car', 'target' => (string)$carId]);
+        echo json_encode(["success" => true]);
+    } catch (PDOException $e) {
+        error_log('manage_cars confirm_ready: ' . $e->getMessage());
+        echo json_encode(["success" => false, "message" => "ทำรายการไม่สำเร็จ"]);
+    }
+    exit;
+}
+
 // 3. บันทึกข้อมูล (Insert / Update ครบทุกฟิลด์วันที่)
 if ($action === 'save') {
     $carID      = $_POST['CarID'] ?? '';
@@ -79,6 +105,20 @@ if ($action === 'save') {
     }
     if (!in_array($carStatus, ['ว่าง', 'เช็คระยะ'], true)) {
         $carStatus = 'ว่าง';
+    }
+    // วันที่คาดว่าเสร็จ ใช้เฉพาะสถานะ เช็คระยะ/ซ่อม (ถ้ากลับเป็น ว่าง ล้างทิ้ง)
+    foreach (['MaintenanceStartDate', 'MaintenanceEndDate'] as $k) {
+        if (!empty($_POST[$k]) && !preg_match('/^d{4}-d{2}-d{2}$/', $_POST[$k])) {
+            echo json_encode(["success" => false, "message" => "รูปแบบวันที่เช็คระยะ/ซ่อมไม่ถูกต้อง"]);
+            exit;
+        }
+    }
+    if ($carStatus !== 'เช็คระยะ') {
+        $_POST['MaintenanceStartDate'] = '';
+        $_POST['MaintenanceEndDate'] = '';
+    } elseif (!empty($_POST['MaintenanceStartDate']) && !empty($_POST['MaintenanceEndDate']) && $_POST['MaintenanceEndDate'] < $_POST['MaintenanceStartDate']) {
+        echo json_encode(["success" => false, "message" => "วันที่คาดว่าเสร็จต้องไม่ก่อนวันเริ่ม"]);
+        exit;
     }
     try { // ทะเบียนซ้ำกับรถคันอื่น
         $dup = $conn->prepare("SELECT COUNT(*) FROM Cars WHERE REPLACE(Plate, ' ', '') = REPLACE(?, ' ', '') AND CarID <> ?");

@@ -222,6 +222,7 @@ function fetchCarsData(dateStr) {
                   <span>${escapeHtml(car.Plate || "-")}</span>
                 </span>
               </div>
+              ${isMaintenance ? `<div class="svc-note"><i class="fa-regular fa-calendar-check"></i> ${car.ServiceUntil ? "คาดว่าพร้อมใช้ " + fmtServiceDate(car.ServiceUntil) + " (จองล่วงหน้าได้)" : "ยังไม่ระบุวันเสร็จ"}</div>` : ""}
             </div>
           </div>
         `;
@@ -234,6 +235,13 @@ function fetchCarsData(dateStr) {
 /**
  * Handle car selection
  */
+function fmtServiceDate(iso) {
+  const m = /^(d{4})-(d{2})-(d{2})$/.exec(iso || "");
+  if (!m) return iso || "";
+  const mons = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  return Number(m[3]) + " " + mons[Number(m[2]) - 1] + " " + (Number(m[1]) + 543);
+}
+
 function selectCarForCalendar(car, cardEl) {
   selectedCarPlate = car.Plate;
   selectedCarInfo = car;

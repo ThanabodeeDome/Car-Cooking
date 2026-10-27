@@ -216,6 +216,11 @@ function nt_collect_admin(PDO $conn): array {
             }
         }
     } catch (Throwable $e) { error_log('nt admin geo: ' . $e->getMessage()); }
+    try { // รถเช็คระยะ/ซ่อมถึงกำหนดเสร็จ รอแอดมินยืนยัน
+        foreach ($conn->query("SELECT CarID, Plate, CONVERT(varchar(10), MaintenanceEndDate, 23) AS u FROM Cars WHERE CarStatus = N'เช็คระยะ' AND MaintenanceEndDate IS NOT NULL AND MaintenanceEndDate <= CAST(GETDATE() AS DATE)")->fetchAll(PDO::FETCH_ASSOC) as $sv) {
+            $items[] = nt_item("a_svc:{$sv['CarID']}:{$sv['u']}", 'warn', "รถ {$sv['Plate']} ถึงกำหนดเช็คระยะ/ซ่อมเสร็จ", 'กด "ยืนยันรถพร้อมใช้" ที่แดชบอร์ดเพื่อเปิดให้จอง', '../Admin/index.html');
+        }
+    } catch (Throwable $e) { error_log('nt admin svc due: ' . $e->getMessage()); }
     try { // คำขอคืนรถนอกจุดที่รอแอดมินอนุมัติ
         require_once __DIR__ . '/return_request_lib.php';
         foreach (rr_pending($conn, 20) as $rq) {

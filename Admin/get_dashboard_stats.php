@@ -78,6 +78,13 @@ try {
                      OR (ActExpiry IS NOT NULL AND ActExpiry <= DATEADD(day, 30, CAST(GETDATE() AS DATE)))";
     $alerts = $conn->query($sqlAlerts)->fetchAll(PDO::FETCH_ASSOC);
 
+    // รถเช็คระยะ/ซ่อมที่ถึงวัน (หรือเลยวัน) ที่คาดว่าเสร็จ รอแอดมินยืนยันรถพร้อมใช้
+    $serviceDue = $conn->query(
+        "SELECT CarID, Plate, Brand, Model, CONVERT(varchar(10), MaintenanceEndDate, 23) AS ServiceUntil
+         FROM Cars WHERE CarStatus = N'เช็คระยะ' AND MaintenanceEndDate IS NOT NULL AND MaintenanceEndDate <= CAST(GETDATE() AS DATE)
+         ORDER BY MaintenanceEndDate"
+    )->fetchAll(PDO::FETCH_ASSOC);
+
     // ---------- 5.1) แจ้งเตือน: ถึงกำหนดเช็คระยะครั้งถัดไป (≤30 วัน) — เอาเฉพาะ record ล่าสุดต่อคัน ----------
     $sqlMaintDue = "SELECT c.Plate, c.Brand, c.Model, m.NextDueDate
                      FROM Cars c
@@ -173,6 +180,7 @@ try {
         "alerts"        => $alerts,
         "maint_due"     => $maintDue,
         "overdue_returns" => $overdueReturns,
+        "service_due"   => $serviceDue,
         "feedback"      => $feedback,
         "backup"        => $backup,
     ], JSON_UNESCAPED_UNICODE);

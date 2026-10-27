@@ -108,13 +108,19 @@ try {
     $driverName = trim($driverRow['first_name'] . ' ' . $driverRow['last_name']);
     $department = trim(($driverRow['Division'] ?? '') . ' / ' . ($driverRow['department'] ?? '') . ' / ' . ($driverRow['Unit'] ?? ''));
 
-    $carCheck = $conn->prepare("SELECT CarStatus, Mileage FROM Cars WHERE Plate = :plate");
+    $carCheck = $conn->prepare("SELECT CarStatus, Mileage, CONVERT(varchar(10), MaintenanceEndDate, 23) AS ServiceUntil FROM Cars WHERE Plate = :plate");
     $carCheck->execute([':plate' => $carPlate]);
     $carRow = $carCheck->fetch(PDO::FETCH_ASSOC);
 
-    if (!$carRow || $carRow['CarStatus'] !== 'ว่าง') {
+    // รถเช็คระยะ/ซ่อมที่ระบุวันเสร็จไว้ จองล่วงหน้าได้ตั้งแต่วันเสร็จ (ยกเว้นวันนี้ที่ต้องรอแอดมินยืนยันรถพร้อม)
+    $svcOk = $carRow && $carRow['CarStatus'] === 'เช็คระยะ' && !empty($carRow['ServiceUntil'])
+          && $useDate >= $carRow['ServiceUntil'] && $useDate > date('Y-m-d');
+    if (!$carRow || ($carRow['CarStatus'] !== 'ว่าง' && !$svcOk)) {
         $conn->rollBack();
-        echo json_encode(["success" => false, "message" => "รถคันนี้ไม่พร้อมให้จอง (สถานะ: " . ($carRow['CarStatus'] ?? 'ไม่พบข้อมูล') . ")"]);
+        $why = ($carRow && $carRow['CarStatus'] === 'เช็คระยะ')
+            ? 'รถกำลังเช็คระยะ/ซ่อม' . (!empty($carRow['ServiceUntil']) ? ' คาดว่าพร้อมใช้ ' . $carRow['ServiceUntil'] : ' (ยังไม่ระบุวันเสร็จ)')
+            : 'สถานะ: ' . ($carRow['CarStatus'] ?? 'ไม่พบข้อมูล');
+        echo json_encode(["success" => false, "message" => "รถคันนี้ไม่พร้อมให้จองในวันที่เลือก ($why)"], JSON_UNESCAPED_UNICODE);
         exit;
     }
 

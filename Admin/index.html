@@ -136,6 +136,7 @@
           </div>
         </div>
 
+        <div id="svc-panel" class="dash-panel od-panel" hidden></div>
         <div id="rr-panel" class="dash-panel od-panel" hidden></div>
         <div id="overdue-panel" class="dash-panel od-panel" hidden></div>
 
@@ -225,9 +226,14 @@
                   <label class="ef-f">
                     <select id="form-car-status" name="CarStatus">
                       <option value="ว่าง">ใช้งานได้ปกติ (ระบบคำนวณ ว่าง/ติดจอง เองจากการจอง)</option>
-                      <option value="เช็คระยะ">งดให้บริการ (ซ่อม / ปิดใช้ชั่วคราว)</option>
+                      <option value="เช็คระยะ">เช็คระยะ / ซ่อม (ปิดใช้ชั่วคราว)</option>
                     </select>
                   </label>
+                  <div class="ef-grid" id="svc-dates" style="grid-template-columns:1fr 1fr">
+                    <label class="ef-f"><span>เริ่มเช็คระยะ/ซ่อม</span><input type="date" id="MaintenanceStartDate" name="MaintenanceStartDate" /></label>
+                    <label class="ef-f"><span>คาดว่าเสร็จ (จองได้ตั้งแต่วันนี้)</span><input type="date" id="MaintenanceEndDate" name="MaintenanceEndDate" /></label>
+                  </div>
+                  <p class="svc-hint">ระบุ "คาดว่าเสร็จ" ไว้ ผู้ใช้จะจองล่วงหน้าตั้งแต่วันนั้นได้เลย • ถึงวันแล้วแอดมินต้องกด "ยืนยันรถพร้อมใช้" ที่แดชบอร์ด รถถึงจะเปิดให้จองของวันนั้น</p>
                 </div>
               </div>
 
@@ -498,8 +504,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="../Car/ui-dialog.js?v=3"></script>
     <script src="admin-toast.js?v=1"></script>
-    <script src="status-badge.js?v=6"></script>
-    <script src="dashboard.js?v=9"></script>
+    <script src="status-badge.js?v=7"></script>
+    <script src="dashboard.js?v=10"></script>
     <script src="reports.js?v=6"></script>
     <script src="system-log.js?v=2"></script>
     <script>
@@ -520,7 +526,7 @@
     </script>
 
     <script src="admin-datepicker.js"></script>
-    <script src="app.js?v=15"></script>
+    <script src="app.js?v=16"></script>
     <script src="../Car/notify-bell.js?v=6"></script>
     <script>
       // เปิดแท็บตามลิงก์ #ชื่อแท็บ (ใช้จากหน้า "จุดตรวจพิกัด" และปุ่มย้อนกลับของเบราว์เซอร์)

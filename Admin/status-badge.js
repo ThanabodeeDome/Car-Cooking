@@ -33,9 +33,9 @@
     "ไม่ว่าง": { k: "use", icon: "fa-car-side", label: "ไม่ว่าง" },
     "กำลังใช้งาน": { k: "use", icon: "fa-car-side", label: "กำลังใช้งาน" },
     "ติดจอง": { k: "wait", icon: "fa-calendar-check", label: "ติดจอง" },
-    "งดให้บริการ": { k: "bad", icon: "fa-screwdriver-wrench", label: "งดให้บริการ" },
-    "เช็คระยะ": { k: "bad", icon: "fa-screwdriver-wrench", label: "งดให้บริการ" },
-    "ซ่อมบำรุง": { k: "bad", icon: "fa-screwdriver-wrench", label: "งดให้บริการ" },
+    "งดให้บริการ": { k: "bad", icon: "fa-screwdriver-wrench", label: "เช็คระยะ/ซ่อม" },
+    "เช็คระยะ": { k: "bad", icon: "fa-screwdriver-wrench", label: "เช็คระยะ/ซ่อม" },
+    "ซ่อมบำรุง": { k: "bad", icon: "fa-screwdriver-wrench", label: "เช็คระยะ/ซ่อม" },
   };
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
