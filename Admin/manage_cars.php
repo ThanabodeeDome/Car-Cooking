@@ -108,7 +108,7 @@ if ($action === 'save') {
     }
     // วันที่คาดว่าเสร็จ ใช้เฉพาะสถานะ เช็คระยะ/ซ่อม (ถ้ากลับเป็น ว่าง ล้างทิ้ง)
     foreach (['MaintenanceStartDate', 'MaintenanceEndDate'] as $k) {
-        if (!empty($_POST[$k]) && !preg_match('/^d{4}-d{2}-d{2}$/', $_POST[$k])) {
+        if (!empty($_POST[$k]) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST[$k])) {
             echo json_encode(["success" => false, "message" => "รูปแบบวันที่เช็คระยะ/ซ่อมไม่ถูกต้อง"]);
             exit;
         }

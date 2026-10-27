@@ -404,7 +404,7 @@ function fillWorkspaceForm(car) {
     if (statusToShow === "ไม่ว่าง") {
       statusToShow = "ว่าง"; // ค่าที่ admin ตั้งไว้จริงคือว่าง แค่ตอนนี้มีคนจองอยู่
     } else if (statusToShow === "เช็คระยะ" || statusToShow === "ซ่อมบำรุง") {
-      statusToShow = "งดให้บริการ"; // ค่าเก่ารวมเป็นค่าใหม่ตัวเดียว
+      statusToShow = "เช็คระยะ"; // ค่าเก่ารวมเป็นค่าใหม่ตัวเดียว
     }
     document.getElementById("form-car-status").value = statusToShow;
   }
