@@ -100,10 +100,23 @@ if ($action === 'close') {
     }
 
     try {
+        // ปิดงานพร้อมบันทึกผล (ไมล์/ค่าใช้จ่าย/เช็คครั้งถัดไป/หมายเหตุ) ถ้ากรอกมา — ช่องที่ว่างไม่ทับค่าเดิม
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$end)) $end = date('Y-m-d');
+        $nx = !empty($data['next_due_date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$data['next_due_date']) ? $data['next_due_date'] : null;
         $stmt = $conn->prepare(
-            "UPDATE MaintenanceHistory SET EndDate = :end WHERE MaintenanceID = :id"
+            "UPDATE MaintenanceHistory SET EndDate = :end,
+                    Mileage = COALESCE(:mileage, Mileage), Cost = COALESCE(:cost, Cost),
+                    NextDueDate = COALESCE(:nx, NextDueDate), Note = COALESCE(:note, Note)
+             WHERE MaintenanceID = :id"
         );
-        $stmt->execute([':end' => $end, ':id' => $id]);
+        $stmt->execute([
+            ':end' => $end,
+            ':mileage' => !empty($data['mileage']) ? $data['mileage'] : null,
+            ':cost' => !empty($data['cost']) ? $data['cost'] : null,
+            ':nx' => $nx,
+            ':note' => isset($data['note']) && trim((string)$data['note']) !== '' ? $data['note'] : null,
+            ':id' => $id,
+        ]);
         mt_release_car_if_done($conn, $id);
         echo json_encode(["success" => true]);
     } catch (PDOException $e) {

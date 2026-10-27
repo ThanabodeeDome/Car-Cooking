@@ -834,6 +834,8 @@ function closeCalendarEventModal() {
 let currentMaintCarId = null;
 
 function openMaintenanceModal(carId, plate) {
+  loadMaintenanceHistory.tabPicked = false;
+  maintOpenRecord = null;
   currentMaintCarId = carId;
 
   const overlay = document.createElement("div");
@@ -841,44 +843,58 @@ function openMaintenanceModal(carId, plate) {
   overlay.id = "maint-modal-overlay";
   overlay.innerHTML = `
     <div class="modal-content" style="width: 560px; max-width: 95vw; max-height: 92vh; overflow-y: auto;">
-      <h2 style="margin-top:0; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
-        <span><i class="fa-solid fa-screwdriver-wrench"></i> ส่งซ่อม / เช็คระยะ — ${escapeHtml(plate)}</span>
+      <h2 style="margin-top:0; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <span><i class="fa-solid fa-screwdriver-wrench"></i> เช็คระยะ / ซ่อม — ${escapeHtml(plate)}</span>
         <button type="button" onclick="closeMaintenanceModal()" aria-label="ปิด" style="border:none; background:#f1f5f9; width:36px; height:36px; border-radius:50%; font-size:20px; line-height:1; cursor:pointer;">&times;</button>
       </h2>
 
-      <form id="maint-add-form" style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;">
+      <div style="display:flex; gap:8px; margin-bottom:14px; background:#f1f5f9; padding:4px; border-radius:14px;">
+        <button type="button" id="mt-tab-send" onclick="showMaintTab('send')" style="flex:1; padding:10px 8px; border:none; border-radius:10px; font:600 14px inherit; cursor:pointer;">1. ส่งรถเข้าเช็ค/ซ่อม</button>
+        <button type="button" id="mt-tab-done" onclick="showMaintTab('done')" style="flex:1; padding:10px 8px; border:none; border-radius:10px; font:600 14px inherit; cursor:pointer;">2. รถเสร็จแล้ว</button>
+      </div>
+
+      <form id="maint-send-form" style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;">
         <div style="grid-column: span 2;">
           <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ทำอะไร</label>
-          <input type="text" id="maint-type" list="maint-type-list" value="เช็คระยะ" required style="margin-bottom:0;">
+          <input type="text" id="ms-type" list="maint-type-list" value="เช็คระยะ" required style="margin-bottom:0;">
           <datalist id="maint-type-list"><option value="เช็คระยะ"><option value="ซ่อม"><option value="เปลี่ยนยาง"><option value="ตรวจสภาพ/ต่อภาษี"></datalist>
         </div>
         <div>
           <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">วันที่ส่งรถ</label>
-          <input type="date" id="maint-start" required style="margin-bottom:0;">
+          <input type="date" id="ms-start" required style="margin-bottom:0;">
         </div>
         <div>
-          <label id="maint-end-label" style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">คาดว่าเสร็จวันที่</label>
-          <input type="date" id="maint-end" style="margin-bottom:0;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">คาดว่าเสร็จวันที่</label>
+          <input type="date" id="ms-end" style="margin-bottom:0;">
         </div>
-        <label style="grid-column: span 2; display:flex; gap:8px; align-items:center; font-size:13px; cursor:pointer; margin:0;">
-          <input type="checkbox" id="maint-hold" checked style="width:auto; margin:0;">
-          <span>ปิดการจองรถคันนี้ <span style="color:#64748b;">(จองล่วงหน้าได้ตั้งแต่วันคาดว่าเสร็จ)</span></span>
-        </label>
         <div style="grid-column: span 2;">
           <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">หมายเหตุ (ไม่บังคับ)</label>
-          <input type="text" id="maint-note" style="margin-bottom:0;">
+          <input type="text" id="ms-note" style="margin-bottom:0;">
         </div>
-        <details style="grid-column: span 2; font-size:13px;">
-          <summary style="cursor:pointer; color:#64748b;">ข้อมูลเพิ่มเติม (เลขไมล์ / ค่าใช้จ่าย / กำหนดเช็คครั้งถัดไป)</summary>
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px 12px; margin-top:10px;">
-            <div><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">เลขไมล์</label><input type="number" id="maint-mileage" style="margin-bottom:0;"></div>
-            <div><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ค่าใช้จ่าย</label><input type="number" step="0.01" id="maint-cost" style="margin-bottom:0;"></div>
-            <div style="grid-column: span 2;"><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">กำหนดเช็คครั้งถัดไป</label><input type="date" id="maint-next-due" style="margin-bottom:0;"></div>
-          </div>
-        </details>
+        <p style="grid-column: span 2; margin:0; font-size:12px; color:#64748b;">บันทึกแล้วรถจะถูกปิดการจอง — ผู้ใช้จองล่วงหน้าได้ตั้งแต่วันคาดว่าเสร็จ</p>
         <div style="grid-column: span 2; display:flex; justify-content:flex-end; gap:10px;">
           <button type="button" class="btn-clear" onclick="closeMaintenanceModal()">ปิด</button>
-          <button type="submit" class="btn btn-primary">บันทึก</button>
+          <button type="submit" class="btn btn-primary">ส่งรถเข้าเช็ค/ซ่อม</button>
+        </div>
+      </form>
+
+      <form id="maint-done-form" style="display:none; grid-template-columns: 1fr 1fr; gap: 10px 12px;">
+        <div id="md-info" style="grid-column: span 2; font-size:13px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:10px 12px;"></div>
+        <div id="md-retro" style="grid-column: span 2; display:none; grid-template-columns: 1fr 1fr; gap:10px 12px;">
+          <div><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ทำอะไร</label><input type="text" id="md-type" value="เช็คระยะ" style="margin-bottom:0;"></div>
+          <div><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">วันที่เริ่ม</label><input type="date" id="md-start" style="margin-bottom:0;"></div>
+        </div>
+        <div style="grid-column: span 2;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">เสร็จเมื่อวันที่</label>
+          <input type="date" id="md-end" required style="margin-bottom:0;">
+        </div>
+        <div><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">เลขไมล์</label><input type="number" id="md-mileage" style="margin-bottom:0;"></div>
+        <div><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ค่าใช้จ่าย (บาท)</label><input type="number" step="0.01" id="md-cost" style="margin-bottom:0;"></div>
+        <div style="grid-column: span 2;"><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">กำหนดเช็คครั้งถัดไป</label><input type="date" id="md-next" style="margin-bottom:0;"></div>
+        <div style="grid-column: span 2;"><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">หมายเหตุ</label><input type="text" id="md-note" style="margin-bottom:0;"></div>
+        <div style="grid-column: span 2; display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn-clear" onclick="closeMaintenanceModal()">ปิด</button>
+          <button type="submit" class="btn btn-primary" id="md-submit">รถเสร็จแล้ว — เปิดให้จอง</button>
         </div>
       </form>
 
@@ -891,14 +907,18 @@ function openMaintenanceModal(carId, plate) {
   document.body.appendChild(overlay);
 
   overlay.addEventListener("click", (e) => { if (e.target === overlay) closeMaintenanceModal(); });
-  document.getElementById("maint-start").value = ((d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0])(new Date());
-  document.getElementById("maint-hold").addEventListener("change", (e) => {
-    document.getElementById("maint-end-label").textContent = e.target.checked ? "คาดว่าเสร็จวันที่" : "เสร็จเมื่อวันที่";
-  });
-  document.getElementById("maint-add-form").addEventListener("submit", (e) => {
+  const today = maintToday();
+  document.getElementById("ms-start").value = today;
+  document.getElementById("md-end").value = today;
+  document.getElementById("maint-send-form").addEventListener("submit", (e) => {
     e.preventDefault();
-    submitMaintenanceRecord();
+    submitMaintSend();
   });
+  document.getElementById("maint-done-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    submitMaintDone();
+  });
+  showMaintTab("send");
 
   loadMaintenanceHistory(carId);
 }
@@ -1131,6 +1151,13 @@ function loadMaintenanceHistory(carId) {
         return;
       }
       const rows = data.history || [];
+      maintOpenRecord = rows.find((r) => !r.EndDate) || null;
+      if (!loadMaintenanceHistory.tabPicked) {
+        loadMaintenanceHistory.tabPicked = true;
+        showMaintTab(maintOpenRecord ? "done" : "send"); // มีงานค้างอยู่ -> เปิดแท็บ "รถเสร็จแล้ว" ให้เลย
+      } else {
+        syncMaintDoneForm();
+      }
       if (rows.length === 0) {
         wrap.innerHTML = `<p class="empty-hint">ยังไม่มีประวัติซ่อม</p>`;
         return;
@@ -1162,40 +1189,112 @@ function loadMaintenanceHistory(carId) {
     });
 }
 
-function submitMaintenanceRecord() {
-  const payload = {
-    action: "add",
-    car_id: currentMaintCarId,
-    maintenance_type: document.getElementById("maint-type").value,
-    start_date: document.getElementById("maint-start").value,
-    end_date: document.getElementById("maint-end").value,
-    hold_car: document.getElementById("maint-hold").checked,
-    mileage: document.getElementById("maint-mileage").value,
-    cost: document.getElementById("maint-cost").value,
-    next_due_date: document.getElementById("maint-next-due").value,
-    note: document.getElementById("maint-note").value,
-  };
+let maintOpenRecord = null; // รายการเช็ค/ซ่อมที่ยังเปิดอยู่ของรถคันที่เปิดหน้าต่างอยู่
 
-  fetch("manage_maintenance.php", {
+function maintToday() {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0];
+}
+
+function showMaintTab(tab) {
+  const send = tab === "send";
+  const sf = document.getElementById("maint-send-form");
+  const df = document.getElementById("maint-done-form");
+  if (!sf || !df) return;
+  sf.style.display = send ? "grid" : "none";
+  df.style.display = send ? "none" : "grid";
+  const on = "background:#fff; color:#0f172a; box-shadow:0 1px 4px rgba(0,0,0,.12);";
+  const off = "background:transparent; color:#64748b; box-shadow:none;";
+  const base = "flex:1; padding:10px 8px; border:none; border-radius:10px; font:600 14px inherit; cursor:pointer;";
+  document.getElementById("mt-tab-send").style.cssText = base + (send ? on : off);
+  document.getElementById("mt-tab-done").style.cssText = base + (send ? off : on);
+  syncMaintDoneForm();
+}
+
+// ฟอร์ม "รถเสร็จแล้ว": มีงานค้างอยู่ = ปิดงานนั้น / ไม่มี = บันทึกย้อนหลัง (ต้องระบุวันเริ่ม)
+function syncMaintDoneForm() {
+  const info = document.getElementById("md-info");
+  const retro = document.getElementById("md-retro");
+  const btn = document.getElementById("md-submit");
+  if (!info || !retro) return;
+  const r = maintOpenRecord;
+  if (r) {
+    info.innerHTML = `กำลัง<b>${escapeHtml(r.MaintenanceType) || "เช็ค/ซ่อม"}</b> ตั้งแต่ ${escapeHtml(String(r.StartDate).slice(0, 10))} — กรอกผลแล้วกดยืนยัน รถจะเปิดให้จองทันที`;
+    retro.style.display = "none";
+    btn.textContent = "รถเสร็จแล้ว — เปิดให้จอง";
+  } else {
+    info.style.background = "#f8fafc";
+    info.style.borderColor = "#e2e8f0";
+    info.textContent = "ตอนนี้ไม่มีงานเช็ค/ซ่อมค้างอยู่ — ใช้ฟอร์มนี้บันทึกงานที่เสร็จไปแล้ว (ย้อนหลัง)";
+    retro.style.display = "grid";
+    btn.textContent = "บันทึกประวัติ";
+  }
+}
+
+function maintAfterSave() {
+  loadMaintenanceHistory(currentMaintCarId);
+  loadCarsToWorkspaceTable();
+  fetchDashboardStats();
+}
+
+function maintPost(payload) {
+  return fetch("manage_maintenance.php", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   })
     .then((res) => res.json())
-    .then((result) => {
-      if (result.success) {
-        document.getElementById("maint-add-form").reset();
-        document.getElementById("maint-end-label").textContent = "คาดว่าเสร็จวันที่";
-        document.getElementById("maint-type").value = "เช็คระยะ";
-        document.getElementById("maint-start").value = ((d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0])(new Date());
-        loadMaintenanceHistory(currentMaintCarId);
-        loadCarsToWorkspaceTable();
-        fetchDashboardStats();
-      } else {
-        alert("บันทึกไม่สำเร็จ: " + (result.message || ""));
-      }
-    })
-    .catch(() => alert("ติดต่อเซิร์ฟเวอร์ไม่ได้"));
+    .catch(() => ({ success: false, message: "ติดต่อเซิร์ฟเวอร์ไม่ได้" }));
+}
+
+// ฟอร์ม 1: ส่งรถเข้าเช็ค/ซ่อม (ล็อกรถ + ตั้งวันคาดว่าเสร็จ)
+async function submitMaintSend() {
+  const result = await maintPost({
+    action: "add",
+    car_id: currentMaintCarId,
+    hold_car: true,
+    maintenance_type: document.getElementById("ms-type").value,
+    start_date: document.getElementById("ms-start").value,
+    end_date: document.getElementById("ms-end").value,
+    note: document.getElementById("ms-note").value,
+  });
+  if (!result.success) return alert("บันทึกไม่สำเร็จ: " + (result.message || ""));
+  document.getElementById("maint-send-form").reset();
+  document.getElementById("ms-start").value = maintToday();
+  maintAfterSave();
+  showMaintTab("done");
+}
+
+// ฟอร์ม 2: รถเสร็จแล้ว (ปิดงานที่ค้าง + ปล่อยรถ) หรือบันทึกย้อนหลัง
+async function submitMaintDone() {
+  const common = {
+    mileage: document.getElementById("md-mileage").value,
+    cost: document.getElementById("md-cost").value,
+    next_due_date: document.getElementById("md-next").value,
+    note: document.getElementById("md-note").value,
+  };
+  const end = document.getElementById("md-end").value;
+  let result;
+  if (maintOpenRecord) {
+    result = await maintPost({ action: "close", maintenance_id: maintOpenRecord.MaintenanceID, end_date: end, ...common });
+  } else {
+    const start = document.getElementById("md-start").value;
+    if (!start) return alert("กรุณาระบุวันที่เริ่ม");
+    result = await maintPost({
+      action: "add",
+      car_id: currentMaintCarId,
+      hold_car: false,
+      maintenance_type: document.getElementById("md-type").value || "เช็คระยะ",
+      start_date: start,
+      end_date: end,
+      ...common,
+    });
+  }
+  if (!result.success) return alert("บันทึกไม่สำเร็จ: " + (result.message || ""));
+  document.getElementById("maint-done-form").reset();
+  document.getElementById("md-end").value = maintToday();
+  maintAfterSave();
+  showMaintTab("send");
 }
 
 async function closeMaintenanceRecord(maintenanceId) {
