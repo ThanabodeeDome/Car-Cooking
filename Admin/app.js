@@ -840,75 +840,60 @@ function openMaintenanceModal(carId, plate) {
   overlay.className = "modal-overlay";
   overlay.id = "maint-modal-overlay";
   overlay.innerHTML = `
-    <div class="modal-content" style="width: 820px; max-width: 95vw; max-height: 92vh; overflow: hidden; display: flex; flex-direction: column;">
+    <div class="modal-content" style="width: 560px; max-width: 95vw; max-height: 92vh; overflow-y: auto;">
       <h2 style="margin-top:0; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
-        <span><i class="fa-solid fa-screwdriver-wrench"></i> ประวัติซ่อม — ${escapeHtml(plate)}</span>
+        <span><i class="fa-solid fa-screwdriver-wrench"></i> ส่งซ่อม / เช็คระยะ — ${escapeHtml(plate)}</span>
         <button type="button" onclick="closeMaintenanceModal()" aria-label="ปิด" style="border:none; background:#f1f5f9; width:36px; height:36px; border-radius:50%; font-size:20px; line-height:1; cursor:pointer;">&times;</button>
       </h2>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; overflow: hidden;">
-        <div style="overflow-y: auto; max-height: 70vh; padding-right: 6px;">
-          <h3 style="margin-top:0;">รายการที่ผ่านมา</h3>
-          <div id="maint-history-list">
-            <p class="empty-hint">กำลังโหลด...</p>
+      <form id="maint-add-form" style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;">
+        <div style="grid-column: span 2;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ทำอะไร</label>
+          <input type="text" id="maint-type" list="maint-type-list" value="เช็คระยะ" required style="margin-bottom:0;">
+          <datalist id="maint-type-list"><option value="เช็คระยะ"><option value="ซ่อม"><option value="เปลี่ยนยาง"><option value="ตรวจสภาพ/ต่อภาษี"></datalist>
+        </div>
+        <div>
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">วันที่ส่งรถ</label>
+          <input type="date" id="maint-start" required style="margin-bottom:0;">
+        </div>
+        <div>
+          <label id="maint-end-label" style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">คาดว่าเสร็จวันที่</label>
+          <input type="date" id="maint-end" style="margin-bottom:0;">
+        </div>
+        <label style="grid-column: span 2; display:flex; gap:8px; align-items:center; font-size:13px; cursor:pointer; margin:0;">
+          <input type="checkbox" id="maint-hold" checked style="width:auto; margin:0;">
+          <span>ปิดการจองรถคันนี้ <span style="color:#64748b;">(จองล่วงหน้าได้ตั้งแต่วันคาดว่าเสร็จ)</span></span>
+        </label>
+        <div style="grid-column: span 2;">
+          <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">หมายเหตุ (ไม่บังคับ)</label>
+          <input type="text" id="maint-note" style="margin-bottom:0;">
+        </div>
+        <details style="grid-column: span 2; font-size:13px;">
+          <summary style="cursor:pointer; color:#64748b;">ข้อมูลเพิ่มเติม (เลขไมล์ / ค่าใช้จ่าย / กำหนดเช็คครั้งถัดไป)</summary>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px 12px; margin-top:10px;">
+            <div><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">เลขไมล์</label><input type="number" id="maint-mileage" style="margin-bottom:0;"></div>
+            <div><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ค่าใช้จ่าย</label><input type="number" step="0.01" id="maint-cost" style="margin-bottom:0;"></div>
+            <div style="grid-column: span 2;"><label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">กำหนดเช็คครั้งถัดไป</label><input type="date" id="maint-next-due" style="margin-bottom:0;"></div>
           </div>
+        </details>
+        <div style="grid-column: span 2; display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn-clear" onclick="closeMaintenanceModal()">ปิด</button>
+          <button type="submit" class="btn btn-primary">บันทึก</button>
         </div>
+      </form>
 
-        <div style="overflow-y: auto; max-height: 70vh; padding-right: 6px;">
-          <h3 style="margin-top:0;">+ เพิ่มรายการซ่อม/เช็คระยะ</h3>
-          <form id="maint-add-form" style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px 12px;">
-            <div style="grid-column: span 2;">
-              <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ประเภท</label>
-              <input type="text" id="maint-type" placeholder="เช่น เช็คระยะ, เปลี่ยนยาง" required style="margin-bottom:0;">
-            </div>
-
-            <div>
-              <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">วันที่เริ่ม *</label>
-              <input type="date" id="maint-start" required style="margin-bottom:0;">
-            </div>
-            <div>
-              <label id="maint-end-label" style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">คาดว่าเสร็จ</label>
-              <input type="date" id="maint-end" style="margin-bottom:0;">
-            </div>
-
-            <label style="grid-column: span 2; display:flex; gap:8px; align-items:flex-start; font-size:13px; background:#fff7ed; border:1px solid #fed7aa; border-radius:10px; padding:10px 12px; cursor:pointer;">
-              <input type="checkbox" id="maint-hold" checked style="width:auto; margin:3px 0 0;">
-              <span><b>ส่งรถเข้าเช็ค/ซ่อมตอนนี้ (ปิดการจองรถคันนี้)</b><br>ผู้ใช้จะจองล่วงหน้าตั้งแต่วัน "คาดว่าเสร็จ" ได้ • เสร็จแล้วกด "ยืนยันรถพร้อมใช้" ที่แดชบอร์ด หรือ "ปิดงาน" ในรายการด้านซ้าย<br><span style="color:#64748b;">ถ้าเป็นการบันทึกย้อนหลังของงานที่เสร็จไปแล้ว ให้ติ๊กออก แล้วใส่ "วันที่เสร็จ" จริง</span></span>
-            </label>
-
-            <div>
-              <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">เลขไมล์</label>
-              <input type="number" id="maint-mileage" style="margin-bottom:0;">
-            </div>
-            <div>
-              <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">ค่าใช้จ่าย</label>
-              <input type="number" step="0.01" id="maint-cost" style="margin-bottom:0;">
-            </div>
-
-            <div style="grid-column: span 2;">
-              <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">กำหนดเช็คครั้งถัดไป</label>
-              <input type="date" id="maint-next-due" style="margin-bottom:0;">
-            </div>
-
-            <div style="grid-column: span 2;">
-              <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">หมายเหตุ</label>
-              <input type="text" id="maint-note" style="margin-bottom:0;">
-            </div>
-
-            <div style="grid-column: span 2; display:flex; justify-content:flex-end; gap:10px; margin-top:4px;">
-              <button type="button" class="btn-clear" onclick="closeMaintenanceModal()">ปิด</button>
-              <button type="submit" class="btn btn-primary">บันทึก</button>
-            </div>
-          </form>
-        </div>
+      <h3 style="margin:18px 0 8px; font-size:15px;">ประวัติที่ผ่านมา</h3>
+      <div id="maint-history-list" style="max-height: 28vh; overflow-y: auto;">
+        <p class="empty-hint">กำลังโหลด...</p>
       </div>
     </div>
   `;
   document.body.appendChild(overlay);
 
   overlay.addEventListener("click", (e) => { if (e.target === overlay) closeMaintenanceModal(); });
+  document.getElementById("maint-start").value = ((d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0])(new Date());
   document.getElementById("maint-hold").addEventListener("change", (e) => {
-    document.getElementById("maint-end-label").textContent = e.target.checked ? "คาดว่าเสร็จ" : "วันที่เสร็จ";
+    document.getElementById("maint-end-label").textContent = e.target.checked ? "คาดว่าเสร็จวันที่" : "เสร็จเมื่อวันที่";
   });
   document.getElementById("maint-add-form").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -1200,7 +1185,9 @@ function submitMaintenanceRecord() {
     .then((result) => {
       if (result.success) {
         document.getElementById("maint-add-form").reset();
-        document.getElementById("maint-end-label").textContent = "คาดว่าเสร็จ";
+        document.getElementById("maint-end-label").textContent = "คาดว่าเสร็จวันที่";
+        document.getElementById("maint-type").value = "เช็คระยะ";
+        document.getElementById("maint-start").value = ((d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0])(new Date());
         loadMaintenanceHistory(currentMaintCarId);
         loadCarsToWorkspaceTable();
         fetchDashboardStats();
