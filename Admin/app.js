@@ -818,6 +818,7 @@ function openCalendarEventModal(ev) {
       </div>
     </div>
   `;
+  document.body.appendChild(overlay);
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) closeCalendarEventModal();
   });
@@ -903,7 +904,6 @@ function openMaintenanceModal(carId, plate) {
       </div>
     </div>
   `;
-  document.body.appendChild(overlay);
 
   const today = maintToday();
   document.getElementById("ms-start").value = today;
