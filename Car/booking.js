@@ -831,6 +831,7 @@ function selectMiniCalDay(dateStr) {
   weekGridNeedsScroll = true;
   renderMiniCalendar();
   renderWeekLabelAndGrid();
+  loadCarSelectList(); // สถานะรถ (เช็คระยะ/ซ่อม ฯลฯ) ขึ้นกับวันที่เลือก
 }
 
 // แตะวันในแถบวัน (มือถือ) — อยู่สัปดาห์เดิม แค่เปลี่ยนวันที่ดู
@@ -839,6 +840,7 @@ function selectStripDay(dateStr) {
   renderMiniCalendar();
   renderDayStrip();
   renderDayList();
+  loadCarSelectList();
 }
 
 function shiftGanttWeek(deltaWeeks) {
@@ -854,6 +856,7 @@ function shiftGanttWeek(deltaWeeks) {
   weekGridNeedsScroll = true;
   renderMiniCalendar();
   renderWeekLabelAndGrid();
+  loadCarSelectList();
 }
 
 function goToGanttToday() {
@@ -865,6 +868,7 @@ function goToGanttToday() {
   weekGridNeedsScroll = true;
   renderMiniCalendar();
   renderWeekLabelAndGrid();
+  loadCarSelectList();
 }
 
 // ---------- เลือกรถ (การ์ดมีรูป + สถานะ: มือถือเลื่อนซ้ายขวา / คอมเรียงแนวตั้ง) ----------
