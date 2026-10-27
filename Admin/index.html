@@ -16,7 +16,7 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
-    <link rel="stylesheet" href="style.css?v=22" />
+    <link rel="stylesheet" href="style.css?v=23" />
     <link rel="stylesheet" href="admin-datepicker.css" />
     <link rel="stylesheet" href="../Car/form-ios-zoom.css?v=3" />
   </head>
@@ -219,7 +219,7 @@
                   <div class="ef-grid ef-grid-3">
                     <label class="ef-f"><span>ประกันภัยหมดอายุ</span><input type="date" name="InsuranceExpiry" /></label>
                     <label class="ef-f"><span>พ.ร.บ. หมดอายุ</span><input type="date" name="ActExpiry" /></label>
-                    <label class="ef-f"><span>เช็กระยะล่าสุด</span><input type="date" name="LastMaintenance" /></label>
+                    <label class="ef-f"><span>เช็กระยะล่าสุด (วันที่ทำเสร็จแล้ว)</span><input type="date" name="LastMaintenance" /></label>
                   </div>
 
                   <div class="ef-sec">สถานะการให้บริการ</div>
@@ -229,7 +229,7 @@
                       <option value="เช็คระยะ">เช็คระยะ / ซ่อม (ปิดใช้ชั่วคราว)</option>
                     </select>
                   </label>
-                  <div class="ef-grid" id="svc-dates" style="grid-template-columns:1fr 1fr">
+                  <div class="ef-grid" id="svc-dates" hidden style="grid-template-columns:1fr 1fr">
                     <label class="ef-f"><span>เริ่มเช็คระยะ/ซ่อม</span><input type="date" id="MaintenanceStartDate" name="MaintenanceStartDate" /></label>
                     <label class="ef-f"><span>คาดว่าเสร็จ (จองได้ตั้งแต่วันนี้)</span><input type="date" id="MaintenanceEndDate" name="MaintenanceEndDate" /></label>
                   </div>
@@ -526,7 +526,7 @@
     </script>
 
     <script src="admin-datepicker.js"></script>
-    <script src="app.js?v=17"></script>
+    <script src="app.js?v=18"></script>
     <script src="../Car/notify-bell.js?v=6"></script>
     <script>
       // เปิดแท็บตามลิงก์ #ชื่อแท็บ (ใช้จากหน้า "จุดตรวจพิกัด" และปุ่มย้อนกลับของเบราว์เซอร์)

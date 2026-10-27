@@ -408,10 +408,12 @@ function fillWorkspaceForm(car) {
     }
     document.getElementById("form-car-status").value = statusToShow;
   }
+  syncSvcDates();
   const svcS = document.getElementById("MaintenanceStartDate");
   const svcE = document.getElementById("MaintenanceEndDate");
   if (svcS) svcS.value = (car.MaintenanceStartDate || "").slice(0, 10);
   if (svcE) svcE.value = (car.MaintenanceEndDate || "").slice(0, 10);
+  syncSvcDates();
 
   // 🩹 แก้บั๊ก: ช่องวันที่ 3 อันนี้ไม่มี id มีแต่ name เลยไม่เคยถูกเติมค่าตอนกด "แก้ไข"
   // ผลคือกดบันทึกทีไร ค่าเดิมของ ประกัน/พ.ร.บ./เช็คระยะ หายหมดเพราะส่งค่าว่างทับ
@@ -472,7 +474,7 @@ function clearToInputMode() {
 
   // 3. รีเซ็ตสถานะตัวเลือกกลับไปที่ค่าแรก ("ว่าง")
   const statusSelect = document.getElementById("form-car-status");
-  if (statusSelect) statusSelect.selectedIndex = 0;
+  if (statusSelect) statusSelect.selectedIndex = 0; syncSvcDates();
 
   // 4. เปลี่ยนหัวข้อฟอร์มกลับมาเป็นโหมดเพิ่มรถใหม่
   const modeTitle = document.getElementById("action-mode-title");
@@ -1356,3 +1358,12 @@ async function deleteUser(userId, username) {
     })
     .catch(() => alert("ติดต่อเซิร์ฟเวอร์ไม่ได้"));
 }
+// แสดงช่อง "เริ่ม/คาดว่าเสร็จ" เฉพาะตอนเลือกสถานะ เช็คระยะ/ซ่อม
+function syncSvcDates() {
+  const sel = document.getElementById("form-car-status");
+  const box = document.getElementById("svc-dates");
+  if (box && sel) box.hidden = sel.value !== "เช็คระยะ";
+}
+document.addEventListener("change", (e) => {
+  if (e.target && e.target.id === "form-car-status") syncSvcDates();
+});

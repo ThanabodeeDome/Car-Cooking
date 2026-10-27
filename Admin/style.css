@@ -2608,3 +2608,4 @@ tr.clickable-row:hover td { background: #fafbff; }
 .status-cell .st + div { margin-top: 5px; }
 
 .svc-hint { margin: 4px 0 0; font-size: 12px; color: #64748b; }
+#svc-dates[hidden] { display: none; }
