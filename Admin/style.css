@@ -2609,3 +2609,9 @@ tr.clickable-row:hover td { background: #fafbff; }
 
 .svc-hint { margin: 4px 0 0; font-size: 12px; color: #64748b; }
 #svc-dates[hidden] { display: none; }
+
+.cv-tabs { display: flex; gap: 6px; margin: 0 0 14px; padding: 4px; background: #f1f5f9; border-radius: 14px; width: fit-content; max-width: 100%; }
+.cv-tabs button { border: none; background: transparent; color: #64748b; padding: 9px 16px; border-radius: 10px; font: 600 14px inherit; cursor: pointer; }
+.cv-tabs button.on { background: #fff; color: #0f172a; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12); }
+.svc-inline[hidden] { display: none; }
+.svc-pick { padding: 24px; text-align: center; color: #64748b; background: #f8fafc; border-radius: 12px; }

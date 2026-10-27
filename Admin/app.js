@@ -294,7 +294,7 @@ function openCarMenu(ev, id) {
     if (!b) return;
     closeRowMenu();
     if (b.dataset.a === "edit") fillWorkspaceForm(car);
-    else if (b.dataset.a === "maint") openMaintenanceModal(Number(car.CarID), car.Plate || "");
+    else if (b.dataset.a === "maint") { fillWorkspaceForm(car); switchCarView("svc"); }
     else if (b.dataset.a === "del") deleteCarFromWorkspace(car.CarID);
   });
   setTimeout(() => {
@@ -429,8 +429,9 @@ function fillWorkspaceForm(car) {
     if (lastMaintInput) lastMaintInput.value = car.LastMaintenance || "";
   }
 
-  const formElement = document.getElementById("crud-car-form");
-  if (formElement) formElement.scrollIntoView({ behavior: "smooth" });
+  if (carView === "svc") switchCarView("svc"); // อยู่แท็บเช็คระยะ/ซ่อม -> เปลี่ยนไปของรถคันที่เลือกใหม่
+  const tabs = document.querySelector(".cv-tabs");
+  if (tabs) tabs.scrollIntoView({ behavior: "smooth" });
 }
 
 // ซูมโค้ดตัวอย่างในฟังก์ชันแก้ไข (Edit) ฝั่ง JavaScript ของนาย
@@ -817,7 +818,6 @@ function openCalendarEventModal(ev) {
       </div>
     </div>
   `;
-  document.body.appendChild(overlay);
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) closeCalendarEventModal();
   });
@@ -838,11 +838,10 @@ function openMaintenanceModal(carId, plate) {
   maintOpenRecord = null;
   currentMaintCarId = carId;
 
-  const overlay = document.createElement("div");
-  overlay.className = "modal-overlay";
-  overlay.id = "maint-modal-overlay";
+  const overlay = document.getElementById("svc-inline");
+  if (!overlay) return;
   overlay.innerHTML = `
-    <div class="modal-content" style="width: 560px; max-width: 95vw; max-height: 92vh; overflow-y: auto;">
+    <div style="width:100%; max-width:760px;">
       <h2 style="margin-top:0; margin-bottom:12px; display:flex; align-items:center; justify-content:space-between; gap:10px;">
         <span><i class="fa-solid fa-screwdriver-wrench"></i> เช็คระยะ / ซ่อม — ${escapeHtml(plate)}</span>
         <button type="button" onclick="closeMaintenanceModal()" aria-label="ปิด" style="border:none; background:#f1f5f9; width:36px; height:36px; border-radius:50%; font-size:20px; line-height:1; cursor:pointer;">&times;</button>
@@ -906,7 +905,6 @@ function openMaintenanceModal(carId, plate) {
   `;
   document.body.appendChild(overlay);
 
-  overlay.addEventListener("click", (e) => { if (e.target === overlay) closeMaintenanceModal(); });
   const today = maintToday();
   document.getElementById("ms-start").value = today;
   document.getElementById("md-end").value = today;
@@ -924,9 +922,31 @@ function openMaintenanceModal(carId, plate) {
 }
 
 function closeMaintenanceModal() {
-  const overlay = document.getElementById("maint-modal-overlay");
-  if (overlay) overlay.remove();
-  currentMaintCarId = null;
+  switchCarView("car");
+}
+
+// สลับมุมมองในหน้าจัดการรถ: ข้อมูลรถ <-> เช็คระยะ/ซ่อม (ของรถที่เลือกอยู่ในฟอร์ม)
+let carView = "car";
+function switchCarView(view) {
+  carView = view;
+  const form = document.getElementById("crud-car-form");
+  const host = document.getElementById("svc-inline");
+  const tc = document.getElementById("cv-tab-car");
+  const ts = document.getElementById("cv-tab-svc");
+  if (!form || !host) return;
+  const svc = view === "svc";
+  form.style.display = svc ? "none" : "";
+  host.hidden = !svc;
+  if (tc) tc.classList.toggle("on", !svc);
+  if (ts) ts.classList.toggle("on", svc);
+  if (!svc) return;
+  const id = Number(document.getElementById("form-car-id")?.value || 0);
+  if (!id) {
+    currentMaintCarId = null;
+    host.innerHTML = '<p class="svc-pick">เลือกรถก่อน — คลิกแถวรถในตารางด้านล่าง แล้วกลับมาที่แท็บนี้</p>';
+    return;
+  }
+  openMaintenanceModal(id, document.getElementById("form-car-plate")?.value || "");
 }
 
 /**
