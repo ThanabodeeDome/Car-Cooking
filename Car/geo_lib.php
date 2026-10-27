@@ -88,7 +88,7 @@ function geo_user_note(array $ev, string $what): string {
     switch ($ev['geo']) {
         case 'ok':   return ' (ยืนยันพิกัดแล้ว)';
         case 'far':  return " (ตำแหน่งอยู่ห่างจากจุด{$what} — แจ้งแอดมินให้ทราบแล้ว)";
-        case 'none': return ' (ไม่ได้ยืนยันพิกัด — แจ้งแอดมินให้ทราบแล้ว)';
+        case 'none': return ''; // ไม่ได้ส่งตำแหน่งมา: ไม่แจ้งอะไรผู้ใช้ (และไม่เตือนแอดมินแล้ว)
         default:     return '';
     }
 }

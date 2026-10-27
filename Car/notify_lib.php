@@ -202,17 +202,15 @@ function nt_collect_admin(PDO $conn): array {
         if (geo_columns_ok($conn)) {
             $stmt = $conn->prepare(
                 "SELECT BookingID, CarPlate, DriverName, CheckInGeo, CheckInDist, ReturnGeo, ReturnDist FROM CarBookings
-                 WHERE (CheckInTime >= :d1 OR ReturnDate >= :d2) AND (CheckInGeo IN ('far','none') OR ReturnGeo IN ('far','none'))"
+                 WHERE (CheckInTime >= :d1 OR ReturnDate >= :d2) AND (CheckInGeo = 'far' OR ReturnGeo = 'far')" // เตือนเฉพาะ 'far' (ได้ตำแหน่งแต่ห่างจริง); 'none' = ไม่ได้ส่งตำแหน่ง ไม่เตือนแล้ว (เช็คอินตามเวลาไม่ต้องใช้ GPS และผู้ใช้ส่วนใหญ่ไม่ได้ให้ตำแหน่ง)
             );
             $since = (clone $now)->modify('-3 days')->format('Y-m-d');
             $stmt->execute([':d1' => $since, ':d2' => $since]);
             foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $g) {
                 foreach (['CheckIn' => 'เช็คอิน', 'Return' => 'คืนรถ'] as $p => $label) {
                     $st = $g[$p . 'Geo'] ?? null;
-                    if ($st !== 'far' && $st !== 'none') continue;
-                    $body = $st === 'far'
-                        ? "{$g['DriverName']}: {$label}นอกจุดบริษัท (ห่างประมาณ " . ($g[$p . 'Dist'] ?? '?') . ' ม.)'
-                        : "{$g['DriverName']}: {$label}โดยไม่ได้ยืนยันพิกัด";
+                    if ($st !== 'far') continue;
+                    $body = "{$g['DriverName']}: {$label}นอกจุดบริษัท (ห่างประมาณ " . ($g[$p . 'Dist'] ?? '?') . ' ม.)';
                     $items[] = nt_item("a_geo:{$p}:{$g['BookingID']}", 'warn', "พิกัดผิดปกติ: รถ {$g['CarPlate']}", $body, '../Admin/index.html');
                 }
             }
