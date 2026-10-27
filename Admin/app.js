@@ -866,9 +866,14 @@ function openMaintenanceModal(carId, plate) {
               <input type="date" id="maint-start" required style="margin-bottom:0;">
             </div>
             <div>
-              <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">วันที่เสร็จ</label>
+              <label id="maint-end-label" style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">คาดว่าเสร็จ</label>
               <input type="date" id="maint-end" style="margin-bottom:0;">
             </div>
+
+            <label style="grid-column: span 2; display:flex; gap:8px; align-items:flex-start; font-size:13px; background:#fff7ed; border:1px solid #fed7aa; border-radius:10px; padding:10px 12px; cursor:pointer;">
+              <input type="checkbox" id="maint-hold" checked style="width:auto; margin:3px 0 0;">
+              <span><b>ส่งรถเข้าเช็ค/ซ่อมตอนนี้ (ปิดการจองรถคันนี้)</b><br>ผู้ใช้จะจองล่วงหน้าตั้งแต่วัน "คาดว่าเสร็จ" ได้ • เสร็จแล้วกด "ยืนยันรถพร้อมใช้" ที่แดชบอร์ด หรือ "ปิดงาน" ในรายการด้านซ้าย<br><span style="color:#64748b;">ถ้าเป็นการบันทึกย้อนหลังของงานที่เสร็จไปแล้ว ให้ติ๊กออก แล้วใส่ "วันที่เสร็จ" จริง</span></span>
+            </label>
 
             <div>
               <label style="display:block; font-size:13px; font-weight:600; margin-bottom:4px;">เลขไมล์</label>
@@ -900,6 +905,9 @@ function openMaintenanceModal(carId, plate) {
   `;
   document.body.appendChild(overlay);
 
+  document.getElementById("maint-hold").addEventListener("change", (e) => {
+    document.getElementById("maint-end-label").textContent = e.target.checked ? "คาดว่าเสร็จ" : "วันที่เสร็จ";
+  });
   document.getElementById("maint-add-form").addEventListener("submit", (e) => {
     e.preventDefault();
     submitMaintenanceRecord();
@@ -1147,7 +1155,7 @@ function loadMaintenanceHistory(carId) {
           <div class="fleet-row" style="align-items:flex-start;">
             <div class="fleet-row-name">
               <strong>${escapeHtml(r.MaintenanceType) || "-"}</strong>
-              <span>${r.StartDate} → ${r.EndDate || "ยังไม่เสร็จ"}${r.Cost ? " • " + r.Cost + " บาท" : ""}</span>
+              <span>${r.StartDate} → ${r.EndDate || "ยังไม่เสร็จ (รถปิดการจอง)"}${r.Cost ? " • " + r.Cost + " บาท" : ""}</span>
               ${r.Note ? `<span>${escapeHtml(r.Note)}</span>` : ""}
               ${r.NextDueDate ? `<span>เช็คถัดไป: ${r.NextDueDate}</span>` : ""}
             </div>
@@ -1174,6 +1182,7 @@ function submitMaintenanceRecord() {
     maintenance_type: document.getElementById("maint-type").value,
     start_date: document.getElementById("maint-start").value,
     end_date: document.getElementById("maint-end").value,
+    hold_car: document.getElementById("maint-hold").checked,
     mileage: document.getElementById("maint-mileage").value,
     cost: document.getElementById("maint-cost").value,
     next_due_date: document.getElementById("maint-next-due").value,
@@ -1189,6 +1198,7 @@ function submitMaintenanceRecord() {
     .then((result) => {
       if (result.success) {
         document.getElementById("maint-add-form").reset();
+        document.getElementById("maint-end-label").textContent = "คาดว่าเสร็จ";
         loadMaintenanceHistory(currentMaintCarId);
         loadCarsToWorkspaceTable();
         fetchDashboardStats();

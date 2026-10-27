@@ -24,6 +24,7 @@ function sl_events(): array {
         'return'               => ['คืนรถ', 'usage'],
         'return_request'       => ['ขอคืนรถนอกจุดบริษัท', 'usage'],
         'return_approved'      => ['แอดมินอนุมัติคืนรถนอกจุด', 'admin'],
+        'car_service_start'     => ['ส่งรถเข้าเช็คระยะ/ซ่อม', 'admin'],
         'car_ready'             => ['แอดมินยืนยันรถพร้อมใช้', 'admin'],
         'return_rejected'      => ['แอดมินปฏิเสธคำขอคืนรถ', 'admin'],
         'release_noshow'       => ['ปล่อยคิว (ไม่มาใช้งาน)', 'usage'],

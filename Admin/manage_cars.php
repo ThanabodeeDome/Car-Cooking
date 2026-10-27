@@ -68,6 +68,7 @@ if ($action === 'confirm_ready') {
             echo json_encode(["success" => false, "message" => "รถคันนี้ไม่ได้อยู่ในสถานะเช็คระยะ/ซ่อม (อาจยืนยันไปแล้ว)"]);
             exit;
         }
+        $conn->prepare("UPDATE MaintenanceHistory SET EndDate = CAST(GETDATE() AS DATE) WHERE CarID = ? AND EndDate IS NULL")->execute([$carId]);
         $pl = $conn->prepare("SELECT Plate FROM Cars WHERE CarID = ?");
         $pl->execute([$carId]);
         require_once __DIR__ . '/../Car/log_lib.php';
@@ -106,20 +107,7 @@ if ($action === 'save') {
     if (!in_array($carStatus, ['ว่าง', 'เช็คระยะ'], true)) {
         $carStatus = 'ว่าง';
     }
-    // วันที่คาดว่าเสร็จ ใช้เฉพาะสถานะ เช็คระยะ/ซ่อม (ถ้ากลับเป็น ว่าง ล้างทิ้ง)
-    foreach (['MaintenanceStartDate', 'MaintenanceEndDate'] as $k) {
-        if (!empty($_POST[$k]) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST[$k])) {
-            echo json_encode(["success" => false, "message" => "รูปแบบวันที่เช็คระยะ/ซ่อมไม่ถูกต้อง"]);
-            exit;
-        }
-    }
-    if ($carStatus !== 'เช็คระยะ') {
-        $_POST['MaintenanceStartDate'] = '';
-        $_POST['MaintenanceEndDate'] = '';
-    } elseif (!empty($_POST['MaintenanceStartDate']) && !empty($_POST['MaintenanceEndDate']) && $_POST['MaintenanceEndDate'] < $_POST['MaintenanceStartDate']) {
-        echo json_encode(["success" => false, "message" => "วันที่คาดว่าเสร็จต้องไม่ก่อนวันเริ่ม"]);
-        exit;
-    }
+    // วันเริ่ม/คาดว่าเสร็จของการเช็คระยะ/ซ่อม ตั้งจากปุ่ม "ประวัติซ่อม" ฟอร์มนี้ไม่แตะต้อง (ดูตอนสั่ง UPDATE ด้านล่าง)
     try { // ทะเบียนซ้ำกับรถคันอื่น
         $dup = $conn->prepare("SELECT COUNT(*) FROM Cars WHERE REPLACE(Plate, ' ', '') = REPLACE(?, ' ', '') AND CarID <> ?");
         $dup->execute([$plate, (int)$carID]);
@@ -136,8 +124,8 @@ if ($action === 'save') {
     $actExpiry       = !empty($_POST['ActExpiry'])       ? $_POST['ActExpiry'] : null;
     $lastMaintenance = !empty($_POST['LastMaintenance']) ? $_POST['LastMaintenance'] : null;
     $nextMaintenance = !empty($_POST['NextMaintenance']) ? $_POST['NextMaintenance'] : null;
-    $startDate       = !empty($_POST['MaintenanceStartDate']) ? $_POST['MaintenanceStartDate'] : null;
-    $endDate         = !empty($_POST['MaintenanceEndDate'])   ? $_POST['MaintenanceEndDate'] : null;
+    $startDate       = null;
+    $endDate         = null;
    
     // จัดการอัปโหลดไฟล์รูปภาพ
     $imageName = null;
@@ -177,27 +165,31 @@ if ($action === 'save') {
                 // ถ้ามีการอัปโหลดเปลี่ยนรูปใหม่ด้วย
                 $sql = "UPDATE Cars SET Plate=?, Brand=?, Model=?, Color=?, Mileage=?, CarStatus=?, CarImage=?, 
                                         InsuranceExpiry=?, ActExpiry=?, LastMaintenance=?, NextMaintenance=?, 
-                                        MaintenanceStartDate=?, MaintenanceEndDate=? 
+                                        MaintenanceStartDate=CASE WHEN ?=N'เช็คระยะ' THEN MaintenanceStartDate END, MaintenanceEndDate=CASE WHEN ?=N'เช็คระยะ' THEN MaintenanceEndDate END 
                         WHERE CarID=?";
                 $params = [
                     $plate, $brand, $model, $color, $mileage, $carStatus, $imageName, 
                     $insuranceExpiry, $actExpiry, $lastMaintenance, $nextMaintenance, 
-                    $startDate, $endDate, $carID
+                    $carStatus, $carStatus, $carID
                 ];
             } else {
                 // ถ้าใช้รูปเดิม
                 $sql = "UPDATE Cars SET Plate=?, Brand=?, Model=?, Color=?, Mileage=?, CarStatus=?, 
                                         InsuranceExpiry=?, ActExpiry=?, LastMaintenance=?, NextMaintenance=?, 
-                                        MaintenanceStartDate=?, MaintenanceEndDate=? 
+                                        MaintenanceStartDate=CASE WHEN ?=N'เช็คระยะ' THEN MaintenanceStartDate END, MaintenanceEndDate=CASE WHEN ?=N'เช็คระยะ' THEN MaintenanceEndDate END 
                         WHERE CarID=?";
                 $params = [
                     $plate, $brand, $model, $color, $mileage, $carStatus, 
                     $insuranceExpiry, $actExpiry, $lastMaintenance, $nextMaintenance, 
-                    $startDate, $endDate, $carID
+                    $carStatus, $carStatus, $carID
                 ];
             }
             $stmt = $conn->prepare($sql);
             $stmt->execute($params);
+            // เปลี่ยนรถกลับเป็น ว่าง จากฟอร์มนี้ = ปิดรายการซ่อมที่ค้างเปิดอยู่ด้วย (ไม่งั้นแดชบอร์ดยังนับว่ากำลังซ่อม)
+            if ($carStatus === 'ว่าง') {
+                $conn->prepare("UPDATE MaintenanceHistory SET EndDate = CAST(GETDATE() AS DATE) WHERE CarID = ? AND EndDate IS NULL")->execute([$carID]);
+            }
         }
         echo json_encode(["success" => true]);
     } catch (PDOException $e) {
