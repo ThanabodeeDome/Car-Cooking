@@ -167,7 +167,7 @@
     $("gd-date-next").disabled = isToday;
     $("gd-date-today").hidden = isToday;
     $("gd-sum").innerHTML =
-      `<span><b>${num(sm.returned)}</b> คัน</span><span>ระยะรวม <b>${num(sm.km)}</b> กม.</span>` + (isToday ? `<span>ยังไม่คืน <b>${num(sm.out)}</b> คัน</span>` : "");
+      `<span><b>${num(sm.returned)}</b> คัน</span><span>ระยะรวม <b>${num(sm.km)}</b> กม.</span>` + (sm.auto ? `<span>ระบบปิดให้ <b>${num(sm.auto)}</b> คัน</span>` : "") + (isToday ? `<span>ยังไม่คืน <b>${num(sm.out)}</b> คัน</span>` : "");
     $("gd-print-head").textContent = "สรุปการคืนรถ " + thaiDate(data.date || today()) + " • คืน " + num(sm.returned) + " คัน • ระยะรวม " + num(sm.km) + " กม. • จัดทำโดย " + (data.guard || "");
     $("gd-done").innerHTML = doneList.length
       ? doneList
@@ -176,8 +176,11 @@
         <div class="od-row gd-done-row">
           <div class="gd-lead"><div class="od-plate">${esc(d.CarPlate)}</div><div class="gd-code">รหัสจอง <b>${Number(d.BookingID)}</b></div></div>
           <div class="od-info"><b>${esc(((d.Brand || "") + " " + (d.Model || "")).trim() || "รถยนต์")} <small>${esc(d.DriverName || "-")}</small></b>
-            <span>${esc(d.ReturnAt || "")} น. • เลขไมล์ ${num(d.EndMileage)} กม. (ใช้ ${num(Number(d.EndMileage) - Number(d.StartMileage))} กม.)</span>
-            ${optBadges(d.opts)}
+            ${
+              d.auto_closed
+                ? `<span>ปิดตอน ${esc(d.ReturnAt || "")} น. • ไม่มีบันทึกเลขไมล์</span><div class="gd-badges"><span class="gd-b auto"><i class="fa-solid fa-robot"></i> ระบบปิดอัตโนมัติ (ผู้ขับไม่ได้บันทึกคืน)</span></div>`
+                : `<span>${esc(d.ReturnAt || "")} น. • เลขไมล์ ${num(d.EndMileage)} กม. (ใช้ ${num(Number(d.EndMileage) - Number(d.StartMileage))} กม.)</span>${optBadges(d.opts)}`
+            }
           </div>
           ${d.editable ? `<div class="od-actions gd-noprint"><button type="button" class="od-btn gd-edit" data-i="${i}"><i class="fa-solid fa-pen"></i> แก้ไข</button></div>` : ""}
           ${thumbs(d.ReturnPhotoPath)}

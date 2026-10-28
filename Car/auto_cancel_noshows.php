@@ -51,6 +51,44 @@ function autoRulesStart() {
 function autoCancelNoShows($conn) {
     autoReleaseNoShows($conn);
     autoCheckInByTime($conn);
+    autoCloseOverdueReturns($conn);
+}
+
+// รอบปิดรายการที่ไม่ได้คืนรถ: ทุกวันเวลานี้ (ชั่วโมง 0-23) ระบบปิดรายการ 'ขาไป' ที่ "เลยเวลากลับตามที่จอง" ให้เป็น 'คืนแล้ว'
+// ไม่เขียนเลขไมล์/ไม่แก้ Cars.Mileage (ไม่รู้เลขจริง) แต่ใส่หมายเหตุขึ้นต้นด้วย AUTO_CLOSE_TAG ให้หน้ารปภ./แอดมินแยกได้
+// รายการที่จองข้ามวันและยังไม่ถึงเวลากลับ ไม่ถูกปิด
+const AUTO_CLOSE_HOUR = 20;
+const AUTO_CLOSE_TAG  = 'ระบบปิดอัตโนมัติ';
+
+function autoCloseOverdueReturns($conn, ?int $nowTs = null) {
+    try {
+        $nowTs = $nowTs ?? time();
+        $hh = sprintf('%02d:00:00', AUTO_CLOSE_HOUR);
+        // รอบล่าสุดที่ถึงแล้ว: วันนี้ถ้าเลยเวลาแล้ว ไม่งั้นเมื่อวาน
+        $cutDay = (int)date('G', $nowTs) >= AUTO_CLOSE_HOUR ? date('Y-m-d', $nowTs) : date('Y-m-d', strtotime('-1 day', $nowTs));
+        $cut = $cutDay . ' ' . $hh;
+        $remark = AUTO_CLOSE_TAG . ' ' . sprintf('%02d:00', AUTO_CLOSE_HOUR) . ' (ไม่มีบันทึกเลขไมล์)';
+        $where = "FROM CarBookings b
+             JOIN (" . bookingTimesSql("N'ขาไป'") . ") t ON t.BookingID = b.BookingID
+             WHERE b.BookingStatus = N'ขาไป'
+               AND t.EndAt IS NOT NULL AND t.EndAt <= '$cut' AND t.EndAt >= '" . autoRulesStart() . "'";
+        $due = $conn->query("SELECT b.BookingID, b.BookingNumber, b.CarPlate, b.DriverName $where")->fetchAll(PDO::FETCH_ASSOC);
+        if (!$due) return;
+        $up = $conn->prepare(
+            "UPDATE b SET b.BookingStatus = N'คืนแล้ว', b.ReturnDate = :d, b.ReturnTime = :t, b.ReturnRemark = :r $where"
+        );
+        $up->execute([':d' => $cutDay, ':t' => $hh, ':r' => $remark]);
+        if ($up->rowCount() > 0) {
+            require_once __DIR__ . '/log_lib.php';
+            foreach ($due as $d) {
+                sl_log($conn, 'return_auto', 'ระบบปิดรายการที่ไม่ได้คืนรถ ' . trim($d['CarPlate'] . ' ' . $d['DriverName']), [
+                    'system' => true, 'target_type' => 'booking', 'target' => (string)$d['BookingNumber'],
+                ]);
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('autoCloseOverdueReturns: ' . $e->getMessage());
+    }
 }
 
 // คิวที่เลยเวลากลับแล้วแต่ยังเป็น 'จองแล้ว' (ไม่มีใครเช็คอินให้เลย) -> ปล่อยคิว

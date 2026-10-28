@@ -22,6 +22,7 @@ function sl_events(): array {
         'checkin_auto'         => ['เช็คอินอัตโนมัติตามเวลา', 'usage'],
         'pickup_confirm'       => ['ยืนยันรับรถที่รถ', 'usage'],
         'return'               => ['คืนรถ', 'usage'],
+        'return_auto'          => ['ระบบปิดรายการที่ไม่ได้คืนรถ', 'usage'],
         'return_request'       => ['ขอคืนรถนอกจุดบริษัท', 'usage'],
         'return_approved'      => ['แอดมินอนุมัติคืนรถนอกจุด', 'admin'],
         'car_service_start'     => ['ส่งรถเข้าเช็คระยะ/ซ่อม', 'admin'],

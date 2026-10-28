@@ -155,6 +155,7 @@
 .gd-b.cln-ok { background: #dcfce7; color: #15803d; }
 .gd-b.key { background: #e0e7ff; color: #3730a3; }
 .gd-b.note { background: #f1f5f9; color: #475569; max-width: 100%; }
+.gd-b.auto { background: #fef3c7; color: #92400e; }
 
 /* ตัวเลือกสภาพรถในหน้าต่างจดไมล์ */
 .gd-opts { display: flex; flex-direction: column; gap: 8px; }

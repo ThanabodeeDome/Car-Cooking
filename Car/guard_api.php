@@ -141,6 +141,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
             $d['by_guard'] = gd_by_guard($d['ReturnRemark']);
             $d['editable'] = $isToday && $d['by_guard'];
             $d['opts'] = gd_parse_remark($d['ReturnRemark']);
+            $d['auto_closed'] = strpos((string)$d['ReturnRemark'], AUTO_CLOSE_TAG) === 0;
         }
         unset($d);
         $overdue = 0;
@@ -149,7 +150,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
         echo json_encode([
             'success' => true, 'guard' => $guardName, 'is_admin' => $isAdminUser, 'date' => $date, 'is_today' => $isToday,
             'out' => $out, 'upcoming' => $upcoming, 'returned' => $done, 'returned_today' => $isToday ? $done : [],
-            'summary' => ['returned' => count($done), 'km' => $km, 'out' => count($out), 'overdue' => $overdue, 'upcoming' => count($upcoming)],
+            'summary' => ['returned' => count($done), 'auto' => count(array_filter($done, fn($x) => $x['auto_closed'])), 'km' => $km, 'out' => count($out), 'overdue' => $overdue, 'upcoming' => count($upcoming)],
         ], JSON_UNESCAPED_UNICODE);
     } catch (PDOException $e) {
         error_log('guard_api list: ' . $e->getMessage());
