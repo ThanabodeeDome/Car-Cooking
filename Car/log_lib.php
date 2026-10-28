@@ -32,6 +32,7 @@ function sl_events(): array {
         'admin_booking_cancel' => ['แอดมินยกเลิกการจอง', 'admin'],
         'admin_booking_delete' => ['แอดมินลบการจอง', 'admin'],
         'user_edit'            => ['แก้ไขผู้ใช้', 'user'],
+        'user_create'          => ['แอดมินเพิ่มบัญชี', 'admin'],
         'user_delete'          => ['ลบผู้ใช้', 'user'],
         'geo_add'              => ['เพิ่มจุดตรวจพิกัด', 'admin'],
         'geo_update'           => ['แก้ไขจุดตรวจพิกัด', 'admin'],

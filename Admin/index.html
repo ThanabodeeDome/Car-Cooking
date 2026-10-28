@@ -16,7 +16,7 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
-    <link rel="stylesheet" href="style.css?v=32" />
+    <link rel="stylesheet" href="style.css?v=33" />
     <link rel="stylesheet" href="admin-datepicker.css" />
     <link rel="stylesheet" href="../Car/form-ios-zoom.css?v=3" />
   </head>
@@ -317,7 +317,14 @@
             oninput="filterUsersTable(this.value)"
           />
         </div>
+        <div class="us-filter" id="us-filter" role="group" aria-label="กรองตามสิทธิ์">
+          <button type="button" data-role="all" class="on">ทั้งหมด <b>0</b></button>
+          <button type="button" data-role="user"><i class="fa-solid fa-user"></i> พนักงาน <b>0</b></button>
+          <button type="button" data-role="security"><i class="fa-solid fa-user-shield"></i> รปภ. <b>0</b></button>
+          <button type="button" data-role="admin"><i class="fa-solid fa-shield-halved"></i> Admin <b>0</b></button>
+        </div>
         <span class="us-count" id="users-count"></span>
+        <button type="button" class="btn btn-primary us-add" onclick="openUserCreateModal()"><i class="fa-solid fa-user-plus"></i> <span>เพิ่มบัญชี</span></button>
         </div>
         <div class="table-scroll-container">
           <table class="car-data-table tbl-fit">
@@ -524,7 +531,7 @@
     </script>
 
     <script src="admin-datepicker.js"></script>
-    <script src="app.js?v=29"></script>
+    <script src="app.js?v=30"></script>
     <script src="../Car/notify-bell.js?v=6"></script>
     <script>
       // เปิดแท็บตามลิงก์ #ชื่อแท็บ (ใช้จากหน้า "จุดตรวจพิกัด" และปุ่มย้อนกลับของเบราว์เซอร์)

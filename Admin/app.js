@@ -77,7 +77,7 @@ function loadUsers() {
         return;
       }
       allUsersCache = data.users || [];
-      renderUsersTable(allUsersCache);
+      applyUsersFilter();
     })
     .catch((err) => {
       console.error("Error loading users:", err);
@@ -155,13 +155,143 @@ function openUserMenu(ev, id) {
   }, 0);
 }
 
-function filterUsersTable(keyword) {
-  const q = (keyword || "").trim().toLowerCase();
-  if (!q) return renderUsersTable(allUsersCache);
-  const filtered = allUsersCache.filter((u) =>
-    `${u.username} ${u.first_name} ${u.last_name || ""} ${u.employee_id} ${u.email || ""}`.toLowerCase().includes(q),
+let usersRoleFilter = "all";
+
+// กรองตามสิทธิ์ (ปุ่ม ทั้งหมด/พนักงาน/รปภ./Admin) + คำค้น พร้อมอัปเดตตัวเลขบนปุ่ม
+function applyUsersFilter() {
+  const input = document.getElementById("user-search-input");
+  const q = ((input && input.value) || "").trim().toLowerCase();
+  const roleOf = (u) => (u.role === "admin" || u.role === "security" ? u.role : "user");
+  const counts = { all: allUsersCache.length, user: 0, security: 0, admin: 0 };
+  allUsersCache.forEach((u) => counts[roleOf(u)]++);
+  document.querySelectorAll("#us-filter button").forEach((b) => {
+    const n = b.querySelector("b");
+    if (n) n.textContent = counts[b.dataset.role] ?? 0;
+    b.classList.toggle("on", b.dataset.role === usersRoleFilter);
+  });
+  const filtered = allUsersCache.filter(
+    (u) =>
+      (usersRoleFilter === "all" || roleOf(u) === usersRoleFilter) &&
+      (!q || `${u.username} ${u.first_name} ${u.last_name || ""} ${u.employee_id} ${u.email || ""}`.toLowerCase().includes(q)),
   );
   renderUsersTable(filtered);
+}
+function filterUsersTable() {
+  applyUsersFilter();
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest && e.target.closest("#us-filter button");
+  if (!b) return;
+  usersRoleFilter = b.dataset.role;
+  applyUsersFilter();
+});
+
+// ---------- แอดมินเพิ่มบัญชีเอง ----------
+function openUserCreateModal() {
+  const overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.id = "user-create-modal-overlay";
+  overlay.addEventListener("mousedown", (e) => e.target === overlay && closeUserCreateModal());
+  overlay.innerHTML = `
+    <div class="modal-content ef-modal" style="width: 560px !important;">
+      <div class="ef-head">
+        <div>
+          <h2><i class="fa-solid fa-user-plus"></i> เพิ่มบัญชี</h2>
+          <p>เลือกประเภทบัญชี แล้วกรอกข้อมูล</p>
+        </div>
+        <button type="button" class="ef-x" aria-label="ปิด" onclick="closeUserCreateModal()"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="user-create-form" class="ef" autocomplete="off">
+        <div class="us-role-pick" id="uc-role-pick" role="group" aria-label="ประเภทบัญชี">
+          <button type="button" data-v="user" class="on"><i class="fa-solid fa-user"></i> พนักงาน</button>
+          <button type="button" data-v="security"><i class="fa-solid fa-user-shield"></i> รปภ.</button>
+          <button type="button" data-v="admin"><i class="fa-solid fa-shield-halved"></i> Admin</button>
+        </div>
+        <p class="ef-note" id="uc-note"></p>
+        <div class="ef-sec">ข้อมูลเข้าสู่ระบบ</div>
+        <div class="ef-grid">
+          <label class="ef-f"><span>รหัสพนักงาน / รหัส รปภ. *</span><input type="text" id="uc-emp" required maxlength="20" placeholder="เช่น 02150 หรือ SEC01" /></label>
+          <label class="ef-f"><span>Username *</span><input type="text" id="uc-username" required maxlength="50" autocapitalize="none" placeholder="ตัวอังกฤษ/ตัวเลข" /></label>
+          <label class="ef-f ef-span"><span>รหัสผ่านเริ่มต้น * <small style="font-weight:400;color:#94a3b8">(อย่างน้อย 6 ตัว)</small></span><input type="text" id="uc-password" required minlength="6" autocomplete="new-password" /></label>
+        </div>
+        <div class="ef-sec">ข้อมูลผู้ใช้</div>
+        <div class="ef-grid">
+          <label class="ef-f"><span>ชื่อ *</span><input type="text" id="uc-first" required /></label>
+          <label class="ef-f"><span>นามสกุล</span><input type="text" id="uc-last" /></label>
+          <label class="ef-f"><span>เบอร์โทร</span><input type="text" id="uc-phone" inputmode="tel" /></label>
+          <label class="ef-f"><span>อีเมล</span><input type="email" id="uc-email" /></label>
+        </div>
+        <div class="ef-err" id="uc-err" role="alert"></div>
+        <div class="ef-actions">
+          <button type="button" class="btn-clear" onclick="closeUserCreateModal()">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary" id="uc-save"><i class="fa-solid fa-floppy-disk"></i> <span>สร้างบัญชี</span></button>
+        </div>
+      </form>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  let role = "user";
+  const notes = {
+    user: "พนักงานทั่วไป: จองรถและใช้งานระบบฝั่งผู้ใช้ตามปกติ",
+    security: "รปภ.: เห็นเฉพาะหน้า \"จดเลขไมล์รถคืน\" เท่านั้น",
+    admin: "Admin: สร้างบัญชีได้ แต่ใช้สิทธิ์แอดมินไม่ได้จนกว่าจะเพิ่ม id ในไฟล์ admin_whitelist.php (ระบบจะแจ้ง id ให้หลังสร้าง)",
+  };
+  const note = overlay.querySelector("#uc-note");
+  const setRole = (r) => {
+    role = r;
+    overlay.querySelectorAll("#uc-role-pick button").forEach((b) => b.classList.toggle("on", b.dataset.v === r));
+    note.innerHTML = '<i class="fa-solid fa-circle-info"></i> ' + escapeHtml(notes[r]);
+  };
+  setRole("user");
+  overlay.querySelector("#uc-role-pick").addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (b) setRole(b.dataset.v);
+  });
+  overlay.querySelector("#uc-emp").focus();
+
+  overlay.querySelector("#user-create-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const err = overlay.querySelector("#uc-err");
+    const btn = overlay.querySelector("#uc-save");
+    err.textContent = "";
+    btn.disabled = true;
+    try {
+      const r = await fetch("create_user.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role,
+          employee_id: overlay.querySelector("#uc-emp").value,
+          username: overlay.querySelector("#uc-username").value,
+          password: overlay.querySelector("#uc-password").value,
+          first_name: overlay.querySelector("#uc-first").value,
+          last_name: overlay.querySelector("#uc-last").value,
+          phone: overlay.querySelector("#uc-phone").value,
+          email: overlay.querySelector("#uc-email").value,
+        }),
+      }).then((x) => x.json());
+      if (!r.success) {
+        err.textContent = r.message || "เพิ่มบัญชีไม่สำเร็จ";
+        btn.disabled = false;
+        return;
+      }
+      closeUserCreateModal();
+      loadUsers();
+      if (r.needs_whitelist) {
+        AppDialog.alert(
+          `สร้างบัญชี Admin แล้ว (id = ${r.id})\n\nแต่ยังใช้สิทธิ์แอดมินไม่ได้ ต้องเปิดไฟล์ admin_whitelist.php บนเซิร์ฟเวอร์ แล้วเพิ่มเลข ${r.id} ในวงเล็บ เช่น return [1009, ${r.id}];`,
+          { type: "info", title: "ขั้นตอนสุดท้าย" },
+        );
+      }
+    } catch {
+      err.textContent = "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้";
+      btn.disabled = false;
+    }
+  });
+}
+function closeUserCreateModal() {
+  const o = document.getElementById("user-create-modal-overlay");
+  if (o) o.remove();
 }
 document.addEventListener("DOMContentLoaded", () => {
   // โหลดข้อมูลตารางจัดการรถยนต์

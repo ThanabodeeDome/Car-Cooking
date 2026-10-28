@@ -2711,3 +2711,20 @@ tr.clickable-row:hover td { background: #fafbff; }
 .sidebar-identity.sp-on { flex-direction: row !important; align-items: center !important; justify-content: space-between; text-align: left !important; padding: 10px 12px !important; }
 .sidebar-identity .sp-text { text-align: left; }
 .sidebar-identity .sp-text .sidebar-identity-name { justify-content: flex-start; }
+
+/* ===== บัญชีผู้ใช้: ตัวกรองสิทธิ์ + ปุ่มเพิ่มบัญชี ===== */
+.us-filter { display: flex; gap: 6px; flex-wrap: wrap; }
+.us-filter button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px solid #e0e4ee; border-radius: 999px; background: #fff; color: #475569; font: 600 13.5px inherit; cursor: pointer; transition: all 0.15s; }
+.us-filter button i { color: #94a3b8; font-size: 12px; }
+.us-filter button b { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: #eef0f6; color: #475569; font-size: 12px; text-align: center; }
+.us-filter button:hover { border-color: #c4cadb; }
+.us-filter button.on { background: #fff1f1; border-color: var(--accent); color: var(--accent); }
+.us-filter button.on i { color: var(--accent); }
+.us-filter button.on b { background: var(--accent); color: #fff; }
+.us-bar .us-count { margin-left: auto; }
+.us-add { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.us-role-pick { display: flex; gap: 8px; margin: 6px 0 10px; }
+.us-role-pick button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 8px; border: 1px solid #d9dde8; border-radius: 12px; background: #fff; color: #475569; font: 600 14.5px inherit; cursor: pointer; }
+.us-role-pick button.on { background: #fff1f1; border-color: var(--accent); color: var(--accent); }
+.ef-err { min-height: 20px; margin-top: 10px; color: #dc2626; font-size: 13.5px; font-weight: 600; }
+@media (max-width: 700px) { .us-bar .us-count { margin-left: 0; } .us-add { width: 100%; justify-content: center; } }

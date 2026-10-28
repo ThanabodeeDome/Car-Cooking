@@ -101,7 +101,7 @@ try {
 
     // 📝 บันทึกระบบ: แก้ไขผู้ใช้ — บันทึกเพียงว่า "มีการตั้งรหัสผ่านใหม่" ไม่เก็บตัวรหัสผ่านเด็ดขาด
     require_once __DIR__ . '/../Car/log_lib.php';
-    sl_log($conn, 'user_edit', 'แก้ไขผู้ใช้ ' . $username . ' (รหัสพนักงาน ' . $employeeId . ', สิทธิ์ ' . ($role === 'admin' ? 'Admin' : 'พนักงาน') . ')' . (!empty($newPassword) ? ' + ตั้งรหัสผ่านใหม่' : ''), [
+    sl_log($conn, 'user_edit', 'แก้ไขผู้ใช้ ' . $username . ' (รหัสพนักงาน ' . $employeeId . ', สิทธิ์ ' . ($role === 'admin' ? 'Admin' : ($role === 'security' ? 'รปภ.' : 'พนักงาน')) . ')' . (!empty($newPassword) ? ' + ตั้งรหัสผ่านใหม่' : ''), [
         'target_type' => 'user', 'target' => $username,
         'detail' => ['employee_id' => $employeeId, 'role' => $role, 'password_changed' => !empty($newPassword)],
     ]);
