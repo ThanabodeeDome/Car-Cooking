@@ -219,7 +219,7 @@ function openUserCreateModal() {
           <label class="ef-f"><span>ชื่อ <small style="font-weight:400;color:#94a3b8">(ว่าง = ใช้ Username)</small></span><input type="text" id="uc-first" maxlength="100" /></label>
           <label class="ef-f"><span>นามสกุล</span><input type="text" id="uc-last" /></label>
           <label class="ef-f"><span>เบอร์โทร</span><input type="text" id="uc-phone" inputmode="tel" /></label>
-          <label class="ef-f"><span>อีเมล</span><input type="email" id="uc-email" /></label>
+          <label class="ef-f" id="uc-email-wrap"><span>อีเมล</span><input type="text" inputmode="email" autocapitalize="none" id="uc-email" maxlength="100" /></label>
         </div>
         <div class="ef-err" id="uc-err" role="alert"></div>
         <div class="ef-actions">
@@ -241,6 +241,10 @@ function openUserCreateModal() {
     role = r;
     overlay.querySelectorAll("#uc-role-pick button").forEach((b) => b.classList.toggle("on", b.dataset.v === r));
     note.innerHTML = '<i class="fa-solid fa-circle-info"></i> ' + escapeHtml(notes[r]);
+    // รปภ. ไม่มีอีเมล: ซ่อนช่องนี้ไปเลย (ล้างค่าด้วย)
+    const ew = overlay.querySelector("#uc-email-wrap");
+    ew.hidden = r === "security";
+    if (r === "security") overlay.querySelector("#uc-email").value = "";
   };
   setRole("user");
   overlay.querySelector("#uc-role-pick").addEventListener("click", (e) => {

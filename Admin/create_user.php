@@ -22,6 +22,7 @@ $firstName  = $str('first_name');
 $lastName   = $str('last_name');
 $phone      = $str('phone');
 $email      = $str('email');
+if ($email === '-') $email = ''; // "-" = เว้นว่าง (ต้องทำก่อนตรวจรูปแบบอีเมล)
 $division   = $str('division');
 $department = $str('department');
 $unit       = $str('unit');
@@ -63,6 +64,7 @@ if (mb_strlen($phone) > 20 || mb_strlen($firstName) > 100 || mb_strlen($lastName
 if ($firstName === '' || $firstName === '-') $firstName = $username;
 if ($lastName === '-') $lastName = '';
 if ($phone === '-') $phone = '';
+if ($email === '-') $email = '';
 
 try {
     // แอดมินเพิ่มเอง: ซ้ำได้เฉพาะ Username / รหัสพนักงาน (ไม่เช็คชื่อ-นามสกุลซ้ำ เพราะบัญชี รปภ./ส่วนกลางอาจไม่มีชื่อจริง)
