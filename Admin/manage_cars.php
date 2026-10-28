@@ -107,6 +107,20 @@ if ($action === 'save') {
     if (!in_array($carStatus, ['ว่าง', 'เช็คระยะ'], true)) {
         $carStatus = 'ว่าง';
     }
+    // สถานะรถไม่ได้ตั้งจากฟอร์มนี้แล้ว (ใช้แท็บ เช็คระยะ/ซ่อม): รถเดิมคงสถานะเดิมไว้, รถใหม่เริ่มที่ ว่าง
+    if (!isset($_POST['CarStatus'])) {
+        $carStatus = 'ว่าง';
+        if (!empty($carID)) {
+            try {
+                $cur = $conn->prepare("SELECT CarStatus FROM Cars WHERE CarID = ?");
+                $cur->execute([(int)$carID]);
+                $curStatus = $cur->fetchColumn();
+                if (in_array($curStatus, ['ว่าง', 'เช็คระยะ'], true)) $carStatus = $curStatus;
+            } catch (PDOException $e) {
+                error_log('manage_cars read status: ' . $e->getMessage());
+            }
+        }
+    }
     // วันเริ่ม/คาดว่าเสร็จของการเช็คระยะ/ซ่อม ตั้งจากปุ่ม "ประวัติซ่อม" ฟอร์มนี้ไม่แตะต้อง (ดูตอนสั่ง UPDATE ด้านล่าง)
     try { // ทะเบียนซ้ำกับรถคันอื่น
         $dup = $conn->prepare("SELECT COUNT(*) FROM Cars WHERE REPLACE(Plate, ' ', '') = REPLACE(?, ' ', '') AND CarID <> ?");

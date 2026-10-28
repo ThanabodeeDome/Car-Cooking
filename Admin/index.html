@@ -228,14 +228,7 @@
                     <label class="ef-f"><span>เช็กระยะล่าสุด (วันที่ทำเสร็จแล้ว)</span><input type="date" name="LastMaintenance" /></label>
                   </div>
 
-                  <div class="ef-sec">สถานะการให้บริการ</div>
-                  <label class="ef-f">
-                    <select id="form-car-status" name="CarStatus">
-                      <option value="ว่าง">ใช้งานได้ปกติ (ระบบคำนวณ ว่าง/ติดจอง เองจากการจอง)</option>
-                      <option value="เช็คระยะ">เช็คระยะ / ซ่อม (ปิดใช้ชั่วคราว)</option>
-                    </select>
-                  </label>
-                  <p class="svc-hint">การส่งรถเข้าเช็คระยะ/ซ่อม พร้อมวันที่คาดว่าเสร็จ ให้ทำที่ปุ่ม "ประวัติซ่อม" ของรถคันนั้นในตารางด้านล่าง (กรอกครั้งเดียว ระบบตั้งสถานะให้เอง)</p>
+                  <p class="svc-hint"><i class="fa-solid fa-screwdriver-wrench"></i> ส่งรถเข้าเช็คระยะ/ซ่อม หรือแจ้งรถเสร็จ ให้ใช้แท็บ "เช็คระยะ / ซ่อม" ด้านบน</p>
                 </div>
               </div>
 
@@ -528,7 +521,7 @@
     </script>
 
     <script src="admin-datepicker.js"></script>
-    <script src="app.js?v=27"></script>
+    <script src="app.js?v=28"></script>
     <script src="../Car/notify-bell.js?v=6"></script>
     <script>
       // เปิดแท็บตามลิงก์ #ชื่อแท็บ (ใช้จากหน้า "จุดตรวจพิกัด" และปุ่มย้อนกลับของเบราว์เซอร์)
