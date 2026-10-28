@@ -222,7 +222,7 @@ function fetchCarsData(dateStr) {
                   <span>${escapeHtml(car.Plate || "-")}</span>
                 </span>
               </div>
-              ${isMaintenance ? `<div class="svc-note"><i class="fa-regular fa-calendar-check"></i> ${car.ServiceUntil ? "คาดว่าพร้อมใช้ " + fmtServiceDate(car.ServiceUntil) + " (จองล่วงหน้าได้)" : "ยังไม่ระบุวันเสร็จ"}</div>` : ""}
+              ${isMaintenance ? `<div class="svc-note"><i class="fa-regular fa-calendar-check"></i> ${serviceNote(car)}</div>` : ""}
             </div>
           </div>
         `;
@@ -235,8 +235,17 @@ function fetchCarsData(dateStr) {
 /**
  * Handle car selection
  */
+// ข้อความใต้การ์ดรถที่เช็คระยะ/ซ่อม: คาดว่าเสร็จเมื่อไร และจองล่วงหน้าได้ไหม
+function serviceNote(car) {
+  if (!car.ServiceUntil) return "ยังไม่ระบุวันเสร็จ";
+  const d = new Date();
+  const today = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  if (car.ServiceUntil <= today) return "ครบกำหนดแล้ว รอแอดมินยืนยันรถพร้อมใช้ • จองวันถัดไปได้";
+  return "คาดว่าพร้อมใช้ " + fmtServiceDate(car.ServiceUntil) + " • จองล่วงหน้าตั้งแต่วันนั้นได้";
+}
+
 function fmtServiceDate(iso) {
-  const m = /^(d{4})-(d{2})-(d{2})$/.exec(iso || "");
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || "");
   if (!m) return iso || "";
   const mons = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
   return Number(m[3]) + " " + mons[Number(m[2]) - 1] + " " + (Number(m[1]) + 543);
