@@ -112,6 +112,7 @@
         <a href="index.html#bookings-tab" class="menu-link"><i class="fa-solid fa-clipboard-list"></i> <span>จัดการการจอง</span></a>
         <a href="index.html#users-tab" class="menu-link"><i class="fa-solid fa-users"></i> <span>บัญชีผู้ใช้</span></a>
         <a href="geo-setup.php" class="menu-link active"><i class="fa-solid fa-location-crosshairs"></i> <span>จุดตรวจพิกัด</span></a>
+        <a href="guard.html" class="menu-link"><i class="fa-solid fa-gauge-high"></i> <span>จดเลขไมล์รถคืน</span></a>
         <a href="index.html#reports-tab" class="menu-link"><i class="fa-solid fa-chart-column"></i> <span>รายงาน</span></a>
         <a href="index.html#log-tab" class="menu-link"><i class="fa-solid fa-clock-rotate-left"></i> <span>บันทึกระบบ</span></a>
       </div>
