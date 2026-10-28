@@ -103,7 +103,7 @@ try {
             $redirect_url = "../Admin/index.html";
         } elseif ($user['role'] === 'security') {
             // รปภ. ไปหน้าจดเลขไมล์เสมอ (ใช้ระบบส่วนอื่นไม่ได้)
-            $redirect_url = "../Car/guard.html";
+            $redirect_url = "../Admin/guard.html";
         } elseif (isSafeRedirect($redirectParam)) {
             // 🌟 ถ้ามี redirect ที่ปลอดภัยแนบมา (เช่นมาจากสแกน QR checkin.php) ส่งกลับไปที่นั่นแทนหน้าหลัก
             $redirect_url = $redirectParam;

@@ -45,9 +45,9 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// 🛂 รปภ. (role = security) ใช้ได้เฉพาะหน้า /guard — หน้าอื่นที่ผ่าน guard นี้ ส่งกลับไปหน้า รปภ.
-//    หน้า รปภ. เองประกาศ define('CB_SECURITY_PAGE', true) ก่อน require ไฟล์นี้
-if (strtolower((string)($_SESSION['role'] ?? '')) === 'security' && !defined('CB_SECURITY_PAGE')) {
-    header('Location: /guard');
+// 🛂 รปภ. (role = security) ใช้ได้เฉพาะหน้า Admin/guard.html — หน้าอื่นที่ผ่าน guard นี้ ส่งกลับไปหน้า รปภ.
+//    (หน้า รปภ. อยู่ที่ Admin/guard.html และไม่ผ่านไฟล์นี้)
+if (strtolower((string)($_SESSION['role'] ?? '')) === 'security') {
+    header('Location: /Admin/guard.html');
     exit;
 }
