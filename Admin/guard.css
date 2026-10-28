@@ -36,3 +36,12 @@
 }
 .gd-calc .gd-full { color: #111827; font-size: 20px; }
 .gd-calc .warn { margin-top: 6px; font-size: 13.5px; font-weight: 600; color: #b45309; }
+
+.gd-lead { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.gd-code { font-size: 12.5px; color: #6b7280; }
+.gd-code b { display: inline-block; padding: 1px 9px; border-radius: 8px; background: #111827; color: #fff; font-size: 16px; letter-spacing: 0.02em; }
+.gd-m-code { display: inline-block !important; margin-bottom: 2px; padding: 1px 10px; border-radius: 8px; background: #111827; color: #fff !important; font-size: 15px; }
+.gd-search { position: relative; margin: 0 0 12px; }
+.gd-search i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+.gd-search input { width: 100%; height: 46px; padding: 0 14px 0 40px; border: 1px solid #d9dde8; border-radius: 12px; background: #fff; font: inherit; font-size: 16px; }
+.gd-search input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(229, 37, 42, 0.15); }

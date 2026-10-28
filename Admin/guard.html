@@ -24,7 +24,7 @@ $__user = htmlspecialchars((string)($_SESSION['username'] ?? '-'), ENT_QUOTES, '
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="style.css?v=34" />
-    <link rel="stylesheet" href="guard.css?v=3" />
+    <link rel="stylesheet" href="guard.css?v=4" />
     <link rel="stylesheet" href="../Car/form-ios-zoom.css?v=3" />
   </head>
   <body class="admin-app">
@@ -76,6 +76,7 @@ $__user = htmlspecialchars((string)($_SESSION['username'] ?? '-'), ENT_QUOTES, '
 
       <div class="dash-panel">
         <h2 class="panel-title"><i class="fa-solid fa-car-side"></i> รถที่ยังไม่คืน</h2>
+        <div class="gd-search"><i class="fa-solid fa-magnifying-glass"></i><input id="gd-q" type="search" inputmode="search" placeholder="ค้นหา: รหัสจอง / ทะเบียน / ชื่อผู้ขับ" autocomplete="off" /></div>
         <div id="gd-out" class="od-list"><p class="gd-empty">กำลังโหลด...</p></div>
       </div>
 
@@ -99,7 +100,7 @@ $__user = htmlspecialchars((string)($_SESSION['username'] ?? '-'), ENT_QUOTES, '
         document.addEventListener("keydown", (e) => e.key === "Escape" && set(false));
       })();
     </script>
-    <script src="guard.js?v=2"></script>
+    <script src="guard.js?v=3"></script>
     <script src="profile-menu.js?v=1"></script>
   </body>
 </html>

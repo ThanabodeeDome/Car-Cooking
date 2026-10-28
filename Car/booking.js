@@ -472,7 +472,7 @@ function submitBooking() {
           `จองสำเร็จ ${ok} จาก ${repeatWeeks + 1} สัปดาห์` + (skipped.length ? ` (ข้ามวันที่ติดจอง: ${skipped.join(", ")})` : ""),
         );
       } else {
-        showToast("success", "บันทึกการจองสำเร็จ!"); if (window.fxCelebrate) window.fxCelebrate();
+        showToast("success", "บันทึกการจองสำเร็จ!" + (first.booking_id ? " รหัสจอง " + first.booking_id + " (แจ้ง รปภ. ตอนคืนรถ)" : "")); if (window.fxCelebrate) window.fxCelebrate();
       }
       const rw = document.getElementById("repeat-weeks");
       if (rw) rw.value = "0";

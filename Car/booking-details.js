@@ -128,6 +128,7 @@ function applyFilterAndRender(highlightPlate) {
     if (q) {
       const searchTarget = `
         ${bk.BookingNumber || ""}
+        ${bk.BookingID || ""}
         ${bk.CarPlate || ""}
         ${bk.DriverName || ""}
         ${bk.Department || ""}
@@ -294,7 +295,7 @@ function applyFilterAndRender(highlightPlate) {
       <div class="booking-header-row" onclick="toggleDropdown('${dropdownId}', this)">
         <div class="bk-id-chip">
           <i class="fa-solid fa-ticket"></i>
-          <span>#${escapeHtml(bk.BookingNumber || bk.BookingID)}</span>
+          <span class="bk-code">รหัสจอง <b>${Number(bk.BookingID)}</b></span>
         </div>
 
         <div>
@@ -329,7 +330,7 @@ function applyFilterAndRender(highlightPlate) {
         <div class="detail-drawer-header">
           <h4 class="detail-drawer-title">
             <i class="fa-solid fa-file-invoice"></i>
-            <span>ข้อมูลการเดินทางฉบับเต็ม #${escapeHtml(bk.BookingNumber || bk.BookingID)}</span>
+            <span>ข้อมูลการเดินทางฉบับเต็ม • รหัสจอง ${Number(bk.BookingID)} • เลขที่ ${escapeHtml(bk.BookingNumber || "")}</span>
           </h4>
         </div>
 

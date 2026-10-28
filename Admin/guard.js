@@ -36,16 +36,26 @@
     toast._t = setTimeout(() => (t.hidden = true), 4200);
   }
 
+  let allOut = [];
+  let lastData = null;
+  const norm = (s) => String(s ?? "").toLowerCase().replace(/\s+/g, "");
+
   function render(data) {
-    outList = data.out || [];
-    $("gd-out-n").textContent = outList.length;
+    lastData = data;
+    allOut = data.out || [];
+    $("gd-out-n").textContent = allOut.length;
+    // ค้นหาด้วยรหัสจอง / ทะเบียน / ชื่อ / รหัสพนักงาน (พิมพ์รหัสจอง 345 หรือ #345 ก็ได้)
+    const q = norm($("gd-q").value).replace(/^#/, "");
+    outList = q
+      ? allOut.filter((o) => String(o.BookingID) === q || norm(o.CarPlate + " " + o.DriverName + " " + o.EmployeeID + " " + o.BookingNumber).includes(q))
+      : allOut;
     $("gd-out").innerHTML = outList.length
       ? outList
           .map((o, i) => {
             const late = lateText(o.OverdueMin);
             return `
         <div class="od-row${late ? " od-stale" : ""}">
-          <div class="od-plate">${esc(o.CarPlate)}</div>
+          <div class="gd-lead"><div class="od-plate">${esc(o.CarPlate)}</div><div class="gd-code">รหัสจอง <b>${Number(o.BookingID)}</b></div></div>
           <div class="od-info">
             <b>${esc(((o.Brand || "") + " " + (o.Model || "")).trim() || "รถยนต์")} <small>${esc(o.DriverName || "-")}${o.EmployeeID ? " #" + esc(o.EmployeeID) : ""}</small></b>
             <span>ออก ${esc(when(o.CheckInAt))}${o.DueAt ? " • กำหนดคืน " + esc(when(o.DueAt)) + " น." : ""} • ไมล์ตอนออก ${num(o.StartMileage)} กม.</span>
@@ -55,7 +65,9 @@
         </div>`;
           })
           .join("")
-      : '<p class="gd-empty"><i class="fa-solid fa-circle-check"></i> ไม่มีรถค้างอยู่ — รถทุกคันกลับมาแล้ว</p>';
+      : allOut.length
+        ? '<p class="gd-empty"><i class="fa-solid fa-magnifying-glass"></i> ไม่พบรายการที่ตรงกับ "' + esc($("gd-q").value) + '"</p>'
+        : '<p class="gd-empty"><i class="fa-solid fa-circle-check"></i> ไม่มีรถค้างอยู่ — รถทุกคันกลับมาแล้ว</p>';
 
     const done = data.returned_today || [];
     $("gd-done-n").textContent = done.length;
@@ -65,7 +77,7 @@
             (d) => `
         <div class="od-row gd-done-row">
           <div class="od-plate">${esc(d.CarPlate)}</div>
-          <div class="od-info"><b>${esc(d.DriverName || "-")}</b><span>${esc(d.ReturnAt || "")} น. • เลขไมล์ ${num(d.EndMileage)} กม. (ใช้ ${num(Number(d.EndMileage) - Number(d.StartMileage))} กม.)</span></div>
+          <div class="od-info"><b>${esc(d.DriverName || "-")} <small>รหัสจอง ${Number(d.BookingID)}</small></b><span>${esc(d.ReturnAt || "")} น. • เลขไมล์ ${num(d.EndMileage)} กม. (ใช้ ${num(Number(d.EndMileage) - Number(d.StartMileage))} กม.)</span></div>
         </div>`,
           )
           .join("")
@@ -93,7 +105,7 @@
       <form class="od-modal-card gd-modal" autocomplete="off">
         <h3><i class="fa-solid fa-gauge-high"></i> จดเลขไมล์รถคืน</h3>
         <div class="gd-m-head"><span class="od-plate">${esc(o.CarPlate)}</span>
-          <div><b>${esc(((o.Brand || "") + " " + (o.Model || "")).trim() || "รถยนต์")}</b><small>${esc(o.DriverName || "-")}${o.DriverPhone ? " • โทร " + esc(o.DriverPhone) : ""}</small></div></div>
+          <div><b class="gd-m-code">รหัสจอง ${Number(o.BookingID)}</b><b>${esc(((o.Brand || "") + " " + (o.Model || "")).trim() || "รถยนต์")}</b><small>${esc(o.DriverName || "-")}${o.DriverPhone ? " • โทร " + esc(o.DriverPhone) : ""}</small></div></div>
         <div class="gd-m-start">เลขไมล์ตอนออก <b>${num(start)}</b> กม.</div>
         <label for="gd-mile">เลขไมล์ตอนนี้ — พิมพ์ <b>3 ตัวท้าย</b> ก็ได้ (ระบบต่อเลขเต็มให้)</label>
         <input id="gd-mile" class="gd-mile" type="text" inputmode="numeric" placeholder="เช่น ${String(start + 150).slice(-3)}" required />
@@ -182,6 +194,7 @@
     const b = e.target.closest(".gd-go");
     if (b) openModal(outList[Number(b.dataset.i)]);
   });
+  $("gd-q").addEventListener("input", () => lastData && render(lastData));
   $("gd-refresh").addEventListener("click", () => load());
   load();
   setInterval(() => !document.querySelector(".od-modal") && load(true), 30000);

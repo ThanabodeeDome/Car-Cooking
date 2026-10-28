@@ -208,9 +208,11 @@ try {
         ':booked_by'      => $bookedByUserId,
     ]);
 
+    $newBookingId = (int)$conn->lastInsertId();
     $conn->commit();
 
-    echo json_encode(["success" => true, "booking_number" => $bookingNumber]);
+    // booking_id = "รหัสจอง" สั้นๆ ที่ผู้ขับบอก รปภ. ตอนคืนรถ (เลขที่ BK-... ยาวเกินกว่าจะบอกปากเปล่า)
+    echo json_encode(["success" => true, "booking_number" => $bookingNumber, "booking_id" => $newBookingId]);
 
     // 📝 บันทึกระบบ: จองรถ (ผู้จอง = คนที่ล็อกอิน, ผู้ขับอาจเป็นคนอื่นถ้าจองแทน)
     require_once __DIR__ . '/log_lib.php';
