@@ -843,10 +843,14 @@ function openMaintenanceModal(carId, plate) {
   if (!host) return;
   host.innerHTML = `
     <div class="mt-wrap">
-      <div id="mt-status"></div>
-      <div id="mt-body"></div>
-      <div class="mt-sec">ประวัติเช็คระยะ / ซ่อม</div>
-      <div id="maint-history-list" class="mt-history"><p class="empty-hint">กำลังโหลด...</p></div>
+      <div class="mt-main">
+        <div id="mt-status"></div>
+        <div id="mt-body"></div>
+      </div>
+      <aside class="mt-side">
+        <div class="mt-sec">ประวัติเช็คระยะ / ซ่อม</div>
+        <div id="maint-history-list" class="mt-history"><p class="empty-hint">กำลังโหลด...</p></div>
+      </aside>
     </div>`;
   loadMaintenanceHistory(carId);
 }

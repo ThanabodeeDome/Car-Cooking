@@ -2674,3 +2674,13 @@ tr.clickable-row:hover td { background: #fafbff; }
 .mt-del:hover { background: #fee2e2; color: #b91c1c; }
 @media (max-width: 640px) { .svc-inline.ef { padding-left: 16px; padding-right: 16px; } .mt-extend { width: 100%; } .mt-extend input { flex: 1; } }
 .mt-extend button { white-space: nowrap; }
+
+/* จัดวางใหม่: ซ้าย = สถานะ+ฟอร์ม, ขวา = ประวัติ (ใช้พื้นที่เต็มการ์ด) */
+.cv-tabs { margin: 16px 26px 6px; }
+.svc-inline.ef { padding: 14px 26px 28px; }
+.mt-wrap { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 24px; max-width: none; align-items: start; }
+.mt-main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.mt-side { padding: 16px 18px; border: 1px solid #e8eaf1; border-radius: 16px; background: #fafbfd; min-width: 0; }
+.mt-side .mt-sec { margin: 0 0 10px; }
+.mt-side .mt-history { max-height: 420px; }
+@media (max-width: 900px) { .mt-wrap { grid-template-columns: 1fr; } .cv-tabs { margin-left: 16px; margin-right: 16px; } }
