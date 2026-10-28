@@ -1112,6 +1112,25 @@ function maintFmt(iso) {
   const mons = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
   return Number(m[3]) + " " + mons[Number(m[2]) - 1] + " " + (Number(m[1]) + 543);
 }
+// ช่องตัวเลขที่ใส่ , ให้อัตโนมัติ (1,234 / 1,234.50) — ส่งไปเซิร์ฟเวอร์เป็นตัวเลขล้วน
+function maintNum(id) {
+  const v = String(document.getElementById(id).value || "").replace(/,/g, "").trim();
+  return v === "" || isNaN(Number(v)) ? "" : v;
+}
+document.addEventListener("input", (e) => {
+  const el = e.target;
+  if (!el || !el.dataset || !el.dataset.num) return;
+  const dec = el.dataset.num === "dec";
+  let v = el.value.replace(dec ? /[^\d.]/g : /\D/g, "");
+  if (dec) {
+    const p = v.split(".");
+    v = p[0] + (p.length > 1 ? "." + p.slice(1).join("").slice(0, 2) : "");
+  }
+  const [i, d] = v.split(".");
+  const fmt = (i ? Number(i).toLocaleString("en-US") : "") + (d !== undefined ? "." + d : "");
+  el.value = fmt;
+});
+
 function maintDaysLeft(iso) {
   return Math.round((new Date(iso + "T00:00:00") - new Date(maintToday() + "T00:00:00")) / 86400000);
 }
@@ -1196,10 +1215,10 @@ function renderMaintPanel() {
         <summary>บันทึกงานที่เสร็จไปแล้ว (ย้อนหลัง)</summary>
         <form id="mt-retro" class="ef-grid">
           <label class="ef-f"><span>ทำอะไร</span><input type="text" id="rt-type" value="เช็คระยะ" /></label>
-          <label class="ef-f"><span>เลขไมล์</span><input type="number" id="rt-mileage" /></label>
+          <label class="ef-f"><span>เลขไมล์ (กม.)</span><input type="text" inputmode="numeric" data-num="int" id="rt-mileage" /></label>
           <label class="ef-f"><span>วันที่เริ่ม</span><input type="date" id="rt-start" required /></label>
           <label class="ef-f"><span>เสร็จวันที่</span><input type="date" id="rt-end" required /></label>
-          <label class="ef-f"><span>ค่าใช้จ่าย (บาท)</span><input type="number" step="0.01" id="rt-cost" /></label>
+          <label class="ef-f"><span>ค่าใช้จ่าย (บาท)</span><input type="text" inputmode="decimal" data-num="dec" id="rt-cost" /></label>
           <label class="ef-f"><span>กำหนดเช็คครั้งถัดไป</span><input type="date" id="rt-next" /></label>
           <button type="submit" class="mt-btn ef-span">บันทึกประวัติ</button>
         </form>
@@ -1244,8 +1263,8 @@ function renderMaintPanel() {
       <h4>รถเสร็จแล้วใช่ไหม?</h4>
       <div class="ef-grid ef-grid-3">
         <label class="ef-f"><span>เสร็จวันที่</span><input type="date" id="md-end" value="${maintToday()}" required /></label>
-        <label class="ef-f"><span>เลขไมล์</span><input type="number" id="md-mileage" /></label>
-        <label class="ef-f"><span>ค่าใช้จ่าย (บาท)</span><input type="number" step="0.01" id="md-cost" /></label>
+        <label class="ef-f"><span>เลขไมล์ (กม.)</span><input type="text" inputmode="numeric" data-num="int" id="md-mileage" value="${maintCar && maintCar.mileage ? Number(maintCar.mileage).toLocaleString("en-US") : ""}" placeholder="ล่าสุดจากการคืนรถ" /></label>
+        <label class="ef-f"><span>ค่าใช้จ่าย (บาท)</span><input type="text" inputmode="decimal" data-num="dec" id="md-cost" /></label>
       </div>
       <details class="mt-more">
         <summary>เพิ่มเติม (กำหนดเช็คครั้งถัดไป / หมายเหตุ)</summary>
@@ -1298,8 +1317,8 @@ async function submitMaintDone() {
     maintenance_id: maintOpenRecord ? maintOpenRecord.MaintenanceID : 0,
     car_id: currentMaintCarId,
     end_date: document.getElementById("md-end").value,
-    mileage: document.getElementById("md-mileage").value,
-    cost: document.getElementById("md-cost").value,
+    mileage: maintNum("md-mileage"),
+    cost: maintNum("md-cost"),
     next_due_date: document.getElementById("md-next").value,
     note: document.getElementById("md-note").value,
   });
@@ -1315,8 +1334,8 @@ async function submitMaintRetro() {
     maintenance_type: document.getElementById("rt-type").value || "เช็คระยะ",
     start_date: document.getElementById("rt-start").value,
     end_date: document.getElementById("rt-end").value,
-    mileage: document.getElementById("rt-mileage").value,
-    cost: document.getElementById("rt-cost").value,
+    mileage: maintNum("rt-mileage"),
+    cost: maintNum("rt-cost"),
     next_due_date: document.getElementById("rt-next").value,
   });
   if (!r.success) return alert("บันทึกไม่สำเร็จ: " + (r.message || ""));
