@@ -15,12 +15,13 @@ if ($__role !== 'security' && $__role !== 'admin') { header('Location: /'); exit
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="guard.css?v=1" />
+    <link rel="stylesheet" href="guard.css?v=2" />
   </head>
   <body>
     <header class="gd-top">
       <div class="gd-brand"><i class="fa-solid fa-user-shield"></i><div><b>จดเลขไมล์รถคืน</b><small id="gd-who">รปภ.</small></div></div>
       <div class="gd-actions">
+        <a href="/Admin/" id="gd-admin-back" class="gd-icon gd-back" hidden aria-label="กลับหน้าแอดมิน" title="กลับหน้าแอดมิน"><i class="fa-solid fa-gauge"></i></a>
         <button type="button" id="gd-refresh" class="gd-icon" aria-label="รีเฟรช"><i class="fa-solid fa-rotate"></i></button>
         <button type="button" id="gd-logout" class="gd-icon" aria-label="ออกจากระบบ"><i class="fa-solid fa-right-from-bracket"></i></button>
       </div>
@@ -62,6 +63,6 @@ if ($__role !== 'security' && $__role !== 'admin') { header('Location: /'); exit
     </div>
 
     <div id="gd-toast" class="gd-toast" role="status" hidden></div>
-    <script src="guard.js?v=1"></script>
+    <script src="guard.js?v=2"></script>
   </body>
 </html>

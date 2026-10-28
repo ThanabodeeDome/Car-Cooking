@@ -34,7 +34,8 @@
   }
 
   function render(data) {
-    $("gd-who").textContent = data.guard || "รปภ.";
+    $("gd-who").textContent = (data.is_admin ? "แอดมิน • " : "") + (data.guard || "รปภ.");
+    $("gd-admin-back").hidden = !data.is_admin;
     outList = data.out || [];
     $("gd-count").textContent = outList.length;
     const box = $("gd-out");

@@ -30,7 +30,10 @@ if ($role === 'admin') {
     }
 }
 
-$guardName = trim((string)($_SESSION['first_name'] ?? '')) ?: (string)($_SESSION['username'] ?? 'รปภ.');
+$isAdminUser = $role === 'admin';
+$whoLabel = $isAdminUser ? 'แอดมิน' : 'รปภ.';
+$guardName = trim((string)($_SESSION['first_name'] ?? ''));
+if ($guardName === '' || $guardName === '-') $guardName = (string)($_SESSION['username'] ?? $whoLabel);
 
 // ---------------- GET: รายการ ----------------
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
@@ -57,7 +60,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
              WHERE b.BookingStatus = N'คืนแล้ว' AND b.ReturnDate = CAST(GETDATE() AS DATE)
              ORDER BY b.ReturnTime DESC"
         )->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode(['success' => true, 'guard' => $guardName, 'out' => $out, 'returned_today' => $done], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['success' => true, 'guard' => $guardName, 'is_admin' => $isAdminUser, 'out' => $out, 'returned_today' => $done], JSON_UNESCAPED_UNICODE);
     } catch (PDOException $e) {
         error_log('guard_api list: ' . $e->getMessage());
         echo json_encode(['success' => false, 'message' => 'โหลดข้อมูลไม่สำเร็จ']);
@@ -104,7 +107,7 @@ try {
         exit;
     }
 
-    $remark = 'รปภ. ' . $guardName . ' จดเลขไมล์' . ($note !== '' ? ' — ' . $note : '');
+    $remark = $whoLabel . ' ' . $guardName . ' จดเลขไมล์' . ($note !== '' ? ' — ' . $note : '');
     $conn->beginTransaction();
     $up = $conn->prepare(
         "UPDATE CarBookings SET BookingStatus = N'คืนแล้ว', ReturnDate = CAST(GETDATE() AS DATE), ReturnTime = CONVERT(varchar(8), GETDATE(), 108),
@@ -121,7 +124,7 @@ try {
     $conn->commit();
 
     $bi = sl_booking_info($conn, $bookingId);
-    sl_log($conn, 'return', 'รปภ. จดคืนรถ ' . trim($bi['plate'] . ' ' . $bi['driver']) . ' ไมล์คืน ' . number_format($endMile) . ' กม.', [
+    sl_log($conn, 'return', $whoLabel . ' จดคืนรถ ' . trim($bi['plate'] . ' ' . $bi['driver']) . ' ไมล์คืน ' . number_format($endMile) . ' กม.', [
         'target_type' => 'booking', 'target' => $bi['no'],
         'detail' => ['start_mileage' => $startMile, 'end_mileage' => $endMile, 'by' => 'security', 'guard' => $guardName],
     ]);

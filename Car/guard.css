@@ -93,3 +93,5 @@ button, input { font-family: inherit; }
   .gd-sheet { align-items: center; }
   .gd-sheet-card { border-radius: 26px; border-bottom: 1px solid var(--line); }
 }
+.gd-back { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.gd-back[hidden] { display: none; }
