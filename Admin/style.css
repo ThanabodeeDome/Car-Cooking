@@ -2627,3 +2627,50 @@ tr.clickable-row:hover td { background: #fafbff; }
 .mt-info { font-size: 13.5px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 10px 12px; }
 .mt-info.plain { background: #f8fafc; border-color: #e2e8f0; color: #475569; }
 .mt-history { max-height: 260px; overflow-y: auto; }
+
+/* ===== เช็คระยะ / ซ่อม (แท็บในหน้าจัดการรถ) ===== */
+.svc-inline.ef { padding: 6px 26px 26px; }
+.mt-wrap { display: flex; flex-direction: column; gap: 16px; max-width: 860px; }
+.mt-card { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 16px 18px; border-radius: 16px; border: 1px solid; }
+.mt-card > i { flex: none; width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 21px; }
+.mt-card > div:not(.mt-extend) { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.mt-card b { font-size: 17px; color: #151926; }
+.mt-card span { font-size: 13.5px; color: #475569; }
+.mt-card.free { background: #f0fdf4; border-color: #bbf7d0; }
+.mt-card.free > i { background: #dcfce7; color: #16a34a; }
+.mt-card.busy { background: #fff7ed; border-color: #fed7aa; }
+.mt-card.busy > i { background: #ffedd5; color: #ea580c; }
+.mt-extend { display: flex; gap: 8px; align-items: center; }
+.mt-extend input { height: 38px; padding: 0 10px; border: 1px solid #fdba74; border-radius: 10px; background: #fff; font: inherit; font-size: 14px; }
+.mt-extend button { height: 38px; padding: 0 14px; border: none; border-radius: 10px; background: #ea580c; color: #fff; font: 600 13.5px inherit; cursor: pointer; }
+.mt-panel { display: flex; flex-direction: column; gap: 14px; padding: 18px; border: 1px solid #e8eaf1; border-radius: 16px; background: #fff; }
+.mt-panel h4 { margin: 0; font-size: 16px; color: #151926; }
+.mt-pills { display: flex; gap: 8px; flex-wrap: wrap; }
+.mt-pills button { padding: 8px 16px; border: 1px solid #d9dde8; border-radius: 999px; background: #fff; color: #475569; font: 600 14px inherit; cursor: pointer; }
+.mt-pills button.on { background: #fff1f1; border-color: var(--accent); color: var(--accent); }
+.mt-panel > input[type="text"] { height: 44px; padding: 0 12px; border: 1px solid #d9dde8; border-radius: 10px; font: inherit; font-size: 15px; }
+.mt-panel > input[hidden] { display: none; }
+.mt-quick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: #64748b; }
+.mt-quick button { padding: 6px 12px; border: 1px dashed #cbd5e1; border-radius: 999px; background: #f8fafc; color: #475569; font: 600 13px inherit; cursor: pointer; }
+.mt-quick button:hover { border-color: var(--accent); color: var(--accent); }
+.mt-hint { margin: 0; font-size: 12.5px; color: #64748b; display: flex; gap: 6px; align-items: flex-start; }
+.mt-btn { height: 48px; border: none; border-radius: 12px; background: #151926; color: #fff; font: 700 15px inherit; cursor: pointer; padding: 0 20px; }
+.mt-btn.warn { background: linear-gradient(135deg, #f97316, #ea580c); box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3); }
+.mt-btn.ok { background: linear-gradient(135deg, #22c55e, #16a34a); box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3); }
+.mt-retro, .mt-more { font-size: 13.5px; color: #64748b; }
+.mt-retro summary, .mt-more summary { cursor: pointer; padding: 6px 2px; }
+.mt-retro form, .mt-more .ef-grid { margin-top: 10px; }
+.mt-retro .ef-grid { padding: 14px; border: 1px solid #e8eaf1; border-radius: 14px; background: #fff; }
+.mt-sec { margin-top: 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; color: #94a3b8; }
+.mt-history { display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; }
+.mt-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 12px; border-radius: 12px; background: #f8fafc; }
+.mt-item.open { background: #fff7ed; }
+.mt-dot { flex: none; width: 10px; height: 10px; margin-top: 6px; border-radius: 50%; background: #94a3b8; }
+.mt-item.open .mt-dot { background: #ea580c; }
+.mt-item-main { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.mt-item-main b { font-size: 14.5px; color: #151926; }
+.mt-when, .mt-meta { font-size: 12.5px; color: #64748b; }
+.mt-del { flex: none; border: none; background: transparent; color: #94a3b8; cursor: pointer; padding: 6px; border-radius: 8px; }
+.mt-del:hover { background: #fee2e2; color: #b91c1c; }
+@media (max-width: 640px) { .svc-inline.ef { padding-left: 16px; padding-right: 16px; } .mt-extend { width: 100%; } .mt-extend input { flex: 1; } }
+.mt-extend button { white-space: nowrap; }

@@ -835,70 +835,19 @@ function closeCalendarEventModal() {
 let currentMaintCarId = null;
 
 function openMaintenanceModal(carId, plate) {
-  loadMaintenanceHistory.tabPicked = false;
   maintOpenRecord = null;
+  maintCar = null;
   currentMaintCarId = carId;
-
-  const overlay = document.getElementById("svc-inline");
-  if (!overlay) return;
-  overlay.innerHTML = `
-    <div class="mt-head">
-      <b><i class="fa-solid fa-screwdriver-wrench"></i> ${escapeHtml(plate)}</b>
-      <div class="mt-tabs">
-        <button type="button" id="mt-tab-send" onclick="showMaintTab('send')">1. ส่งรถเข้าเช็ค/ซ่อม</button>
-        <button type="button" id="mt-tab-done" onclick="showMaintTab('done')">2. รถเสร็จแล้ว</button>
-      </div>
-    </div>
-
-    <form id="maint-send-form" class="ef-grid mt-form">
-      <label class="ef-f ef-span"><span>ทำอะไร</span>
-        <input type="text" id="ms-type" list="maint-type-list" value="เช็คระยะ" required />
-        <datalist id="maint-type-list"><option value="เช็คระยะ"><option value="ซ่อม"><option value="เปลี่ยนยาง"><option value="ตรวจสภาพ/ต่อภาษี"></datalist>
-      </label>
-      <label class="ef-f"><span>วันที่ส่งรถ</span><input type="date" id="ms-start" required /></label>
-      <label class="ef-f"><span>คาดว่าเสร็จวันที่</span><input type="date" id="ms-end" /></label>
-      <label class="ef-f ef-span"><span>หมายเหตุ (ไม่บังคับ)</span><input type="text" id="ms-note" /></label>
-      <p class="ef-note ef-span"><i class="fa-solid fa-circle-info"></i> บันทึกแล้วรถจะถูกปิดการจอง — ผู้ใช้จองล่วงหน้าได้ตั้งแต่วันคาดว่าเสร็จ</p>
-      <div class="ef-actions ef-span">
-        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-screwdriver-wrench"></i> <span>ส่งรถเข้าเช็ค/ซ่อม</span></button>
-      </div>
-    </form>
-
-    <form id="maint-done-form" class="ef-grid mt-form" style="display:none;">
-      <div id="md-info" class="mt-info ef-span"></div>
-      <div id="md-retro" class="ef-grid ef-span" style="display:none;">
-        <label class="ef-f"><span>ทำอะไร</span><input type="text" id="md-type" value="เช็คระยะ" /></label>
-        <label class="ef-f"><span>วันที่เริ่ม</span><input type="date" id="md-start" /></label>
-      </div>
-      <label class="ef-f ef-span"><span>เสร็จเมื่อวันที่</span><input type="date" id="md-end" required /></label>
-      <label class="ef-f"><span>เลขไมล์</span><input type="number" id="md-mileage" /></label>
-      <label class="ef-f"><span>ค่าใช้จ่าย (บาท)</span><input type="number" step="0.01" id="md-cost" /></label>
-      <label class="ef-f ef-span"><span>กำหนดเช็คครั้งถัดไป</span><input type="date" id="md-next" /></label>
-      <label class="ef-f ef-span"><span>หมายเหตุ</span><input type="text" id="md-note" /></label>
-      <div class="ef-actions ef-span">
-        <button type="submit" class="btn btn-primary" id="md-submit"><i class="fa-solid fa-circle-check"></i> <span>รถเสร็จแล้ว — เปิดให้จอง</span></button>
-      </div>
-    </form>
-
-    <div class="ef-sec">ประวัติที่ผ่านมา</div>
-    <div id="maint-history-list" class="mt-history">
-      <p class="empty-hint">กำลังโหลด...</p>
-    </div>
-  `;
-
-  const today = maintToday();
-  document.getElementById("ms-start").value = today;
-  document.getElementById("md-end").value = today;
-  document.getElementById("maint-send-form").addEventListener("submit", (e) => {
-    e.preventDefault();
-    submitMaintSend();
-  });
-  document.getElementById("maint-done-form").addEventListener("submit", (e) => {
-    e.preventDefault();
-    submitMaintDone();
-  });
-  showMaintTab("send");
-
+  maintPlate = plate;
+  const host = document.getElementById("svc-inline");
+  if (!host) return;
+  host.innerHTML = `
+    <div class="mt-wrap">
+      <div id="mt-status"></div>
+      <div id="mt-body"></div>
+      <div class="mt-sec">ประวัติเช็คระยะ / ซ่อม</div>
+      <div id="maint-history-list" class="mt-history"><p class="empty-hint">กำลังโหลด...</p></div>
+    </div>`;
   loadMaintenanceHistory(carId);
 }
 
@@ -1140,93 +1089,171 @@ function closeBookingEditModal() {
   if (overlay) overlay.remove();
 }
 
-function loadMaintenanceHistory(carId) {
-  const wrap = document.getElementById("maint-history-list");
-  if (!wrap) return;
-
-  fetch(`get_maintenance_history.php?car_id=${carId}`)
-    .then((res) => res.json())
-    .then((data) => {
-      if (!data.success) {
-        wrap.innerHTML = `<p style="color:#ef4444;">${escapeHtml(data.message)}</p>`;
-        return;
-      }
-      const rows = data.history || [];
-      maintOpenRecord = rows.find((r) => !r.EndDate) || null;
-      if (!loadMaintenanceHistory.tabPicked) {
-        loadMaintenanceHistory.tabPicked = true;
-        showMaintTab(maintOpenRecord ? "done" : "send"); // มีงานค้างอยู่ -> เปิดแท็บ "รถเสร็จแล้ว" ให้เลย
-      } else {
-        syncMaintDoneForm();
-      }
-      if (rows.length === 0) {
-        wrap.innerHTML = `<p class="empty-hint">ยังไม่มีประวัติซ่อม</p>`;
-        return;
-      }
-      wrap.innerHTML = rows
-        .map((r) => {
-          const isOpen = !r.EndDate;
-          return `
-          <div class="fleet-row" style="align-items:flex-start;">
-            <div class="fleet-row-name">
-              <strong>${escapeHtml(r.MaintenanceType) || "-"}</strong>
-              <span>${r.StartDate} → ${r.EndDate || "ยังไม่เสร็จ (รถปิดการจอง)"}${r.Cost ? " • " + r.Cost + " บาท" : ""}</span>
-              ${r.Note ? `<span>${escapeHtml(r.Note)}</span>` : ""}
-              ${r.NextDueDate ? `<span>เช็คถัดไป: ${r.NextDueDate}</span>` : ""}
-            </div>
-            ${
-              isOpen
-                ? `<button class="op-edit" onclick="closeMaintenanceRecord(${r.MaintenanceID})">ปิดงาน</button>`
-                : ""
-            }
-            <button class="op-del" onclick="deleteMaintenanceRecord(${r.MaintenanceID})">ลบ</button>
-          </div>`;
-        })
-        .join("");
-    })
-    .catch((err) => {
-      console.error("Error loading maintenance history:", err);
-      wrap.innerHTML = `<p style="color:#ef4444;">เชื่อมต่อเซิร์ฟเวอร์ไม่ได้</p>`;
-    });
-}
-
-let maintOpenRecord = null; // รายการเช็ค/ซ่อมที่ยังเปิดอยู่ของรถคันที่เปิดหน้าต่างอยู่
+let maintOpenRecord = null; // รายการเช็ค/ซ่อมที่ยังเปิดอยู่ของรถที่เลือก
+let maintCar = null; // { status, until } ของรถที่เลือก
+let maintPlate = "";
 
 function maintToday() {
   const d = new Date();
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0];
 }
-
-function showMaintTab(tab) {
-  const send = tab === "send";
-  const sf = document.getElementById("maint-send-form");
-  const df = document.getElementById("maint-done-form");
-  if (!sf || !df) return;
-  sf.style.display = send ? "" : "none";
-  df.style.display = send ? "none" : "";
-  document.getElementById("mt-tab-send").classList.toggle("on", send);
-  document.getElementById("mt-tab-done").classList.toggle("on", !send);
-  syncMaintDoneForm();
+function maintAddDays(days) {
+  const d = new Date(maintToday() + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0];
+}
+function maintFmt(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || "");
+  if (!m) return iso || "-";
+  const mons = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  return Number(m[3]) + " " + mons[Number(m[2]) - 1] + " " + (Number(m[1]) + 543);
+}
+function maintDaysLeft(iso) {
+  return Math.round((new Date(iso + "T00:00:00") - new Date(maintToday() + "T00:00:00")) / 86400000);
 }
 
-// ฟอร์ม "รถเสร็จแล้ว": มีงานค้างอยู่ = ปิดงานนั้น / ไม่มี = บันทึกย้อนหลัง (ต้องระบุวันเริ่ม)
-function syncMaintDoneForm() {
-  const info = document.getElementById("md-info");
-  const retro = document.getElementById("md-retro");
-  const btn = document.getElementById("md-submit");
-  if (!info || !retro) return;
-  const r = maintOpenRecord;
-  if (r) {
-    info.innerHTML = `กำลัง<b>${escapeHtml(r.MaintenanceType) || "เช็ค/ซ่อม"}</b> ตั้งแต่ ${escapeHtml(String(r.StartDate).slice(0, 10))} — กรอกผลแล้วกดยืนยัน รถจะเปิดให้จองทันที`;
-    retro.style.display = "none";
-    info.classList.remove("plain");
-    btn.querySelector("span").textContent = "รถเสร็จแล้ว — เปิดให้จอง";
-  } else {
-    info.classList.add("plain");
-    info.textContent = "ตอนนี้ไม่มีงานเช็ค/ซ่อมค้างอยู่ — ใช้ฟอร์มนี้บันทึกงานที่เสร็จไปแล้ว (ย้อนหลัง)";
-    retro.style.display = "";
-    btn.querySelector("span").textContent = "บันทึกประวัติ";
+function loadMaintenanceHistory(carId) {
+  fetch(`get_maintenance_history.php?car_id=${carId}`)
+    .then((res) => res.json())
+    .then((data) => {
+      if (carId !== currentMaintCarId) return; // เปลี่ยนไปดูรถคันอื่นแล้ว
+      const rows = data.success ? data.history || [] : [];
+      maintOpenRecord = rows.find((r) => !r.EndDate) || null;
+      maintCar = data.car || null;
+      renderMaintPanel();
+      renderMaintHistory(rows, data.success ? "" : data.message || "โหลดประวัติไม่สำเร็จ");
+    })
+    .catch(() => {
+      const w = document.getElementById("maint-history-list");
+      if (w) w.innerHTML = '<p class="empty-hint" style="color:#ef4444;">เชื่อมต่อเซิร์ฟเวอร์ไม่ได้</p>';
+    });
+}
+
+function renderMaintHistory(rows, err) {
+  const wrap = document.getElementById("maint-history-list");
+  if (!wrap) return;
+  if (err) return (wrap.innerHTML = `<p class="empty-hint" style="color:#ef4444;">${escapeHtml(err)}</p>`);
+  if (!rows.length) return (wrap.innerHTML = '<p class="empty-hint">ยังไม่มีประวัติ</p>');
+  wrap.innerHTML = rows
+    .map((r) => {
+      const open = !r.EndDate;
+      const bits = [];
+      if (r.Mileage) bits.push(Number(r.Mileage).toLocaleString("th-TH") + " กม.");
+      if (r.Cost) bits.push(Number(r.Cost).toLocaleString("th-TH") + " บาท");
+      if (r.NextDueDate) bits.push("เช็คถัดไป " + maintFmt(r.NextDueDate));
+      if (r.Note) bits.push(escapeHtml(r.Note));
+      return `
+      <div class="mt-item${open ? " open" : ""}">
+        <span class="mt-dot"></span>
+        <div class="mt-item-main">
+          <b>${escapeHtml(r.MaintenanceType) || "-"}</b>
+          <span class="mt-when">${maintFmt(r.StartDate)} → ${open ? "ยังไม่เสร็จ" : maintFmt(r.EndDate)}</span>
+          ${bits.length ? `<span class="mt-meta">${bits.join(" • ")}</span>` : ""}
+        </div>
+        <button type="button" class="mt-del" title="ลบรายการนี้" onclick="deleteMaintenanceRecord(${r.MaintenanceID})"><i class="fa-regular fa-trash-can"></i></button>
+      </div>`;
+    })
+    .join("");
+}
+
+// แผงหลัก: ขึ้นกับสถานะรถ (พร้อมใช้ / อยู่ระหว่างเช็คระยะ-ซ่อม)
+function renderMaintPanel() {
+  const st = document.getElementById("mt-status");
+  const body = document.getElementById("mt-body");
+  if (!st || !body) return;
+  const inService = !!maintOpenRecord || (maintCar && maintCar.status === "เช็คระยะ");
+  if (!inService) {
+    st.innerHTML = `
+      <div class="mt-card free">
+        <i class="fa-solid fa-circle-check"></i>
+        <div><b>${escapeHtml(maintPlate)} พร้อมใช้งาน</b><span>เปิดให้จองตามปกติ</span></div>
+      </div>`;
+    body.innerHTML = `
+      <form id="mt-send" class="mt-panel">
+        <h4>ส่งรถเข้าเช็คระยะ / ซ่อม</h4>
+        <div class="mt-pills" id="mt-pills">
+          <button type="button" class="on" data-v="เช็คระยะ">เช็คระยะ</button>
+          <button type="button" data-v="ซ่อม">ซ่อม</button>
+          <button type="button" data-v="เปลี่ยนยาง">เปลี่ยนยาง</button>
+          <button type="button" data-v="">อื่นๆ</button>
+        </div>
+        <input type="text" id="ms-type" value="เช็คระยะ" hidden placeholder="ระบุงาน เช่น ตรวจสภาพ/ต่อภาษี" />
+        <div class="ef-grid">
+          <label class="ef-f"><span>คาดว่าเสร็จวันที่</span><input type="date" id="ms-end" min="${maintToday()}" /></label>
+          <label class="ef-f"><span>หมายเหตุ (ไม่บังคับ)</span><input type="text" id="ms-note" /></label>
+        </div>
+        <div class="mt-quick"><span>เสร็จอีก</span>
+          <button type="button" data-d="1">1 วัน</button><button type="button" data-d="3">3 วัน</button><button type="button" data-d="7">1 สัปดาห์</button><button type="button" data-d="14">2 สัปดาห์</button>
+        </div>
+        <p class="mt-hint"><i class="fa-solid fa-circle-info"></i> ระหว่างนี้รถปิดการจอง — ผู้ใช้จองล่วงหน้าได้ตั้งแต่วันที่คาดว่าเสร็จ ไม่ระบุวันก็ได้ (ปิดจองจนกว่าจะกดว่ารถเสร็จ)</p>
+        <button type="submit" class="mt-btn warn"><i class="fa-solid fa-screwdriver-wrench"></i> ส่งรถเข้าเช็ค/ซ่อม</button>
+      </form>
+      <details class="mt-retro">
+        <summary>บันทึกงานที่เสร็จไปแล้ว (ย้อนหลัง)</summary>
+        <form id="mt-retro" class="ef-grid">
+          <label class="ef-f"><span>ทำอะไร</span><input type="text" id="rt-type" value="เช็คระยะ" /></label>
+          <label class="ef-f"><span>เลขไมล์</span><input type="number" id="rt-mileage" /></label>
+          <label class="ef-f"><span>วันที่เริ่ม</span><input type="date" id="rt-start" required /></label>
+          <label class="ef-f"><span>เสร็จวันที่</span><input type="date" id="rt-end" required /></label>
+          <label class="ef-f"><span>ค่าใช้จ่าย (บาท)</span><input type="number" step="0.01" id="rt-cost" /></label>
+          <label class="ef-f"><span>กำหนดเช็คครั้งถัดไป</span><input type="date" id="rt-next" /></label>
+          <button type="submit" class="mt-btn ef-span">บันทึกประวัติ</button>
+        </form>
+      </details>`;
+    document.getElementById("mt-send").addEventListener("submit", (e) => { e.preventDefault(); submitMaintSend(); });
+    document.getElementById("mt-retro").addEventListener("submit", (e) => { e.preventDefault(); submitMaintRetro(); });
+    document.getElementById("mt-pills").addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      document.querySelectorAll("#mt-pills button").forEach((x) => x.classList.toggle("on", x === b));
+      const inp = document.getElementById("ms-type");
+      inp.value = b.dataset.v;
+      inp.hidden = b.dataset.v !== "";
+      if (b.dataset.v === "") inp.focus();
+    });
+    body.querySelector(".mt-quick").addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (b) document.getElementById("ms-end").value = maintAddDays(Number(b.dataset.d));
+    });
+    return;
   }
+
+  // อยู่ระหว่างเช็คระยะ/ซ่อม
+  const until = maintCar && maintCar.until;
+  const left = until ? maintDaysLeft(until) : null;
+  const leftTxt = left === null ? "ยังไม่ระบุวันเสร็จ" : left > 0 ? "อีก " + left + " วัน" : left === 0 ? "ครบกำหนดวันนี้" : "เลยกำหนด " + -left + " วัน";
+  const what = (maintOpenRecord && maintOpenRecord.MaintenanceType) || "เช็คระยะ/ซ่อม";
+  st.innerHTML = `
+    <div class="mt-card busy">
+      <i class="fa-solid fa-screwdriver-wrench"></i>
+      <div>
+        <b>${escapeHtml(maintPlate)} กำลัง${escapeHtml(what)}</b>
+        <span>${maintOpenRecord ? "ส่งรถ " + maintFmt(maintOpenRecord.StartDate) + " • " : ""}${until ? "คาดว่าเสร็จ " + maintFmt(until) + " (" + leftTxt + ")" : leftTxt}</span>
+      </div>
+      <form id="mt-extend" class="mt-extend">
+        <input type="date" id="mt-ext-date" value="${until || ""}" min="${maintToday()}" aria-label="วันที่คาดว่าเสร็จ" />
+        <button type="submit">เปลี่ยนวัน</button>
+      </form>
+    </div>`;
+  body.innerHTML = `
+    <form id="mt-done" class="mt-panel">
+      <h4>รถเสร็จแล้วใช่ไหม?</h4>
+      <div class="ef-grid ef-grid-3">
+        <label class="ef-f"><span>เสร็จวันที่</span><input type="date" id="md-end" value="${maintToday()}" required /></label>
+        <label class="ef-f"><span>เลขไมล์</span><input type="number" id="md-mileage" /></label>
+        <label class="ef-f"><span>ค่าใช้จ่าย (บาท)</span><input type="number" step="0.01" id="md-cost" /></label>
+      </div>
+      <details class="mt-more">
+        <summary>เพิ่มเติม (กำหนดเช็คครั้งถัดไป / หมายเหตุ)</summary>
+        <div class="ef-grid">
+          <label class="ef-f"><span>กำหนดเช็คครั้งถัดไป</span><input type="date" id="md-next" /></label>
+          <label class="ef-f"><span>หมายเหตุ</span><input type="text" id="md-note" /></label>
+        </div>
+      </details>
+      <button type="submit" class="mt-btn ok"><i class="fa-solid fa-circle-check"></i> รถเสร็จแล้ว — เปิดให้จอง</button>
+    </form>`;
+  document.getElementById("mt-done").addEventListener("submit", (e) => { e.preventDefault(); submitMaintDone(); });
+  document.getElementById("mt-extend").addEventListener("submit", (e) => { e.preventDefault(); submitMaintExtend(); });
 }
 
 function maintAfterSave() {
@@ -1245,54 +1272,57 @@ function maintPost(payload) {
     .catch(() => ({ success: false, message: "ติดต่อเซิร์ฟเวอร์ไม่ได้" }));
 }
 
-// ฟอร์ม 1: ส่งรถเข้าเช็ค/ซ่อม (ล็อกรถ + ตั้งวันคาดว่าเสร็จ)
 async function submitMaintSend() {
-  const result = await maintPost({
+  const type = (document.getElementById("ms-type").value || "").trim();
+  if (!type) return alert("กรุณาระบุว่าส่งรถไปทำอะไร");
+  const r = await maintPost({
     action: "add",
     car_id: currentMaintCarId,
     hold_car: true,
-    maintenance_type: document.getElementById("ms-type").value,
-    start_date: document.getElementById("ms-start").value,
+    maintenance_type: type,
+    start_date: maintToday(),
     end_date: document.getElementById("ms-end").value,
     note: document.getElementById("ms-note").value,
   });
-  if (!result.success) return alert("บันทึกไม่สำเร็จ: " + (result.message || ""));
-  document.getElementById("maint-send-form").reset();
-  document.getElementById("ms-start").value = maintToday();
+  if (!r.success) return alert("บันทึกไม่สำเร็จ: " + (r.message || ""));
   maintAfterSave();
-  showMaintTab("done");
 }
 
-// ฟอร์ม 2: รถเสร็จแล้ว (ปิดงานที่ค้าง + ปล่อยรถ) หรือบันทึกย้อนหลัง
 async function submitMaintDone() {
-  const common = {
+  const r = await maintPost({
+    action: "close",
+    maintenance_id: maintOpenRecord ? maintOpenRecord.MaintenanceID : 0,
+    car_id: currentMaintCarId,
+    end_date: document.getElementById("md-end").value,
     mileage: document.getElementById("md-mileage").value,
     cost: document.getElementById("md-cost").value,
     next_due_date: document.getElementById("md-next").value,
     note: document.getElementById("md-note").value,
-  };
-  const end = document.getElementById("md-end").value;
-  let result;
-  if (maintOpenRecord) {
-    result = await maintPost({ action: "close", maintenance_id: maintOpenRecord.MaintenanceID, end_date: end, ...common });
-  } else {
-    const start = document.getElementById("md-start").value;
-    if (!start) return alert("กรุณาระบุวันที่เริ่ม");
-    result = await maintPost({
-      action: "add",
-      car_id: currentMaintCarId,
-      hold_car: false,
-      maintenance_type: document.getElementById("md-type").value || "เช็คระยะ",
-      start_date: start,
-      end_date: end,
-      ...common,
-    });
-  }
-  if (!result.success) return alert("บันทึกไม่สำเร็จ: " + (result.message || ""));
-  document.getElementById("maint-done-form").reset();
-  document.getElementById("md-end").value = maintToday();
+  });
+  if (!r.success) return alert("บันทึกไม่สำเร็จ: " + (r.message || ""));
   maintAfterSave();
-  showMaintTab("send");
+}
+
+async function submitMaintRetro() {
+  const r = await maintPost({
+    action: "add",
+    car_id: currentMaintCarId,
+    hold_car: false,
+    maintenance_type: document.getElementById("rt-type").value || "เช็คระยะ",
+    start_date: document.getElementById("rt-start").value,
+    end_date: document.getElementById("rt-end").value,
+    mileage: document.getElementById("rt-mileage").value,
+    cost: document.getElementById("rt-cost").value,
+    next_due_date: document.getElementById("rt-next").value,
+  });
+  if (!r.success) return alert("บันทึกไม่สำเร็จ: " + (r.message || ""));
+  maintAfterSave();
+}
+
+async function submitMaintExtend() {
+  const r = await maintPost({ action: "extend", car_id: currentMaintCarId, end_date: document.getElementById("mt-ext-date").value });
+  if (!r.success) return alert("เปลี่ยนวันไม่สำเร็จ: " + (r.message || ""));
+  maintAfterSave();
 }
 
 async function closeMaintenanceRecord(maintenanceId) {

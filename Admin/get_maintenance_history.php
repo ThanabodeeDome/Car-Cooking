@@ -24,7 +24,11 @@ try {
     $stmt->execute([':car_id' => $carId]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    echo json_encode(["success" => true, "history" => $rows]);
+    $cs = $conn->prepare("SELECT CarStatus, CONVERT(varchar(10), MaintenanceEndDate, 23) AS until FROM Cars WHERE CarID = :c");
+    $cs->execute([':c' => $carId]);
+    $car = $cs->fetch(PDO::FETCH_ASSOC) ?: null;
+    if ($car) $car = ['status' => $car['CarStatus'], 'until' => $car['until']];
+    echo json_encode(["success" => true, "history" => $rows, "car" => $car], JSON_UNESCAPED_UNICODE);
 } catch (PDOException $e) {
     error_log('get_maintenance_history DB error: ' . $e->getMessage());
     echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาดในการโหลดประวัติซ่อมบำรุง"]);

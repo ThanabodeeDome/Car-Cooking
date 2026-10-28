@@ -94,6 +94,19 @@ if ($action === 'close') {
     $id  = $data['maintenance_id'] ?? 0;
     $end = $data['end_date'] ?? date('Y-m-d');
 
+    // รถถูกตั้งเป็นเช็คระยะ/ซ่อมแต่ไม่มีรายการในประวัติ (เช่นตั้งจากฟอร์มรถเดิม): ปล่อยรถตาม car_id ได้เลย
+    if (empty($id) && !empty($data['car_id'])) {
+        try {
+            $conn->prepare("UPDATE Cars SET CarStatus = N'ว่าง', LastMaintenance = CAST(GETDATE() AS DATE), MaintenanceStartDate = NULL, MaintenanceEndDate = NULL WHERE CarID = :c AND CarStatus = N'เช็คระยะ'")
+                 ->execute([':c' => (int)$data['car_id']]);
+            echo json_encode(["success" => true]);
+        } catch (PDOException $e) {
+            error_log('manage_maintenance close by car: ' . $e->getMessage());
+            echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด ไม่สามารถปิดงานได้"]);
+        }
+        exit;
+    }
+
     if (empty($id)) {
         echo json_encode(["success" => false, "message" => "ไม่พบ MaintenanceID"]);
         exit;
@@ -122,6 +135,29 @@ if ($action === 'close') {
     } catch (PDOException $e) {
         error_log('manage_maintenance close DB error: ' . $e->getMessage());
         echo json_encode(["success" => false, "message" => "เกิดข้อผิดพลาด ไม่สามารถปิดงานซ่อมได้"]);
+    }
+    exit;
+}
+
+// ---------- เปลี่ยนวันที่คาดว่าเสร็จ ----------
+if ($action === 'extend') {
+    $carId = (int)($data['car_id'] ?? 0);
+    $end = $data['end_date'] ?? '';
+    if ($carId <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$end)) {
+        echo json_encode(["success" => false, "message" => "กรุณาเลือกวันที่คาดว่าเสร็จ"]);
+        exit;
+    }
+    try {
+        $stmt = $conn->prepare("UPDATE Cars SET MaintenanceEndDate = :e WHERE CarID = :c AND CarStatus = N'เช็คระยะ'");
+        $stmt->execute([':e' => $end, ':c' => $carId]);
+        if ($stmt->rowCount() === 0) {
+            echo json_encode(["success" => false, "message" => "รถคันนี้ไม่ได้อยู่ระหว่างเช็คระยะ/ซ่อม"]);
+            exit;
+        }
+        echo json_encode(["success" => true]);
+    } catch (PDOException $e) {
+        error_log('manage_maintenance extend: ' . $e->getMessage());
+        echo json_encode(["success" => false, "message" => "เปลี่ยนวันไม่สำเร็จ"]);
     }
     exit;
 }
