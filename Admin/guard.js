@@ -95,8 +95,8 @@
         <div class="gd-m-head"><span class="od-plate">${esc(o.CarPlate)}</span>
           <div><b>${esc(((o.Brand || "") + " " + (o.Model || "")).trim() || "รถยนต์")}</b><small>${esc(o.DriverName || "-")}${o.DriverPhone ? " • โทร " + esc(o.DriverPhone) : ""}</small></div></div>
         <div class="gd-m-start">เลขไมล์ตอนออก <b>${num(start)}</b> กม.</div>
-        <label for="gd-mile">เลขไมล์ตอนนี้ (จากหน้าปัดรถ)</label>
-        <input id="gd-mile" class="gd-mile" type="text" inputmode="numeric" placeholder="เช่น ${num(start + 50)}" required />
+        <label for="gd-mile">เลขไมล์ตอนนี้ — พิมพ์ <b>3 ตัวท้าย</b> ก็ได้ (ระบบต่อเลขเต็มให้)</label>
+        <input id="gd-mile" class="gd-mile" type="text" inputmode="numeric" placeholder="เช่น ${String(start + 150).slice(-3)}" required />
         <div class="gd-calc" id="gd-calc" aria-live="polite"></div>
         <label for="gd-note">หมายเหตุ (ไม่บังคับ)</label>
         <input id="gd-note" type="text" maxlength="150" placeholder="เช่น รถมีรอยถลอก" />
@@ -108,18 +108,38 @@
       </form>`;
     document.body.appendChild(ov);
     const mile = ov.querySelector("#gd-mile");
-    const val = () => parseInt((mile.value || "").replace(/,/g, ""), 10) || 0;
+    // เลขไมล์ไม่มีวันลด: พิมพ์ 1–3 ตัวท้าย -> ต่อเป็นเลขเต็มที่ "น้อยที่สุดที่มากกว่าเลขตอนออก" และลงท้ายด้วยเลขนั้น
+    // พิมพ์ 4 หลักขึ้นไป = เลขเต็ม ใช้ตามที่พิมพ์
+    const digits = () => (mile.value || "").replace(/\D/g, "");
+    const val = () => {
+      const d = digits();
+      if (!d) return 0;
+      if (d.length > 3) return parseInt(d, 10);
+      const mod = Math.pow(10, d.length);
+      let m = start - (start % mod) + parseInt(d, 10);
+      if (m <= start) m += mod;
+      return m;
+    };
     const close = () => ov.remove();
     setTimeout(() => mile.focus(), 50);
     ov.addEventListener("click", (e) => (e.target === ov || e.target.closest("[data-close]")) && close());
     mile.addEventListener("input", () => {
       const d = mile.value.replace(/\D/g, "").slice(0, 7);
-      mile.value = d ? Number(d).toLocaleString("en-US") : "";
+      mile.value = d.length > 3 ? Number(d).toLocaleString("en-US") : d; // 3 ตัวท้าย: โชว์ตามที่พิมพ์ (รวมเลข 0 นำหน้า)
       farConfirm = false;
       ov.querySelector("#gd-err").textContent = "";
       const m = val();
       const c = ov.querySelector("#gd-calc");
-      c.innerHTML = !m ? "" : m <= start ? '<span class="bad">ต้องมากกว่า ' + num(start) + " กม.</span>" : "ใช้ไป <b>" + num(m - start) + "</b> กม.";
+      const short = digits().length <= 3;
+      if (!m) c.innerHTML = "";
+      else if (m <= start) c.innerHTML = '<span class="bad">ต้องมากกว่า ' + num(start) + " กม. (เลขไมล์ไม่ลดลง)</span>";
+      else {
+        const dist = m - start;
+        c.innerHTML =
+          (short ? 'เลขเต็ม <b class="gd-full">' + num(m) + "</b> กม. • " : "") +
+          "ใช้ไป <b>" + num(dist) + "</b> กม." +
+          (dist > 500 ? '<div class="warn"><i class="fa-solid fa-triangle-exclamation"></i> ไกลผิดปกติ — ถามผู้ขับว่า 3 ตัวท้ายถูกไหม</div>' : "");
+      }
     });
     ov.querySelector("form").addEventListener("submit", async (e) => {
       e.preventDefault();
