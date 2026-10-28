@@ -41,6 +41,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
         autoCancelNoShows($conn); // เช็คอินตามเวลาให้ก่อน รายการที่ออกรถไปแล้วจะได้ขึ้นครบ
         $out = $conn->query(
             "SELECT b.BookingID, b.BookingNumber, b.CarPlate, b.DriverName, b.EmployeeID, b.Department, b.StartMileage, b.Destination,
+                    CONVERT(varchar(10), b.BookingDate, 23) AS BookingDate,
                     CONVERT(varchar(16), b.CheckInTime, 120) AS CheckInAt,
                     CONVERT(varchar(16), t.EndAt, 120) AS DueAt,
                     DATEDIFF(MINUTE, t.EndAt, GETDATE()) AS OverdueMin,

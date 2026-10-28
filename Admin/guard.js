@@ -36,6 +36,19 @@
     toast._t = setTimeout(() => (t.hidden = true), 4200);
   }
 
+  // วันที่ของรายการจอง (YYYY-MM-DD) และหัวกลุ่ม "วันนี้ / เมื่อวาน / ค้างมา N วัน"
+  const dayOf = (o) => String(o.BookingDate || o.CheckInAt || "").slice(0, 10);
+  const THAI_DAYS = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
+  const THAI_MON = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  function dayHeader(dk, n) {
+    const d = new Date(dk + "T00:00:00");
+    if (isNaN(d)) return `<div class="gd-day"><b>ไม่ระบุวัน</b><span>${n} คัน</span></div>`;
+    const diff = Math.round((new Date(today() + "T00:00:00") - d) / 86400000);
+    const label = THAI_DAYS[d.getDay()] + " " + d.getDate() + " " + THAI_MON[d.getMonth()] + " " + (d.getFullYear() + 543);
+    const tag = diff === 0 ? "วันนี้" : diff === 1 ? "เมื่อวาน" : diff > 1 ? "ค้างมา " + diff + " วัน" : "ล่วงหน้า";
+    return `<div class="gd-day${diff > 0 ? " old" : ""}"><b>${esc(label)}</b><em>${tag}</em><span>${n} คัน</span></div>`;
+  }
+
   let allOut = [];
   let lastData = null;
   const norm = (s) => String(s ?? "").toLowerCase().replace(/\s+/g, "");
@@ -49,11 +62,19 @@
     outList = q
       ? allOut.filter((o) => String(o.BookingID) === q || norm(o.CarPlate + " " + o.DriverName + " " + o.EmployeeID + " " + o.BookingNumber).includes(q))
       : allOut;
+    // แยกเป็นกลุ่มตามวันที่ของรายการจอง: วันล่าสุดขึ้นก่อน ในวันเดียวกันเรียงตามเวลาออก
+    outList = [...outList].sort((a, b) => String(b.BookingDate).localeCompare(String(a.BookingDate)) || String(a.CheckInAt).localeCompare(String(b.CheckInAt)));
+    const perDay = {};
+    outList.forEach((o) => (perDay[dayOf(o)] = (perDay[dayOf(o)] || 0) + 1));
+    let prevDay = null;
     $("gd-out").innerHTML = outList.length
       ? outList
           .map((o, i) => {
             const late = lateText(o.OverdueMin);
-            return `
+            const dk = dayOf(o);
+            const head = dk !== prevDay ? dayHeader(dk, perDay[dk]) : "";
+            prevDay = dk;
+            return head + `
         <div class="od-row${late ? " od-stale" : ""}">
           <div class="gd-lead"><div class="od-plate">${esc(o.CarPlate)}</div><div class="gd-code">รหัสจอง <b>${Number(o.BookingID)}</b></div></div>
           <div class="od-info">
