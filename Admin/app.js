@@ -197,7 +197,7 @@ function openUserCreateModal() {
       <div class="ef-head">
         <div>
           <h2><i class="fa-solid fa-user-plus"></i> เพิ่มบัญชี</h2>
-          <p>เลือกประเภทบัญชี แล้วกรอกข้อมูล</p>
+          <p>กรอกแค่ รหัส, Username, รหัสผ่าน ก็พอ ช่องอื่นเว้นว่างได้</p>
         </div>
         <button type="button" class="ef-x" aria-label="ปิด" onclick="closeUserCreateModal()"><i class="fa-solid fa-xmark"></i></button>
       </div>
@@ -216,7 +216,7 @@ function openUserCreateModal() {
         </div>
         <div class="ef-sec">ข้อมูลผู้ใช้</div>
         <div class="ef-grid">
-          <label class="ef-f"><span>ชื่อ *</span><input type="text" id="uc-first" required /></label>
+          <label class="ef-f"><span>ชื่อ <small style="font-weight:400;color:#94a3b8">(ว่าง = ใช้ Username)</small></span><input type="text" id="uc-first" maxlength="100" /></label>
           <label class="ef-f"><span>นามสกุล</span><input type="text" id="uc-last" /></label>
           <label class="ef-f"><span>เบอร์โทร</span><input type="text" id="uc-phone" inputmode="tel" /></label>
           <label class="ef-f"><span>อีเมล</span><input type="email" id="uc-email" /></label>

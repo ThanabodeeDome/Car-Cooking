@@ -30,8 +30,8 @@ if (!in_array($role, ['user', 'security', 'admin'], true)) {
     echo json_encode(['success' => false, 'message' => 'สิทธิ์ไม่ถูกต้อง']);
     exit;
 }
-if ($employeeId === '' || $username === '' || $firstName === '' || $password === '') {
-    echo json_encode(['success' => false, 'message' => 'กรุณากรอก รหัสพนักงาน, Username, ชื่อ และรหัสผ่าน']);
+if ($employeeId === '' || $username === '' || $password === '') {
+    echo json_encode(['success' => false, 'message' => 'กรุณากรอก รหัสพนักงาน, Username และรหัสผ่าน (ช่องอื่นเว้นว่างได้)']);
     exit;
 }
 if (!preg_match('/^[0-9A-Za-z_-]{1,20}$/', $employeeId)) {
@@ -54,13 +54,19 @@ if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     echo json_encode(['success' => false, 'message' => 'รูปแบบอีเมลไม่ถูกต้อง']);
     exit;
 }
-if ($phone !== '' && !preg_match('/^[0-9+\-\s]{6,20}$/', $phone)) {
-    echo json_encode(['success' => false, 'message' => 'เบอร์โทรไม่ถูกต้อง']);
+if (mb_strlen($phone) > 20 || mb_strlen($firstName) > 100 || mb_strlen($lastName) > 100 || mb_strlen($email) > 100) {
+    echo json_encode(['success' => false, 'message' => 'ข้อมูลยาวเกินกำหนด (ชื่อ/นามสกุล/อีเมล ไม่เกิน 100, เบอร์โทร ไม่เกิน 20 ตัวอักษร)']);
     exit;
 }
 
+// ไม่กรอกชื่อ = ใช้ Username เป็นชื่อที่แสดง (first_name ห้ามว่างใน DB และหลายหน้าใช้แสดงชื่อ)
+if ($firstName === '' || $firstName === '-') $firstName = $username;
+if ($lastName === '-') $lastName = '';
+if ($phone === '-') $phone = '';
+
 try {
-    $dupMsg = duplicateUserMessage(findDuplicateUser($conn, $username, $employeeId, $firstName, $lastName));
+    // แอดมินเพิ่มเอง: ซ้ำได้เฉพาะ Username / รหัสพนักงาน (ไม่เช็คชื่อ-นามสกุลซ้ำ เพราะบัญชี รปภ./ส่วนกลางอาจไม่มีชื่อจริง)
+    $dupMsg = duplicateUserMessage(findDuplicateUser($conn, $username, $employeeId));
     if ($dupMsg !== null) {
         echo json_encode(['success' => false, 'message' => $dupMsg]);
         exit;
