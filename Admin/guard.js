@@ -2,6 +2,7 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const API = "../Car/guard_api.php";
+  const MAX_PHOTOS = 5; // รูปรถต่อรายการ (ไม่บังคับถ่าย) — ต้องตรงกับ GD_MAX_PHOTOS ใน guard_api.php
   let outList = [];
   let busy = false;
 
@@ -48,6 +49,14 @@
     const tag = diff === 0 ? "วันนี้" : diff === 1 ? "เมื่อวาน" : diff > 1 ? "ค้างมา " + diff + " วัน" : "ล่วงหน้า";
     return `<div class="gd-day${diff > 0 ? " old" : ""}"><b>${esc(label)}</b><em>${tag}</em><span>${n} คัน</span></div>`;
   }
+
+  // รูปรถที่ รปภ. ถ่ายไว้ (ช่อง ReturnPhotoPath เก็บหลายรูปคั่นด้วย |) — กดดูภาพเต็มในแท็บใหม่
+  const thumbs = (v) => {
+    const list = String(v || "").split("|").filter((p) => /^uploads\/return\/[A-Za-z0-9_.-]+$/.test(p));
+    return list.length
+      ? '<div class="gd-thumbs">' + list.map((p) => `<a href="../Car/${esc(p)}" target="_blank" rel="noopener"><img src="../Car/${esc(p)}" alt="รูปรถ" loading="lazy" /></a>`).join("") + "</div>"
+      : "";
+  };
 
   let allOut = [];
   let lastData = null;
@@ -99,6 +108,7 @@
         <div class="od-row gd-done-row">
           <div class="od-plate">${esc(d.CarPlate)}</div>
           <div class="od-info"><b>${esc(d.DriverName || "-")} <small>รหัสจอง ${Number(d.BookingID)}</small></b><span>${esc(d.ReturnAt || "")} น. • เลขไมล์ ${num(d.EndMileage)} กม. (ใช้ ${num(Number(d.EndMileage) - Number(d.StartMileage))} กม.)</span></div>
+          ${thumbs(d.ReturnPhotoPath)}
         </div>`,
           )
           .join("")
@@ -124,17 +134,42 @@
     ov.className = "od-modal";
     ov.innerHTML = `
       <form class="od-modal-card gd-modal" autocomplete="off">
-        <h3><i class="fa-solid fa-gauge-high"></i> จดเลขไมล์รถคืน</h3>
-        <div class="gd-m-head"><span class="od-plate">${esc(o.CarPlate)}</span>
-          <div><b class="gd-m-code">รหัสจอง ${Number(o.BookingID)}</b><b>${esc(((o.Brand || "") + " " + (o.Model || "")).trim() || "รถยนต์")}</b><small>${esc(o.DriverName || "-")}${o.DriverPhone ? " • โทร " + esc(o.DriverPhone) : ""}</small></div></div>
-        <div class="gd-m-start">เลขไมล์ตอนออก <b>${num(start)}</b> กม.</div>
-        <label for="gd-mile">เลขไมล์ตอนนี้ — พิมพ์ <b>3 ตัวท้าย</b> ก็ได้ (ระบบต่อเลขเต็มให้)</label>
-        <input id="gd-mile" class="gd-mile" type="text" inputmode="numeric" placeholder="เช่น ${String(start + 150).slice(-3)}" required />
-        <div class="gd-calc" id="gd-calc" aria-live="polite"></div>
-        <label for="gd-note">หมายเหตุ (ไม่บังคับ)</label>
-        <input id="gd-note" type="text" maxlength="150" placeholder="เช่น รถมีรอยถลอก" />
+        <div class="gd-m-top">
+          <div class="gd-m-title"><span><i class="fa-solid fa-gauge-high"></i></span> จดเลขไมล์รถคืน</div>
+          <button type="button" class="gd-m-x" data-close aria-label="ปิด">&times;</button>
+        </div>
+        <div class="gd-m-body">
+        <div class="gd-m-car">
+          <div class="od-plate gd-m-plate">${esc(o.CarPlate)}</div>
+          <div class="gd-m-info">
+            <span class="gd-m-code">รหัสจอง ${Number(o.BookingID)}</span>
+            <b>${esc(((o.Brand || "") + " " + (o.Model || "")).trim() || "รถยนต์")}</b>
+            <small><i class="fa-regular fa-user"></i> ${esc(o.DriverName || "-")}${o.DriverPhone ? " &nbsp;<i class='fa-solid fa-phone'></i> " + esc(o.DriverPhone) : ""}</small>
+          </div>
+        </div>
+        <div class="gd-m-start"><i class="fa-solid fa-flag-checkered"></i> เลขไมล์ตอนออก <b>${num(start)}</b> กม.</div>
+        <section class="gd-sec">
+          <label for="gd-mile">เลขไมล์ตอนนี้ <small>พิมพ์ 3 ตัวท้ายก็ได้ ระบบต่อเลขเต็มให้</small></label>
+          <input id="gd-mile" class="gd-mile" type="text" inputmode="numeric" placeholder="เช่น ${String(start + 150).slice(-3)}" required />
+          <div class="gd-calc" id="gd-calc" aria-live="polite"></div>
+        </section>
+        <section class="gd-sec">
+          <label for="gd-note">หมายเหตุ <small>ไม่บังคับ</small></label>
+          <input id="gd-note" type="text" maxlength="150" placeholder="เช่น รถมีรอยถลอก" />
+        </section>
+        <div class="gd-photos">
+          <div class="gd-photos-head"><b><i class="fa-solid fa-camera"></i> รูปรถ</b><span>ไม่บังคับ • สูงสุด ${MAX_PHOTOS} รูป</span><em id="gd-ph-count">0/${MAX_PHOTOS}</em></div>
+          <div class="gd-ph-grid" id="gd-ph-grid"></div>
+          <div class="gd-ph-btns">
+            <button type="button" class="od-btn" id="gd-ph-cam"><i class="fa-solid fa-camera"></i> ถ่ายรูป</button>
+            <button type="button" class="od-btn" id="gd-ph-pick"><i class="fa-regular fa-image"></i> เลือกรูปจากเครื่อง</button>
+          </div>
+          <input type="file" id="gd-in-cam" accept="image/*" capture="environment" hidden />
+          <input type="file" id="gd-in-pick" accept="image/*" multiple hidden />
+        </div>
         <div class="od-modal-err" id="gd-err" role="alert"></div>
-        <div class="od-modal-btns">
+        </div>
+        <div class="gd-m-foot">
           <button type="button" class="od-btn" data-close>ยกเลิก</button>
           <button type="submit" class="od-btn primary gd-save" id="gd-save"><i class="fa-solid fa-circle-check"></i> บันทึกรถคืนแล้ว</button>
         </div>
@@ -154,6 +189,100 @@
       return m;
     };
     const close = () => ov.remove();
+
+    // ---- รูปรถ (ไม่บังคับ สูงสุด MAX_PHOTOS): ย่อรูปในเครื่องก่อน แล้วอัปโหลดทันทีที่เลือก/ถ่าย ----
+    const photos = []; // { key, url, path, state: "up" | "ok" | "err" }
+    let photoSeq = 0;
+    const phGrid = ov.querySelector("#gd-ph-grid");
+    const renderPhotos = () => {
+      phGrid.innerHTML = photos
+        .map(
+          (p) => `
+        <div class="gd-ph ${p.state}" data-k="${p.key}">
+          <img src="${p.url}" alt="" />
+          <span class="gd-ph-st">${p.state === "up" ? '<i class="fa-solid fa-spinner fa-spin"></i>' : p.state === "ok" ? '<i class="fa-solid fa-check"></i>' : '<i class="fa-solid fa-rotate-right"></i>'}</span>
+          <button type="button" class="gd-ph-x" data-k="${p.key}" aria-label="ลบรูป">&times;</button>
+        </div>`,
+        )
+        .join("");
+      ov.querySelector("#gd-ph-count").textContent = photos.length + "/" + MAX_PHOTOS;
+      const full = photos.length >= MAX_PHOTOS;
+      ov.querySelector("#gd-ph-cam").disabled = full;
+      ov.querySelector("#gd-ph-pick").disabled = full;
+    };
+    const shrink = (file) =>
+      new Promise((resolve) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, 1600 / Math.max(img.width, img.height));
+          const c = document.createElement("canvas");
+          c.width = Math.round(img.width * scale);
+          c.height = Math.round(img.height * scale);
+          c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+          URL.revokeObjectURL(url);
+          c.toBlob((b) => resolve(b || file), "image/jpeg", 0.82);
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          resolve(file);
+        };
+        img.src = url;
+      });
+    const uploadPhoto = async (p, blob) => {
+      p.state = "up";
+      renderPhotos();
+      try {
+        const fd = new FormData();
+        fd.append("photo", blob, "car.jpg");
+        fd.append("booking_id", o.BookingID);
+        const r = await fetch(API, { method: "POST", body: fd }).then((x) => x.json());
+        if (r.success) {
+          p.path = r.photo_path;
+          p.state = "ok";
+        } else {
+          p.state = "err";
+          ov.querySelector("#gd-err").textContent = r.message || "อัปโหลดรูปไม่สำเร็จ";
+        }
+      } catch {
+        p.state = "err";
+        ov.querySelector("#gd-err").textContent = "อัปโหลดรูปไม่สำเร็จ (เน็ตมีปัญหา) แตะรูปเพื่อลองใหม่";
+      }
+      p._blob = blob;
+      if (ov.isConnected) renderPhotos();
+    };
+    const addFiles = async (files) => {
+      for (const f of Array.from(files || [])) {
+        if (photos.length >= MAX_PHOTOS) break;
+        if (!/^image\//.test(f.type)) continue;
+        const blob = await shrink(f);
+        const p = { key: ++photoSeq, url: URL.createObjectURL(blob), path: null, state: "up" };
+        photos.push(p);
+        uploadPhoto(p, blob);
+      }
+    };
+    ov.querySelector("#gd-ph-cam").addEventListener("click", () => ov.querySelector("#gd-in-cam").click());
+    ov.querySelector("#gd-ph-pick").addEventListener("click", () => ov.querySelector("#gd-in-pick").click());
+    ["#gd-in-cam", "#gd-in-pick"].forEach((sel) =>
+      ov.querySelector(sel).addEventListener("change", (e) => {
+        addFiles(e.target.files);
+        e.target.value = "";
+      }),
+    );
+    phGrid.addEventListener("click", (e) => {
+      const x = e.target.closest(".gd-ph-x");
+      if (x) {
+        const i = photos.findIndex((p) => String(p.key) === x.dataset.k);
+        if (i >= 0) photos.splice(i, 1);
+        return renderPhotos();
+      }
+      const t = e.target.closest(".gd-ph.err"); // แตะรูปที่อัปโหลดพลาด = ลองใหม่
+      if (t) {
+        const p = photos.find((q) => String(q.key) === t.dataset.k);
+        if (p && p._blob) uploadPhoto(p, p._blob);
+      }
+    });
+    renderPhotos();
     setTimeout(() => mile.focus(), 50);
     ov.addEventListener("click", (e) => (e.target === ov || e.target.closest("[data-close]")) && close());
     mile.addEventListener("input", () => {
@@ -180,6 +309,8 @@
       const m = val();
       const err = ov.querySelector("#gd-err");
       if (!m) return (err.textContent = "กรุณากรอกเลขไมล์");
+      if (photos.some((p) => p.state === "up")) return (err.textContent = "รออัปโหลดรูปให้เสร็จก่อนสักครู่");
+      if (photos.some((p) => p.state === "err")) return (err.textContent = "มีรูปที่อัปโหลดไม่สำเร็จ แตะรูปเพื่อลองใหม่ หรือกด × เพื่อลบรูปนั้น");
       busy = true;
       const btn = ov.querySelector("#gd-save");
       btn.disabled = true;
@@ -187,7 +318,7 @@
         const r = await fetch(API, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "return", booking_id: o.BookingID, end_mile: m, note: ov.querySelector("#gd-note").value, confirm_far: farConfirm }),
+          body: JSON.stringify({ action: "return", booking_id: o.BookingID, end_mile: m, note: ov.querySelector("#gd-note").value, confirm_far: farConfirm, photos: photos.map((p) => p.path).filter(Boolean) }),
         }).then((x) => x.json());
         if (r.success) {
           close();

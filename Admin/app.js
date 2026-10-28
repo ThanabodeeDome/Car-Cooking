@@ -1091,7 +1091,12 @@ function openBookingDetailModal(bk) {
       <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 18px;">
         ${photoBlock("ก่อนออก (ถ้ามีตำหนิ)", bk.CheckinPhotoPath, true)}
         ${photoBlock("เลขไมล์ตอนคืน", bk.OdometerPhotoPath, false)}
-        ${photoBlock("สภาพรถตอนคืน", bk.ReturnPhotoPath, false)}
+        ${(() => {
+          // รปภ. ถ่ายได้หลายรูป: ช่อง ReturnPhotoPath เก็บคั่นด้วย | (รูปเดียวก็ทำงานเหมือนเดิม)
+          const ps = String(bk.ReturnPhotoPath || "").split("|").filter(Boolean);
+          if (ps.length <= 1) return photoBlock("สภาพรถตอนคืน", ps[0] || null, false);
+          return ps.map((p, i) => photoBlock(`สภาพรถตอนคืน (${i + 1}/${ps.length})`, p, false)).join("");
+        })()}
       </div>
 
       <div style="display:flex; justify-content:flex-end; gap:10px;">
