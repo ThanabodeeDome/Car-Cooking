@@ -2684,3 +2684,13 @@ tr.clickable-row:hover td { background: #fafbff; }
 .mt-side .mt-sec { margin: 0 0 10px; }
 .mt-side .mt-history { max-height: 420px; }
 @media (max-width: 900px) { .mt-wrap { grid-template-columns: 1fr; } .cv-tabs { margin-left: 16px; margin-right: 16px; } }
+
+/* เมนูข้างเยอะจนล้นจอเตี้ย: ให้เมนูเลื่อนได้ในกรอบ ส่วนตัวตน+ปุ่มออกจากระบบอยู่ล่างสุดเสมอ ไม่โดนดันหลุดจอ */
+.sidebar .sidebar-menu-group { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent; }
+.sidebar .sidebar-logout-wrapper { flex: none; }
+@media (max-height: 900px) {
+  .sidebar { padding-top: 16px; padding-bottom: 12px; }
+  .sidebar .sidebar-brand { margin-bottom: 14px !important; }
+  .sidebar .sidebar-menu-group { gap: 4px; }
+  .sidebar .menu-link { padding-top: 10px; padding-bottom: 10px; }
+}
