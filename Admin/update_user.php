@@ -20,7 +20,7 @@ $firstName   = trim($data['first_name'] ?? '');
 $role        = $data['role'] ?? '';
 $newPassword = $data['new_password'] ?? '';
 
-if (empty($id) || empty($username) || !in_array($role, ['admin', 'user'], true)) {
+if (empty($id) || empty($username) || !in_array($role, ['admin', 'user', 'security'], true)) {
     echo json_encode(["success" => false, "message" => "ข้อมูลไม่ครบหรือ role ไม่ถูกต้อง"]);
     exit;
 }

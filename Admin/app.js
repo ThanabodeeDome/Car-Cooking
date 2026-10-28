@@ -111,7 +111,7 @@ function renderUsersTable(users) {
           </div>
         </td>
         <td class="us-mail">${escapeHtml(u.email) || '<span style="color:#cbd5e1;">-</span>'}</td>
-        <td><span class="us-role ${isAdmin ? "admin" : "user"}">${isAdmin ? '<i class="fa-solid fa-shield-halved"></i> Admin' : '<i class="fa-solid fa-user"></i> พนักงาน'}</span></td>
+        <td><span class="us-role ${isAdmin ? "admin" : "user"}">${isAdmin ? '<i class="fa-solid fa-shield-halved"></i> Admin' : u.role === "security" ? '<i class="fa-solid fa-user-shield"></i> รปภ.' : '<i class="fa-solid fa-user"></i> พนักงาน'}</span></td>
         <td class="op-cell" onclick="event.stopPropagation()">
           <button type="button" class="row-menu-btn" aria-label="เมนูจัดการ" onclick="openUserMenu(event, ${Number(u.id)})"><i class="fa-solid fa-ellipsis-vertical"></i></button>
         </td>
@@ -1418,7 +1418,7 @@ function openUserEditModal(user) {
       <div class="ef-head">
         <div>
           <h2><i class="fa-solid fa-user-pen"></i> แก้ไขผู้ใช้</h2>
-          <p>${escapeHtml(full)} • <span class="us-role ${isAdminRow ? "admin" : "user"}">${isAdminRow ? "Admin" : "พนักงาน"}</span></p>
+          <p>${escapeHtml(full)} • <span class="us-role ${isAdminRow ? "admin" : "user"}">${isAdminRow ? "Admin" : user.role === "security" ? "รปภ." : "พนักงาน"}</span></p>
         </div>
         <button type="button" class="ef-x" aria-label="ปิด" onclick="closeUserEditModal()"><i class="fa-solid fa-xmark"></i></button>
       </div>
@@ -1435,6 +1435,7 @@ function openUserEditModal(user) {
         <label class="ef-f"><span>สิทธิ์ (Role)</span>
           <select id="edit-role">
             <option value="user" ${user.role === "user" ? "selected" : ""}>พนักงาน</option>
+            <option value="security" ${user.role === "security" ? "selected" : ""}>รปภ. (จดเลขไมล์รถคืน)</option>
             <option value="admin" ${user.role === "admin" ? "selected" : ""}>Admin</option>
           </select>
         </label>

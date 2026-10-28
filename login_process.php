@@ -101,6 +101,9 @@ try {
         if ($user['role'] === 'admin') {
             // แอดมินไปหน้า Admin เสมอ ไม่รับ redirect param (กันคนพยายามยัด path แปลกๆ ไปโซน Admin)
             $redirect_url = "../Admin/index.html";
+        } elseif ($user['role'] === 'security') {
+            // รปภ. ไปหน้าจดเลขไมล์เสมอ (ใช้ระบบส่วนอื่นไม่ได้)
+            $redirect_url = "../Car/guard.html";
         } elseif (isSafeRedirect($redirectParam)) {
             // 🌟 ถ้ามี redirect ที่ปลอดภัยแนบมา (เช่นมาจากสแกน QR checkin.php) ส่งกลับไปที่นั่นแทนหน้าหลัก
             $redirect_url = $redirectParam;

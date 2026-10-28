@@ -44,3 +44,10 @@ if (!isset($_SESSION['user_id'])) {
     header("Location: index.html?redirect=" . urlencode($safeRedirect));
     exit;
 }
+
+// 🛂 รปภ. (role = security) ใช้ได้เฉพาะหน้า /guard — หน้าอื่นที่ผ่าน guard นี้ ส่งกลับไปหน้า รปภ.
+//    หน้า รปภ. เองประกาศ define('CB_SECURITY_PAGE', true) ก่อน require ไฟล์นี้
+if (strtolower((string)($_SESSION['role'] ?? '')) === 'security' && !defined('CB_SECURITY_PAGE')) {
+    header('Location: /guard');
+    exit;
+}
