@@ -16,7 +16,6 @@ $clean = [
     'return' => 'Car/return_scan.html',
     'profile' => 'Car/profile.html',
     'scan' => 'Car/scan.php',
-    'guard' => 'Car/guard.html',
 ];
 $old = [
     'index' => 'login',
@@ -27,7 +26,6 @@ $old = [
     'checkin' => 'checkin',
     'return_scan' => 'return',
     'profile' => 'profile',
-    'guard' => 'guard',
 ];
 
 function go($to, $qs) { header('Location: ' . $to . ($qs !== '' ? '?' . $qs : ''), true, 302); return true; }
@@ -44,7 +42,7 @@ function serve($file) {
 
 if ($path === '') return serve(__DIR__ . '/Car/homepage.html');
 if (preg_match('#^Car/?$#', $path)) return go('/', $qs);
-if (preg_match('#^(login|booking|queue|history|cars|checkin|return|profile|scan|guard)(?:/|\.html)$#', $path, $mm)) return go('/' . $mm[1], $qs);
+if (preg_match('#^(login|booking|queue|history|cars|checkin|return|profile|scan)(?:/|\.html)$#', $path, $mm)) return go('/' . $mm[1], $qs);
 if (preg_match('#^(?:Car/)?homepage\.html$#', $path)) return go('/', $qs);
 if (preg_match('#^(?:Car/)?([A-Za-z0-9_\-]+)\.html$#', $path, $m) && isset($old[$m[1]])) return go('/' . $old[$m[1]], $qs);
 if ($path === 'Car/scan.php') return go('/scan', $qs);
