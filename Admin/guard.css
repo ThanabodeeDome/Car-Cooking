@@ -117,3 +117,81 @@
   .gd-m-plate { width: 100%; }
   .gd-title { padding: 14px 16px; }
 }
+
+/* ======== เฟสใหม่: แจ้งเตือน/โทร/รอรับรถ/ตัวเลือกสภาพรถ/แก้ไข/ดูย้อนหลัง/พิมพ์ ======== */
+.gd-stats { grid-template-columns: repeat(3, minmax(0, 260px)); }
+.gd-alert { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; padding: 14px 18px; border-radius: 16px; background: linear-gradient(135deg, #fff7ed, #fffbeb); border: 1px solid #fdba74; color: #9a3412; }
+.gd-alert[hidden] { display: none; }
+.gd-alert > i { flex: none; width: 42px; height: 42px; border-radius: 13px; background: #ffedd5; color: #ea580c; display: flex; align-items: center; justify-content: center; font-size: 19px; }
+.gd-alert > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.gd-alert b { font-size: 15.5px; color: #7c2d12; }
+.gd-alert span { font-size: 13px; color: #9a3412; overflow-wrap: anywhere; }
+.gd-alert .od-btn { flex: none; text-decoration: none; background: #fff; border-color: #fdba74; color: #c2410c; }
+.gd-call { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; margin-top: 4px; padding: 4px 11px; border-radius: 999px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857 !important; font-size: 13px; font-weight: 600; text-decoration: none; }
+.gd-call:hover { background: #d1fae5; }
+.gd-call i { font-size: 11px; }
+.main-content .gd-up-row { grid-template-columns: auto minmax(0, 1fr) auto; border-color: #e8eaf1; }
+.gd-up-tag em { font-style: normal; font-size: 12.5px; font-weight: 700; padding: 3px 11px; border-radius: 999px; white-space: nowrap; }
+.gd-up-tag em.soon { background: #dbeafe; color: #1d4ed8; }
+.gd-up-tag em.late { background: #fee2e2; color: #b91c1c; }
+.gd-done-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.gd-datenav { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.gd-datenav input[type="date"] { height: 38px; padding: 0 10px; border: 1px solid #d5d9e4; border-radius: 10px; font: inherit; font-size: 14px; background: #fff; }
+.gd-datenav .od-btn:disabled { opacity: 0.4; cursor: default; }
+.gd-sum { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.gd-sum span { padding: 7px 14px; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: 13.5px; }
+.gd-sum b { color: #111827; font-size: 15px; }
+.gd-print-head { display: none; }
+.main-content .gd-done-row { grid-template-columns: auto minmax(0, 1fr) auto; }
+.gd-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+.gd-b { display: inline-flex; align-items: center; gap: 5px; padding: 2px 10px; border-radius: 999px; background: #f1f5f9; color: #475569; font-size: 12px; font-weight: 600; }
+.gd-b i { font-size: 11px; }
+.gd-b.fuel-full { background: #dcfce7; color: #15803d; }
+.gd-b.fuel-half { background: #fef9c3; color: #a16207; }
+.gd-b.fuel-low { background: #fee2e2; color: #b91c1c; }
+.gd-b.dmg-new { background: #fee2e2; color: #b91c1c; }
+.gd-b.dmg-none { background: #dcfce7; color: #15803d; }
+.gd-b.cln-dirty { background: #fef3c7; color: #b45309; }
+.gd-b.cln-ok { background: #dcfce7; color: #15803d; }
+.gd-b.key { background: #e0e7ff; color: #3730a3; }
+.gd-b.note { background: #f1f5f9; color: #475569; max-width: 100%; }
+
+/* ตัวเลือกสภาพรถในหน้าต่างจดไมล์ */
+.gd-opts { display: flex; flex-direction: column; gap: 8px; }
+.gd-chiprow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.gd-chiprow > span { width: 86px; flex: none; font-size: 13px; color: #64748b; }
+.gd-chiprow button { padding: 8px 14px; border: 1px solid #d9dde8; border-radius: 999px; background: #fff; color: #475569; font: 600 13.5px inherit; cursor: pointer; transition: all 0.12s; }
+.gd-chiprow button.on { background: #fff1f1; border-color: var(--accent); color: var(--accent); }
+.gd-key { display: flex; align-items: center; gap: 8px; margin: 2px 0 0 !important; padding: 10px 12px; border: 1px solid #d9dde8; border-radius: 12px; background: #fff; font-size: 14px !important; font-weight: 600 !important; color: #374151 !important; cursor: pointer; justify-content: flex-start !important; }
+.gd-key input { width: 20px; height: 20px; accent-color: var(--accent); }
+.gd-key i { color: #6366f1; }
+.od-btn.danger { color: #b91c1c; border-color: #fecaca; background: #fff5f5; }
+.od-btn.danger:hover { background: #fee2e2; }
+.gd-m-foot .od-btn.danger { padding: 14px 14px; font-size: 13.5px; }
+.gd-m-info .gd-call { margin-top: 2px; }
+
+@media (max-width: 900px) {
+  .gd-stats { grid-template-columns: 1fr; }
+  .main-content .gd-up-row, .main-content .gd-done-row { grid-template-columns: 1fr; }
+  .gd-alert { flex-wrap: wrap; }
+  .gd-chiprow > span { width: 100%; }
+}
+
+/* พิมพ์สรุปประจำวัน: พิมพ์เฉพาะส่วน "คืนแล้ว" */
+@media print {
+  body.gd-printing .sidebar, body.gd-printing .adm-topbar, body.gd-printing .nav-backdrop, body.gd-printing .gd-noprint,
+  body.gd-printing .gd-title, body.gd-printing .gd-stats, body.gd-printing .gd-alert, body.gd-printing .gd-thumbs, body.gd-printing .gd-sum { display: none !important; }
+  body.gd-printing .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+  body.gd-printing .dash-panel { box-shadow: none !important; border: none !important; padding: 0 !important; }
+  body.gd-printing .gd-print-head { display: block; margin: 0 0 14px; font-size: 15px; font-weight: 700; color: #000; }
+  body.gd-printing .od-row { break-inside: avoid; box-shadow: none !important; border: 1px solid #999 !important; }
+}
+.od-modal-card .gd-key { flex-wrap: nowrap; }
+.od-modal-card .gd-key input[type="checkbox"] { width: 20px !important; height: 20px; padding: 0; margin: 0; flex: none; }
+@media (max-width: 900px) {
+  .gd-stats { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px; }
+  .gd-stats .stat-card-v2 { flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 12px 6px; }
+  .gd-stats .stat-card-v2 i { width: 36px; height: 36px; font-size: 16px; }
+  .gd-stats .stat-card-v2 h3 { font-size: 22px; }
+  .gd-stats .stat-card-v2 p { font-size: 11.5px; line-height: 1.25; }
+}

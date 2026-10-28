@@ -27,6 +27,8 @@ function sl_events(): array {
         'car_service_start'     => ['ส่งรถเข้าเช็คระยะ/ซ่อม', 'admin'],
         'car_ready'             => ['แอดมินยืนยันรถพร้อมใช้', 'admin'],
         'return_rejected'      => ['แอดมินปฏิเสธคำขอคืนรถ', 'admin'],
+        'return_edit'          => ['แก้ไขรายการคืนรถ (รปภ.)', 'usage'],
+        'return_undo'          => ['ยกเลิกการจดคืนรถ (รปภ.)', 'usage'],
         'release_noshow'       => ['ปล่อยคิว (ไม่มาใช้งาน)', 'usage'],
         'admin_booking_edit'   => ['แอดมินแก้ไขการจอง', 'admin'],
         'admin_booking_cancel' => ['แอดมินยกเลิกการจอง', 'admin'],

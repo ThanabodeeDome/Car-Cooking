@@ -24,7 +24,7 @@ $__user = htmlspecialchars((string)($_SESSION['username'] ?? '-'), ENT_QUOTES, '
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="style.css?v=34" />
-    <link rel="stylesheet" href="guard.css?v=6" />
+    <link rel="stylesheet" href="guard.css?v=9" />
     <link rel="stylesheet" href="../Car/form-ios-zoom.css?v=3" />
   </head>
   <body class="admin-app">
@@ -69,19 +69,38 @@ $__user = htmlspecialchars((string)($_SESSION['username'] ?? '-'), ENT_QUOTES, '
         <button type="button" id="gd-refresh" class="od-btn"><i class="fa-solid fa-rotate"></i> รีเฟรช</button>
       </div>
 
+      <div id="gd-alert" class="gd-alert" hidden></div>
+
       <div class="stats-grid-v2 gd-stats">
         <div class="stat-card-v2 c-inuse"><i class="fa-solid fa-car-side"></i><div><h3 id="gd-out-n">0</h3><p>รถที่ยังไม่คืน</p></div></div>
-        <div class="stat-card-v2 c-available"><i class="fa-solid fa-circle-check"></i><div><h3 id="gd-done-n">0</h3><p>คืนแล้ววันนี้</p></div></div>
+        <div class="stat-card-v2 c-booked"><i class="fa-solid fa-clock"></i><div><h3 id="gd-up-n">0</h3><p>จองวันนี้ ยังไม่มารับรถ</p></div></div>
+        <div class="stat-card-v2 c-available"><i class="fa-solid fa-circle-check"></i><div><h3 id="gd-done-n">0</h3><p>คืนแล้ว</p></div></div>
       </div>
 
-      <div class="dash-panel">
+      <div class="dash-panel gd-noprint" id="gd-out-panel">
         <h2 class="panel-title"><i class="fa-solid fa-car-side"></i> รถที่ยังไม่คืน</h2>
         <div class="gd-search"><i class="fa-solid fa-magnifying-glass"></i><input id="gd-q" type="search" inputmode="search" placeholder="ค้นหา: รหัสจอง / ทะเบียน / ชื่อผู้ขับ" autocomplete="off" /></div>
         <div id="gd-out" class="od-list"><p class="gd-empty">กำลังโหลด...</p></div>
       </div>
 
-      <div class="dash-panel">
-        <h2 class="panel-title"><i class="fa-solid fa-circle-check"></i> คืนแล้ววันนี้</h2>
+      <div class="dash-panel gd-noprint" id="gd-up-panel" hidden>
+        <h2 class="panel-title"><i class="fa-solid fa-clock"></i> จองวันนี้ ยังไม่มารับรถ</h2>
+        <div id="gd-up" class="od-list"></div>
+      </div>
+
+      <div class="dash-panel" id="gd-done-panel">
+        <div class="gd-done-head">
+          <h2 class="panel-title" style="margin:0"><i class="fa-solid fa-circle-check"></i> <span id="gd-done-title">คืนแล้ววันนี้</span></h2>
+          <div class="gd-datenav gd-noprint">
+            <button type="button" class="od-btn" id="gd-date-prev" aria-label="วันก่อนหน้า"><i class="fa-solid fa-chevron-left"></i></button>
+            <input type="date" id="gd-date" aria-label="เลือกวันที่" />
+            <button type="button" class="od-btn" id="gd-date-next" aria-label="วันถัดไป"><i class="fa-solid fa-chevron-right"></i></button>
+            <button type="button" class="od-btn" id="gd-date-today" hidden>วันนี้</button>
+            <button type="button" class="od-btn" id="gd-print"><i class="fa-solid fa-print"></i> พิมพ์สรุป</button>
+          </div>
+        </div>
+        <div class="gd-sum" id="gd-sum"></div>
+        <div class="gd-print-head" id="gd-print-head"></div>
         <div id="gd-done" class="od-list"></div>
       </div>
     </div>
@@ -100,7 +119,7 @@ $__user = htmlspecialchars((string)($_SESSION['username'] ?? '-'), ENT_QUOTES, '
         document.addEventListener("keydown", (e) => e.key === "Escape" && set(false));
       })();
     </script>
-    <script src="guard.js?v=5"></script>
+    <script src="guard.js?v=6"></script>
     <script src="profile-menu.js?v=1"></script>
   </body>
 </html>
