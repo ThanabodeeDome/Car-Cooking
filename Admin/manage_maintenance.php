@@ -97,8 +97,25 @@ if ($action === 'close') {
     // รถถูกตั้งเป็นเช็คระยะ/ซ่อมแต่ไม่มีรายการในประวัติ (เช่นตั้งจากฟอร์มรถเดิม): ปล่อยรถตาม car_id ได้เลย
     if (empty($id) && !empty($data['car_id'])) {
         try {
+            $carId = (int)$data['car_id'];
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$end)) $end = date('Y-m-d');
+            $nx = !empty($data['next_due_date']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)$data['next_due_date']) ? $data['next_due_date'] : null;
+            $mileage = !empty($data['mileage']) ? $data['mileage'] : null;
+            $cost = !empty($data['cost']) ? $data['cost'] : null;
+            $note = isset($data['note']) && trim((string)$data['note']) !== '' ? $data['note'] : null;
+            // ผู้ใช้กรอกผล (ไมล์/ค่าใช้จ่าย/เช็คถัดไป/หมายเหตุ) มาด้วย: สร้างรายการประวัติให้ ไม่ปล่อยทิ้งเงียบๆ
+            if ($mileage !== null || $cost !== null || $nx !== null || $note !== null) {
+                $cs = $conn->prepare("SELECT CONVERT(varchar(10), MaintenanceStartDate, 23) FROM Cars WHERE CarID = :c AND CarStatus = N'เช็คระยะ'");
+                $cs->execute([':c' => $carId]);
+                $start = $cs->fetchColumn() ?: $end;
+                if ($start > $end) $start = $end;
+                $conn->prepare(
+                    "INSERT INTO MaintenanceHistory (CarID, MaintenanceType, StartDate, EndDate, Mileage, Cost, Note, NextDueDate, CreatedBy, CreatedAt)
+                     VALUES (:car_id, N'เช็คระยะ/ซ่อม', :start, :end, :mileage, :cost, :note, :nx, :by, GETDATE())"
+                )->execute([':car_id' => $carId, ':start' => $start, ':end' => $end, ':mileage' => $mileage, ':cost' => $cost, ':note' => $note, ':nx' => $nx, ':by' => $_SESSION['user_id']]);
+            }
             $conn->prepare("UPDATE Cars SET CarStatus = N'ว่าง', LastMaintenance = CAST(GETDATE() AS DATE), MaintenanceStartDate = NULL, MaintenanceEndDate = NULL WHERE CarID = :c AND CarStatus = N'เช็คระยะ'")
-                 ->execute([':c' => (int)$data['car_id']]);
+                 ->execute([':c' => $carId]);
             echo json_encode(["success" => true]);
         } catch (PDOException $e) {
             error_log('manage_maintenance close by car: ' . $e->getMessage());
