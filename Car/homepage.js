@@ -183,3 +183,23 @@ function updateStatsCounters(bookings) {
   activeElement.innerText = active;
   completeElement.innerText = complete;
 }
+
+/* =========================================
+   สแกน QR แล้วถูกส่งมาหน้านี้ (scan.php) — บอกเหตุผลให้ผู้ใช้รู้ แล้วล้าง ?msg ออกจาก URL
+   ========================================= */
+(function showScanMessage() {
+  const params = new URLSearchParams(window.location.search);
+  const msg = params.get("msg");
+  if (!msg) return;
+  const plate = params.get("plate") || "";
+  const texts = {
+    no_active_booking: ["warning", "ไม่พบรายการจองที่ใช้งานอยู่ของรถ" + (plate ? " " + plate : "") + " (อาจสแกนผิดคัน หรือคืนรถไปแล้ว)"],
+    system_error: ["error", "ระบบขัดข้องชั่วคราว กรุณาลองสแกนใหม่อีกครั้ง"],
+  };
+  if (!texts[msg]) return;
+  if (typeof showToast === "function") showToast(texts[msg][0], texts[msg][1], 6000);
+  params.delete("msg");
+  params.delete("plate");
+  const qs = params.toString();
+  history.replaceState(null, "", window.location.pathname + (qs ? "?" + qs : "") + window.location.hash);
+})();
