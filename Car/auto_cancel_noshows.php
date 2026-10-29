@@ -51,12 +51,14 @@ function autoRulesStart() {
 function autoCancelNoShows($conn) {
     autoReleaseNoShows($conn);
     autoCheckInByTime($conn);
-    autoCloseOverdueReturns($conn);
+    if (AUTO_CLOSE_ENABLED) autoCloseOverdueReturns($conn);
 }
 
 // รอบปิดรายการที่ไม่ได้คืนรถ: ทุกวันเวลานี้ (ชั่วโมง 0-23) ระบบปิดรายการ 'ขาไป' ที่ "เลยเวลากลับตามที่จอง" ให้เป็น 'คืนแล้ว'
 // ไม่เขียนเลขไมล์/ไม่แก้ Cars.Mileage (ไม่รู้เลขจริง) แต่ใส่หมายเหตุขึ้นต้นด้วย AUTO_CLOSE_TAG ให้หน้ารปภ./แอดมินแยกได้
 // รายการที่จองข้ามวันและยังไม่ถึงเวลากลับ ไม่ถูกปิด
+// ปิดการทำงานไว้ก่อน (ใช้วิธีคืนรถแบบเดิม: ผู้ขับคืนเอง / รปภ. จดให้) — เปลี่ยนเป็น true เมื่อจะเปิดใช้กฎนี้
+const AUTO_CLOSE_ENABLED = false;
 const AUTO_CLOSE_HOUR = 20;
 const AUTO_CLOSE_TAG  = 'ระบบปิดอัตโนมัติ';
 
