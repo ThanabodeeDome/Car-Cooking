@@ -202,7 +202,28 @@ try {
                  ->execute([':m' => (int)$endMile, ':p' => $originalCarPlate, ':m2' => (int)$endMile]);
         }
 
+        // 🗑️ ลบรูปที่แอดมินติ๊ก — รับเฉพาะ path ที่มีอยู่ในรายการจองนี้จริง (ช่องรูปเก็บหลายรูปคั่นด้วย |)
+        $removeReq = isset($data['remove_photos']) && is_array($data['remove_photos']) ? array_filter($data['remove_photos'], 'is_string') : [];
+        $removedFiles = [];
+        if ($removeReq) {
+            foreach (['CheckinPhotoPath', 'OdometerPhotoPath', 'ReturnPhotoPath'] as $col) {
+                $cur = array_values(array_filter(explode('|', (string)($booking[$col] ?? '')), 'strlen'));
+                $keep = array_values(array_diff($cur, $removeReq));
+                if (count($keep) === count($cur)) continue;
+                $removedFiles = array_merge($removedFiles, array_diff($cur, $keep));
+                $conn->prepare("UPDATE CarBookings SET $col = :v WHERE BookingID = :id")
+                     ->execute([':v' => $keep ? implode('|', $keep) : null, ':id' => $bookingId]);
+            }
+        }
+
         $conn->commit();
+
+        // ลบไฟล์จริงหลังบันทึกฐานข้อมูลสำเร็จ (เฉพาะไฟล์ใต้ Car/uploads/)
+        $uploadsRoot = realpath(__DIR__ . '/../Car/uploads');
+        foreach ($removedFiles as $rel) {
+            $full = realpath(__DIR__ . '/../Car/' . $rel);
+            if ($uploadsRoot && $full && strpos($full, $uploadsRoot . DIRECTORY_SEPARATOR) === 0 && is_file($full)) @unlink($full);
+        }
 
         // 📝 บันทึกระบบ: แอดมินแก้ไขการจอง — เก็บค่าก่อน/หลังเฉพาะช่องที่เปลี่ยนจริง
         try {
@@ -223,6 +244,7 @@ try {
             foreach ($pairs as $label => [$from, $to]) {
                 if ($norm($from) !== $norm($to)) $changes[$label] = ['จาก' => $norm($from), 'เป็น' => $norm($to)];
             }
+            if ($removedFiles) $changes['ลบรูป'] = ['จาก' => count($removedFiles) . ' รูป', 'เป็น' => '-'];
             if ($changes) {
                 $parts = [];
                 foreach ($changes as $label => $c) $parts[] = $label . ' ' . ($c['จาก'] !== '' ? $c['จาก'] : '-') . ' → ' . ($c['เป็น'] !== '' ? $c['เป็น'] : '-');

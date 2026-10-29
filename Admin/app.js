@@ -1178,6 +1178,7 @@ function openBookingEditModal(bk) {
         <div class="ef-sec">สถานะ</div>
         <label class="ef-f"><select id="edit-booking-status">${statuses.map((s) => `<option value="${s}" ${bk.BookingStatus === s ? "selected" : ""}>${s}</option>`).join("")}</select></label>
         <p class="ef-note"><i class="fa-solid fa-circle-info"></i> ถ้าตั้งเป็น "คืนแล้ว" ต้องกรอกเลขไมล์ตอนคืนให้มากกว่าเลขไมล์ตอนออก</p>
+        ${bookingEditPhotosHtml(bk)}
 
         <div class="ef-actions">
           <button type="button" class="btn-clear" onclick="closeBookingEditModal()">ยกเลิก</button>
@@ -1193,8 +1194,35 @@ function openBookingEditModal(bk) {
   });
 }
 
+// รูปที่แนบกับการจอง (ช่องเก็บหลายรูปคั่นด้วย |) — ติ๊ก "ลบ" แล้วกดบันทึกเพื่อลบรูปออกจากรายการและเซิร์ฟเวอร์
+function bookingEditPhotosHtml(bk) {
+  const groups = [
+    ["รูปก่อนออก", bk.CheckinPhotoPath],
+    ["รูปเลขไมล์ตอนคืน", bk.OdometerPhotoPath],
+    ["รูปสภาพรถตอนคืน", bk.ReturnPhotoPath],
+  ];
+  const items = [];
+  groups.forEach(([label, v]) => {
+    String(v || "").split("|").filter(Boolean).forEach((p) => {
+      items.push(`
+        <label style="display:inline-flex; flex-direction:column; gap:4px; width:110px; font-size:12px; text-align:center; cursor:pointer;">
+          <img src="../Car/${escapeHtml(p)}" style="width:110px; height:80px; object-fit:cover; border-radius:6px;" />
+          <span>${label}</span>
+          <span style="color:#dc2626;"><input type="checkbox" class="edit-del-photo" value="${escapeHtml(p)}" /> ลบรูปนี้</span>
+        </label>`);
+    });
+  });
+  if (!items.length) return "";
+  return `<div class="ef-sec">รูปถ่าย</div>
+        <div style="display:flex; flex-wrap:wrap; gap:12px;">${items.join("")}</div>
+        <p class="ef-note"><i class="fa-solid fa-circle-info"></i> รูปที่ติ๊กลบจะถูกลบจากรายการและไฟล์บนเซิร์ฟเวอร์ถาวรเมื่อกดบันทึก</p>`;
+}
+
 function submitBookingEdit(bookingId) {
+  const delPhotos = [...document.querySelectorAll(".edit-del-photo:checked")].map((c) => c.value);
+  if (delPhotos.length && !confirm("ลบรูป " + delPhotos.length + " รูปถาวร ใช่หรือไม่?")) return;
   const payload = {
+    remove_photos: delPhotos,
     booking_id: bookingId,
     employee_id: document.getElementById("edit-employee-id").value.trim(),
     car_plate: document.getElementById("edit-car-plate").value.trim(),
