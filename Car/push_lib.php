@@ -168,15 +168,29 @@ function push_dispatch(PDO $conn, ?array $employees = null): int {
         foreach ($items as $it) {
             $key = "$emp|{$it['id']}";
             if (isset($sent[$key])) continue;
+            $delivered = false;
+            $transientFail = false;
             foreach ($list as $s) {
                 $r = push_send_one($s, ['title' => $it['title'], 'body' => $it['body'], 'url' => $it['link'], 'tag' => $it['id']]);
                 if ($r === 'gone') {
                     try { $conn->prepare("DELETE FROM PushSubscriptions WHERE Id = :i")->execute([':i' => $s['Id']]); } catch (Throwable $e) {}
                 } elseif ($r === true) {
                     $n++;
+                    $delivered = true;
+                } else {
+                    $transientFail = true;
                 }
             }
-            $sent[$key] = time();
+            // ส่งไม่ถึงเพราะขัดข้องชั่วคราว (เครือข่าย/บริการล่ม) -> ไม่ถือว่าส่งแล้ว ลองใหม่รอบหน้า แต่ลองไม่เกิน 3 รอบ กันเสียเวลาไม่รู้จบ
+            if ($delivered || !$transientFail) {
+                $sent[$key] = time();
+            } else {
+                // นับจำนวนครั้งที่ล้มเหลวด้วยคีย์ "#f1","#f2" (ค่าเป็นเวลา เพื่อให้ถูกล้างตามอายุเหมือนคีย์อื่น)
+                $tries = 0;
+                while (isset($sent["$key#f" . ($tries + 1)])) $tries++;
+                $sent["$key#f" . ($tries + 1)] = time();
+                if ($tries + 1 >= 3) $sent[$key] = time();
+            }
         }
     }
     @file_put_contents(push_state_file(), json_encode($sent));
