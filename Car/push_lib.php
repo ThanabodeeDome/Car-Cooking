@@ -9,6 +9,18 @@ require_once __DIR__ . '/../session_policy.php';
 function push_b64u(string $s): string { return rtrim(strtr(base64_encode($s), '+/', '-_'), '='); }
 function push_unb64u(string $s): string { return (string)base64_decode(strtr($s, '-_', '+/') . str_repeat('=', (4 - strlen($s) % 4) % 4)); }
 
+// รายการเร่งด่วนที่ยังไม่เคลียร์ จะเด้งซ้ำทุก PUSH_REPEAT_MINUTES นาที (นานสุด PUSH_REPEAT_MAX_HOURS ชม. นับจากครั้งแรก)
+// เฉพาะรายการที่ "ต้องลงมือทำ" — ไม่รวมเตือนประกัน/พ.ร.บ./ซ่อมบำรุง (เตือนครั้งเดียวพอ)
+const PUSH_REPEAT_MINUTES = 60;
+const PUSH_REPEAT_MAX_HOURS = 24;
+const PUSH_REPEAT_PREFIXES = ['overdue:', 'a_overdue:', 'wait_holder:', 'a_wait:', 'a_rr:'];
+
+function push_is_repeating(array $item): bool {
+    if (($item['level'] ?? '') !== 'danger') return false;
+    foreach (PUSH_REPEAT_PREFIXES as $p) if (strpos($item['id'], $p) === 0) return true;
+    return false;
+}
+
 function push_ready(PDO $conn): bool {
     static $ok = null;
     if ($ok === null) {
@@ -167,7 +179,13 @@ function push_dispatch(PDO $conn, ?array $employees = null): int {
         try { $items = push_items_for($conn, $list[0]); } catch (Throwable $e) { error_log('push items: ' . $e->getMessage()); continue; }
         foreach ($items as $it) {
             $key = "$emp|{$it['id']}";
-            if (isset($sent[$key])) continue;
+            $repeat = false;
+            if (isset($sent[$key])) {
+                // ส่งไปแล้ว: เด้งซ้ำได้เฉพาะรายการเร่งด่วนที่ยังค้าง เมื่อครบรอบ และยังไม่เกินเพดานชั่วโมง
+                $first = $sent["$key#t0"] ?? $sent[$key];
+                if (!push_is_repeating($it) || time() - $sent[$key] < PUSH_REPEAT_MINUTES * 60 || time() - $first >= PUSH_REPEAT_MAX_HOURS * 3600) continue;
+                $repeat = true;
+            }
             $delivered = false;
             $transientFail = false;
             foreach ($list as $s) {
@@ -183,6 +201,7 @@ function push_dispatch(PDO $conn, ?array $employees = null): int {
             }
             // ส่งไม่ถึงเพราะขัดข้องชั่วคราว (เครือข่าย/บริการล่ม) -> ไม่ถือว่าส่งแล้ว ลองใหม่รอบหน้า แต่ลองไม่เกิน 3 รอบ กันเสียเวลาไม่รู้จบ
             if ($delivered || !$transientFail) {
+                if (!isset($sent["$key#t0"])) $sent["$key#t0"] = isset($sent[$key]) ? $sent[$key] : time();
                 $sent[$key] = time();
             } else {
                 // นับจำนวนครั้งที่ล้มเหลวด้วยคีย์ "#f1","#f2" (ค่าเป็นเวลา เพื่อให้ถูกล้างตามอายุเหมือนคีย์อื่น)
