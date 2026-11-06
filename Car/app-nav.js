@@ -299,20 +299,25 @@
 
   // ➜ เข้ามาหน้าไหนก็ตาม ถ้าบัญชีนี้มีรอบที่ค้างต้องทำ (ถึงเวลารับรถ / กำลังใช้รถ / ถึงเวลาคืน) พาไปหน้าเช็คอิน/คืนรถของรอบนั้นเลย (ไม่ต้องสแกน QR)
   //   พาไปแค่ครั้งเดียวต่อรอบ+สถานะ+แท็บ (จำใน sessionStorage) ไม่งั้นผู้ใช้จะออกไปหน้าอื่นไม่ได้เลย
-  //   สถานะเปลี่ยน (เช่น ถึงเวลาคืน) จะพาไปอีกครั้ง • มีหลายรอบพร้อมกันไม่พาไป • หน้าเช็คอิน/คืนรถ/ล็อกอินไม่พา (กันวนลูป)
+  //   สถานะเปลี่ยน (เช่น ถึงเวลาคืน) จะพาไปอีกครั้ง • มีหลายรอบพร้อมกัน: พาไปรอบที่เร่งด่วนที่สุดก่อน แล้วค่อยรอบถัดไปในครั้งต่อไป • หน้าเช็คอิน/คืนรถ/ล็อกอินไม่พา (กันวนลูป)
+  const jumpKey = (x) => "aj:" + x.BookingID + ":" + x.kind + ":" + (x.auto ? "a" : "") + (x.waiting ? "w" : "") + (x.overdue ? "o" : "");
   if (!["checkin", "return_scan", "index"].includes(page) && !new URLSearchParams(location.search).has("msg")) {
     fetch("get_my_active.php", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
-        const items = (d && d.items) || [];
-        if (items.length !== 1) return;
-        const o = items[0];
+        // มีหลายรอบพร้อมกัน: เรียงตามความเร่งด่วน (เลยเวลาคืนก่อน → กำลังใช้งาน → รอเช็คอิน, เวลาเก่าก่อน) แล้วพาไปรอบแรกที่ยังไม่เคยพาไป
+        const rank = (x) => (x.overdue ? 0 : x.kind === "inuse" ? 1 : 2);
+        const items = ((d && d.items) || []).slice().sort((a, b) => rank(a) - rank(b) || String(a.DueHM).localeCompare(String(b.DueHM)));
+        const o = items.find((x) => {
+          try { return !sessionStorage.getItem(jumpKey(x)); } catch (e) { return false; }
+        });
+        if (!o) return;
         const q = encodeURIComponent(o.CarPlate || "");
         let url;
         if (o.kind === "pickup") url = "scan.php?plate=" + q;
         else if (o.auto && !o.waiting && !o.overdue) url = "checkin.html?plate=" + q + "&picked=1"; // ระบบเช็คอินให้ ยังไม่ยืนยัน (ยังไม่ถึงเวลาคืน): ยืนยันรับรถ หรือ "ฉันกำลังคืนรถ"
         else url = "return_scan.html?plate=" + q; // ถึง/เลยเวลาคืน หรือแจ้งรถยังไม่มา: ไปหน้าคืนรถตรงๆ
-        const key = "aj:" + o.BookingID + ":" + o.kind + ":" + (o.auto ? "a" : "") + (o.waiting ? "w" : "") + (o.overdue ? "o" : "");
+        const key = jumpKey(o);
         try {
           if (sessionStorage.getItem(key)) return;
           sessionStorage.setItem(key, "1");
