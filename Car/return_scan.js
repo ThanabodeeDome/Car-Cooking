@@ -7,6 +7,7 @@ window.addEventListener("pageshow", function (event) {
 let currentPlate = "";
 let currentBookingId = null;
 let startMileage = 0;
+let startMileageEst = false;
 let odometerFile = null;
 let conditionFile = null;
 
@@ -43,6 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const b = data.booking;
       currentBookingId = b.BookingID;
       startMileage = Number(b.StartMileage || 0);
+      startMileageEst = Number(b.StartMileageEst || 0) === 1; // เลขตอนออกเป็นค่าประมาณ (รอบก่อนถูกระบบปิด): ไม่จำกัดช่วง 1,500 กม.
 
       document.getElementById("rt-plate").value = b.CarPlate || "";
       document.getElementById("rt-driver").value = b.DriverName || "";
@@ -587,7 +589,7 @@ function runOcrAuto(dataUrl) {
     headers: { "Content-Type": "application/json" },
     // ส่งไมล์ตอนออกไปด้วย ให้ server เลือกชุดตัวเลขที่เป็นไปได้ เมื่อในรูปมีตัวเลขหลายชุด (trip, นาฬิกา ฯลฯ)
     // booking_id ส่งไปเพื่อให้ log ฝั่งเซิร์ฟเวอร์จับคู่กับเลขไมล์ที่ยืนยันจริงได้ (ไม่ได้ใช้ตัดสินใจอะไร)
-    body: JSON.stringify({ image: dataUrl, start_mileage: startMileage || null, booking_id: currentBookingId }),
+    body: JSON.stringify({ image: dataUrl, start_mileage: startMileageEst ? null : startMileage || null, booking_id: currentBookingId }),
   })
     .then((res) => res.json())
     .then((result) => {
@@ -615,6 +617,7 @@ function runOcrAuto(dataUrl) {
 // เลขไมล์ตอนคืนที่เป็นไปได้: มากกว่าไมล์ตอนออก และขับไม่เกิน 1,500 กม. (เกณฑ์เดียวกับ save_return.php)
 function isPlausibleMile(v) {
   if (!Number.isFinite(v) || v <= 0) return false;
+  if (startMileageEst) return v > startMileage; // เลขตอนออกเป็นค่าประมาณ อาจเก่ามาก ไม่ตัดที่ +1,500
   return !startMileage || (v > startMileage && v <= startMileage + 1500);
 }
 

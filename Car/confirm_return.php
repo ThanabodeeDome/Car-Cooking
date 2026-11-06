@@ -63,7 +63,8 @@ try {
         exit;
     }
 
-    if (strtolower($sessionRole) !== 'admin' && ($endMile - $startMileage) > 1500) {
+    require_once __DIR__ . '/mileage_lib.php';
+    if (strtolower($sessionRole) !== 'admin' && ($endMile - $startMileage) > 1500 && !startMileageIsEstimate($conn, (int)$booking['BookingID'])) {
         echo json_encode(['success' => false, 'message' => 'ระยะทาง ' . number_format($endMile - $startMileage) . ' กม. ผิดปกติ (เกิน 1,500) กรุณาตรวจเลขไมล์ที่กรอกอีกครั้ง หากถูกต้องจริงให้แจ้งแอดมิน']);
         exit;
     }

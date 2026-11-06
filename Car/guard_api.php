@@ -13,6 +13,7 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 require_once __DIR__ . '/db_connect.php';
 require_once __DIR__ . '/auto_cancel_noshows.php';
+require_once __DIR__ . '/mileage_lib.php';
 require_once __DIR__ . '/log_lib.php';
 require_once __DIR__ . '/text_util.php';
 
@@ -282,7 +283,7 @@ try {
             exit;
         }
         $dist = $fillMile - $startMile;
-        if ($dist > 1500 && empty($data['confirm_far'])) {
+        if ($dist > 1500 && empty($data['confirm_far']) && !startMileageIsEstimate($conn, (int)$b['BookingID'])) {
             echo json_encode(['success' => false, 'code' => 'far_distance', 'message' => 'ระยะทาง ' . number_format($dist) . ' กม. ดูผิดปกติ (เกิน 1,500) ตรวจเลขไมล์ให้แน่ใจ']);
             exit;
         }
@@ -345,7 +346,7 @@ try {
         exit;
     }
     $dist = $endMile - $startMile;
-    if ($dist > 1500 && empty($data['confirm_far'])) {
+    if ($dist > 1500 && empty($data['confirm_far']) && !startMileageIsEstimate($conn, (int)$b['BookingID'])) {
         echo json_encode(['success' => false, 'code' => 'far_distance', 'message' => 'ระยะทาง ' . number_format($dist) . ' กม. ดูผิดปกติ (เกิน 1,500) ตรวจเลขไมล์ให้แน่ใจ']);
         exit;
     }

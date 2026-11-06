@@ -4,6 +4,7 @@
 require_once 'guard_user.php';
 require_once 'db_connect.php';
 require_once __DIR__ . '/geo_lib.php';
+require_once __DIR__ . '/mileage_lib.php';
 header('Content-Type: application/json; charset=utf-8');
 
 $plate = isset($_GET['plate']) ? trim($_GET['plate']) : '';
@@ -24,7 +25,7 @@ try {
                    Destination, CarPlate, StartMileage, Passengers, PassengerIDs,
                    CONVERT(varchar(10), BookingDate, 23) AS BookingDate, TimeSlot,
                    LEFT(OutTime, 5) AS OutTime, CONVERT(varchar(5), PlannedReturnTime, 108) AS PlannedReturnTime,
-                   CONVERT(varchar(5), CheckinTime, 108) AS CheckinHM" . (geo_columns_ok($conn) ? ", CheckInGeo" : "") . "
+                   CONVERT(varchar(5), CheckinTime, 108) AS CheckinHM" . (geo_columns_ok($conn) ? ", CheckInGeo" : "") . (mileage_est_col_ok($conn) ? ", StartMileageEst" : "") . "
             FROM CarBookings
             WHERE REPLACE(CarPlate, ' ', '') = REPLACE(:plate, ' ', '') AND BookingStatus = :status
             ORDER BY CASE WHEN EmployeeID = :emp OR BookedByUserID = :uid THEN 0 ELSE 1 END, ABS(DATEDIFF(MINUTE, GETDATE(), CAST(BookingDate AS DATETIME) + CASE WHEN ISDATE(OutTime) = 1 THEN CAST(OutTime AS DATETIME) ELSE CAST('00:00' AS DATETIME) END)), BookingID ASC";
