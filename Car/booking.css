@@ -1815,3 +1815,55 @@ input[type="date"] {
 }
 .bm-summary.hidden { display: none; }
 .bm-summary i { color: var(--accent); margin-right: 4px; }
+
+/* ===== การ์ดรอบจองในปฏิทิน: อ่านง่ายขึ้น ===== */
+.cal-event {
+  padding: 4px 8px;
+  line-height: 1.3;
+  font-size: 12px;
+}
+.cal-event .ce-title {
+  font-size: 12.5px;
+}
+.cal-event .ce-time {
+  font-size: 11.5px;
+}
+.cal-event .ce-who {
+  opacity: 0.92;
+  font-size: 11.5px;
+}
+/* รอบสั้น (น้อยกว่า ~45 นาที): บรรทัดเดียว ชื่อ + เวลา ซ่อนผู้จอง (เอาเมาส์ชี้/แตะดูเต็ม) */
+.cal-event.is-compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 8px;
+}
+.cal-event.is-compact .ce-title {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.cal-event.is-compact .ce-time {
+  flex: 0 0 auto;
+}
+.cal-event.is-compact .ce-who {
+  display: none;
+}
+/* เอาเมาส์ชี้ = ขยายการ์ดให้เห็นข้อความครบ ไม่ถูกตัด */
+.cal-event:hover {
+  z-index: 6;
+  height: auto !important;
+  min-height: 26px;
+  overflow: visible;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+}
+.cal-event:hover span {
+  white-space: normal;
+  overflow: visible;
+}
+.cal-event.is-compact:hover {
+  display: block;
+}
+.cal-event.is-compact:hover .ce-who {
+  display: block;
+}

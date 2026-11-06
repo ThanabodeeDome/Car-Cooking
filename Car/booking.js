@@ -1120,7 +1120,7 @@ function weekDatesList() {
 // เปลี่ยนมาวาดเป็นบล็อกต่อเนื่องแบบปฏิทิน: บล็อกเริ่มที่เส้น 15:00 และจบที่เส้น 17:00 พอดี
 // เส้นชั่วโมงกลายเป็น "เส้นแบ่งเวลา" ไม่ใช่ "ช่อง" จึงไม่มีทางอ่านผิดอีก
 // ยังเป็น 24 ชั่วโมงเต็มเหมือนเดิม (เลื่อนดูได้ เปิดมาเด้งไปชั่วโมงปัจจุบันให้)
-const CAL_HOUR_PX = 48; // ความสูงของ 1 ชั่วโมงบนปฏิทิน
+const CAL_HOUR_PX = 60; // ความสูงของ 1 ชั่วโมงบนปฏิทิน (สูงพอให้การ์ดรอบ 1 ชม. แสดงครบ 3 บรรทัด: ชื่อ/เวลา/ผู้จอง)
 
 // 🎨 สีประจำการจองแต่ละรอบ — เดิมทุกบล็อกเป็นสีแดงเหมือนกันหมด พอมีหลายรอบในวันเดียว
 // จะแยกไม่ออกว่าอันไหนของใคร เลือกสีจาก BookingID (เลขรันต่อเนื่อง) ให้รอบที่อยู่ติดกัน
@@ -1229,7 +1229,9 @@ function renderWeekGrid() {
       const el = document.createElement("div");
       el.className = "cal-event" + (ev.overdue ? " is-overdue" : ev.inUse ? " is-inuse" : "");
       el.style.top = ev.start * CAL_HOUR_PX + "px";
-      el.style.height = Math.max(26, (ev.end - ev.start) * CAL_HOUR_PX - 3) + "px";
+      const evH = Math.max(26, (ev.end - ev.start) * CAL_HOUR_PX - 3);
+      el.style.height = evH + "px";
+      if (evH < 50) el.classList.add("is-compact"); // รอบสั้น (< ~45 นาที) แสดงบรรทัดเดียว: เวลา + ชื่อ
       if (!ev.overdue) calTint(el, ev.id);
       el.innerHTML =
         `<span class="ce-title"><i class="ce-dot"></i>${escHtml(ev.dest || state)}</span>` +
