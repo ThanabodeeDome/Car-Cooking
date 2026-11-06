@@ -298,7 +298,7 @@
   }
 
   // ✓ ป้ายแจ้ง: ระบบเช็คอินให้อัตโนมัติแล้ว (ของฉัน) — ยังไม่ยืนยันรับรถ/ไม่ได้ปล่อยรถ จะขึ้นให้เห็นทุกหน้า (ปิดได้ต่อรอบเปิดแท็บ)
-  if (!["checkin", "return_scan", "index"].includes(page)) {
+  if (!["checkin", "return_scan", "index", "homepage"].includes(page)) {
     const ACK = "ac-dismissed";
     let dismissed = [];
     try { dismissed = JSON.parse(sessionStorage.getItem(ACK) || "[]") || []; } catch (e) {}
