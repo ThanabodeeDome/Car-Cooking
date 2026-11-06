@@ -74,8 +74,9 @@ function nt_item(string $id, string $level, string $title, string $body, string 
 }
 
 // Notifications for one logged-in user (+ extra admin items when $isAdmin).
-function nt_collect_for_user(PDO $conn, string $employeeId, bool $isAdmin): array {
+function nt_collect_for_user(PDO $conn, string $employeeId, bool $isAdmin, bool $isGuard = false): array {
     $items = nt_build_user_items(nt_fetch_window_bookings($conn, $employeeId), $employeeId, nt_now());
+    $items = array_merge($items, nt_waiting_items($conn, $employeeId, $isAdmin || $isGuard));
     if ($isAdmin) {
         $items = array_merge($items, nt_collect_admin($conn));
     }
@@ -137,6 +138,30 @@ function nt_build_user_items(array $rows, string $employeeId, DateTime $now): ar
         }
     }
 
+    return $items;
+}
+
+// "รถยังไม่มา": คนที่ยังถือรถอยู่ (ทุกคน) + รปภ./แอดมิน ($staff) — แยกบล็อก ไม่ให้กระทบกระดิ่งส่วนอื่นถ้าคอลัมน์ยังไม่มี
+function nt_waiting_items(PDO $conn, string $employeeId, bool $staff): array {
+    $items = [];
+    try {
+        require_once __DIR__ . '/car_waiting_lib.php';
+        foreach (cw_waiting_list($conn) as $w) {
+            $min = (int)$w['WaitMin'];
+            $holder = !empty($w['HolderName']) ? $w['HolderName'] : 'ไม่ทราบ';
+            $id = $w['BookingID'];
+            if (!empty($w['HolderEmp']) && $w['HolderEmp'] === $employeeId && (int)$w['HolderBookingID'] !== (int)$id) {
+                $items[] = nt_item("wait_holder:$id", 'danger', "มีคนรอรับรถ {$w['CarPlate']} อยู่ — กรุณานำรถกลับมาคืน",
+                    "{$w['DriverName']} รอรถมาแล้ว " . nt_fmt_duration($min) . ' กรุณานำรถกลับมาที่บริษัทและคืนรถ', 'booking-details.html');
+            }
+            if ($staff) {
+                $items[] = nt_item("a_wait:$id", 'danger', "รถ {$w['CarPlate']} ยังไม่มา — มีคนรอรับ " . nt_fmt_duration($min),
+                    "ผู้รอรับ: {$w['DriverName']}" . (!empty($w['WaiterPhone']) ? " ({$w['WaiterPhone']})" : '')
+                        . " · ผู้ถือรถก่อนหน้า: $holder" . (!empty($w['HolderPhone']) ? " ({$w['HolderPhone']})" : ''),
+                    '../Admin/guard.html');
+            }
+        }
+    } catch (Throwable $e) { error_log('nt waiting: ' . $e->getMessage()); }
     return $items;
 }
 

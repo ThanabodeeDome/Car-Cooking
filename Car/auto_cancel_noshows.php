@@ -63,6 +63,7 @@ function autoCancelNoShows($conn) {
 // ต้องรัน SQL คอลัมน์ใหม่ (db/migrations/2026-11-06_auto-close.sql) ก่อน ไม่งั้นข้ามเงียบๆ
 const AUTO_CLOSE_ENABLED     = true;
 const AUTO_CLOSE_GRACE_HOURS = 3;
+const AUTO_CLOSE_WAIT_HOURS = 6; // กด "รถยังไม่มา" แล้วหยุดนับปิดรายการได้นานสุดกี่ชม. (กันรถถูกล็อกค้างถ้าลืมกดเคลียร์)
 const AUTO_CLOSE_STATUS      = 'ปิดโดยระบบ';
 const AUTO_CLOSE_TAG         = 'ระบบปิดอัตโนมัติ';
 
@@ -110,7 +111,7 @@ function autoCloseOverdueReturns($conn) {
                                AND n.StartAt >= t.StartAt AND n.StartAt <= GETDATE()
                                AND (n.EndAt IS NULL OR n.EndAt > GETDATE())
                              ORDER BY n.StartAt) nx
-                WHERE b.BookingStatus = N'ขาไป' AND b.WaitingCarAt IS NULL
+                WHERE b.BookingStatus = N'ขาไป' AND (b.WaitingCarAt IS NULL OR DATEADD(HOUR, " . AUTO_CLOSE_WAIT_HOURS . ", b.WaitingCarAt) <= GETDATE())
                   AND t.EndAt IS NOT NULL AND t.EndAt <= GETDATE() AND t.EndAt >= '" . autoCloseStart() . "'
                   AND (nx.NextStart IS NOT NULL OR DATEADD(HOUR, $grace, t.EndAt) <= GETDATE())";
         $due = $conn->query($sql)->fetchAll(PDO::FETCH_ASSOC);

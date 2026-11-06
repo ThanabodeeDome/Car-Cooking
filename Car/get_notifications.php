@@ -27,7 +27,8 @@ try {
     $adminIds = require __DIR__ . '/../admin_whitelist.php';
     $isAdmin = ($_SESSION['role'] ?? '') === 'admin' && in_array((int)$_SESSION['user_id'], $adminIds, true);
 
-    echo json_encode(['success' => true, 'items' => nt_collect_for_user($conn, $emp, $isAdmin)], JSON_UNESCAPED_UNICODE);
+    $isGuard = strtolower((string)($_SESSION['role'] ?? '')) === 'security';
+    echo json_encode(['success' => true, 'items' => nt_collect_for_user($conn, $emp, $isAdmin, $isGuard)], JSON_UNESCAPED_UNICODE);
 } catch (Throwable $e) {
     error_log('get_notifications error: ' . $e->getMessage());
     echo json_encode(['success' => false, 'message' => 'error']);

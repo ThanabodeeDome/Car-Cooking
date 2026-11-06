@@ -31,6 +31,8 @@ function sl_events(): array {
         'return_edit'          => ['แก้ไขรายการคืนรถ (รปภ.)', 'usage'],
         'return_fill'          => ['กรอกเลขไมล์คืนย้อนหลัง (ระบบปิดให้)', 'usage'],
         'return_undo'          => ['ยกเลิกการจดคืนรถ (รปภ.)', 'usage'],
+        'car_waiting'          => ['แจ้งรถยังไม่มา (รอรับรถ)', 'usage'],
+        'car_received'         => ['แจ้งได้รับรถแล้ว', 'usage'],
         'release_noshow'       => ['ปล่อยคิว (ไม่มาใช้งาน)', 'usage'],
         'admin_booking_edit'   => ['แอดมินแก้ไขการจอง', 'admin'],
         'admin_booking_cancel' => ['แอดมินยกเลิกการจอง', 'admin'],

@@ -150,7 +150,27 @@
         )
         .join("");
     }
-    foot.hidden = !("Notification" in window) || Notification.permission !== "default";
+    refreshPushFoot();
+  }
+
+  // ปุ่มท้ายแผง: เปิด/ปิดแจ้งเตือนในเครื่อง (Web Push — เด้งแม้ปิดหน้าเว็บ) ผ่าน push.js
+  const permBtn = () => panel.querySelector("#nb-perm");
+  async function refreshPushFoot() {
+    if (!window.CBPush) {
+      foot.hidden = !("Notification" in window) || Notification.permission !== "default";
+      return;
+    }
+    const st = await window.CBPush.state();
+    const label = {
+      off: "เปิดแจ้งเตือนบนเครื่องนี้",
+      on: "ปิดแจ้งเตือนบนเครื่องนี้ (เปิดอยู่)",
+      "ios-install": "iPhone: วิธีเปิดแจ้งเตือน",
+      denied: "แจ้งเตือนถูกบล็อก (ดูวิธีแก้)",
+      unsupported: "",
+    }[st];
+    foot.hidden = !label;
+    permBtn().textContent = label || "";
+    permBtn().dataset.st = st;
   }
 
   function maybeSystemNotify() {
@@ -220,9 +240,25 @@
     if (row && row.dataset.link) window.location.href = row.dataset.link;
   });
   panel.querySelector("#nb-clear").addEventListener("click", () => dismiss(visibleItems().map((i) => i.id)));
-  panel.querySelector("#nb-perm").addEventListener("click", () => {
-    Notification.requestPermission().then(render);
+  panel.querySelector("#nb-perm").addEventListener("click", async () => {
+    const b = permBtn();
+    if (!window.CBPush) {
+      Notification.requestPermission().then(render);
+      return;
+    }
+    b.disabled = true;
+    const r = b.dataset.st === "on" ? await window.CBPush.disable() : await window.CBPush.enable();
+    b.disabled = false;
+    if (r && r.message) alert(r.message);
+    refreshPushFoot();
   });
+  // โหลด push.js (อยู่โฟลเดอร์ Car/ เดียวกับไฟล์นี้) แล้วอัปเดตปุ่มเมื่อพร้อม
+  (function () {
+    const s = document.createElement("script");
+    s.src = new URL("push.js?v=1", BASE).href;
+    s.onload = refreshPushFoot;
+    document.head.appendChild(s);
+  })();
 
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) load();

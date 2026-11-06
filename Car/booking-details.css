@@ -1082,3 +1082,12 @@ body {
 
 .bk-id-chip .bk-code { font-weight: 500; }
 .bk-id-chip .bk-code b { font-size: 1.15em; font-weight: 700; letter-spacing: 0.02em; }
+
+/* รถยังไม่มา (เฟส 2) */
+.btn-waiting { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600; color: #fbbf24; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.45); border-radius: 10px; cursor: pointer; font-family: inherit; }
+.btn-waiting:hover { background: rgba(245, 158, 11, 0.22); }
+.waiting-box { margin-top: 40px; padding: 14px; border-radius: 12px; border: 1px solid rgba(245, 158, 11, 0.5); background: rgba(245, 158, 11, 0.08); }
+.waiting-title { color: #fbbf24; font-weight: 600; font-size: 0.9rem; }
+.waiting-text { color: var(--text-dim); font-size: 0.8rem; margin: 6px 0 10px; line-height: 1.45; }
+.waiting-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn-got { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 0.85rem; font-weight: 600; color: #fff; background: #16a34a; border: none; border-radius: 10px; cursor: pointer; font-family: inherit; }

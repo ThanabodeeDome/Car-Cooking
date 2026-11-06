@@ -8,6 +8,7 @@ require_once __DIR__ . '/db_connect.php';
 require_once __DIR__ . '/notify_lib.php';
 require_once __DIR__ . '/mailer.php';
 require_once __DIR__ . '/auto_cancel_noshows.php';
+require_once __DIR__ . '/push_lib.php';
 
 $dry = in_array('--dry-run', $argv, true);
 $cfg = mail_cfg();
@@ -68,5 +69,33 @@ foreach ($rows as $b) {
     }
 }
 
+// "รถยังไม่มา": อีเมลถึงคนที่ยังถือรถ + รปภ. + แอดมิน ครั้งแรกทันที แล้วเตือนซ้ำทุก CW_REMIND_MINUTES นาทีจนกว่าจะเคลียร์
+try {
+    require_once __DIR__ . '/car_waiting_lib.php';
+    $guardMails = [];
+    try { $guardMails = array_column($conn->query("SELECT email FROM Users WHERE LOWER(role) = 'security' AND email IS NOT NULL AND email <> ''")->fetchAll(PDO::FETCH_ASSOC), 'email'); } catch (Throwable $e2) {}
+    foreach (cw_waiting_list($conn) as $w) {
+        $bucket = intdiv(max(0, (int)$w['WaitMin']), CW_REMIND_MINUTES);
+        $dur  = nt_fmt_duration((int)$w['WaitMin']);
+        $plate = $w['CarPlate'];
+        $holder = !empty($w['HolderName']) ? $w['HolderName'] : 'ไม่ทราบ';
+        if (!empty($w['HolderEmail'])) {
+            $subj = "มีคนรอรับรถ $plate อยู่ กรุณานำรถกลับมา";
+            $body = "<p>คุณ {$e($holder)} — รถ <b>{$e($plate)}</b> ที่คุณถืออยู่มีคนรอรับ ({$e($w['DriverName'])} รอมาแล้ว $dur)</p><p>กรุณานำรถกลับมาที่บริษัทและคืนรถโดยเร็ว</p>";
+            $send("mail_wait_holder:{$w['BookingID']}:$bucket", $w['HolderEmail'], $subj, mail_layout($subj, $body, "$base/booking-details.html", 'เปิดการจองของฉัน'));
+        }
+        $staff = array_values(array_unique(array_merge((array)($cfg['admin_emails'] ?? []), $guardMails)));
+        if ($staff) {
+            $subj = "รถ $plate ยังไม่มา มีคนรอรับ $dur";
+            $body = "<p>รถ <b>{$e($plate)}</b> ยังไม่มา — ผู้รอรับ: {$e($w['DriverName'])}" . (!empty($w['WaiterPhone']) ? " ({$e($w['WaiterPhone'])})" : '')
+                . "<br>ผู้ถือรถก่อนหน้า: {$e($holder)}" . (!empty($w['HolderPhone']) ? " ({$e($w['HolderPhone'])})" : '') . "<br>รอมาแล้ว $dur</p>";
+            $send("mail_wait_staff:{$w['BookingID']}:$bucket", $staff, $subj, mail_layout($subj, $body, "$base/../Admin/guard.html", 'เปิดหน้า รปภ.'));
+        }
+    }
+} catch (Throwable $e3) { error_log('notify_cron waiting: ' . $e3->getMessage()); }
+
 if (!$dry) file_put_contents($stateFile, json_encode($sent));
+// แจ้งเตือนในเครื่อง (Web Push) ให้ทุกคนที่เปิดไว้ — รายการ warn/danger ใหม่ที่กระดิ่งแสดง (ส่งครั้งเดียวต่อรายการ)
+if (!$dry) { try { $pn = push_dispatch($conn); if ($pn) echo "push: $pn
+"; } catch (Throwable $ep) { error_log('notify_cron push: ' . $ep->getMessage()); } }
 echo "done, $count mail(s)\n";

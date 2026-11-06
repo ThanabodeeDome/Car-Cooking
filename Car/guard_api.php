@@ -149,6 +149,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
 
         // รายการที่ระบบปิดให้ (เลยเวลา) และยังไม่มีเลขไมล์คืน — รปภ./แอดมินกรอกย้อนหลัง
         $closedPending = [];
+        require_once __DIR__ . '/car_waiting_lib.php';
+        $waiting = cw_waiting_list($conn);
         if (autoCloseColumnsOk($conn)) {
             $closedPending = $conn->query(
                 "SELECT TOP 100 b.BookingID, b.CarPlate, b.DriverName, b.StartMileage, b.StartMileageEst, b.ClosedReason,
@@ -163,7 +165,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
 
         echo json_encode([
             'success' => true, 'guard' => $guardName, 'is_admin' => $isAdminUser, 'date' => $date, 'is_today' => $isToday,
-            'out' => $out, 'closed_pending' => $closedPending, 'upcoming' => $upcoming, 'returned' => $done, 'returned_today' => $isToday ? $done : [],
+            'out' => $out, 'closed_pending' => $closedPending, 'waiting' => $waiting, 'upcoming' => $upcoming, 'returned' => $done, 'returned_today' => $isToday ? $done : [],
             'summary' => ['returned' => count($done), 'auto' => count(array_filter($done, fn($x) => $x['auto_closed'])), 'km' => $km, 'out' => count($out), 'overdue' => $overdue, 'upcoming' => count($upcoming)],
         ], JSON_UNESCAPED_UNICODE);
     } catch (PDOException $e) {

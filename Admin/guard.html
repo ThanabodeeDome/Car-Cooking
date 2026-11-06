@@ -33,6 +33,7 @@ $__user = htmlspecialchars((string)($_SESSION['username'] ?? '-'), ENT_QUOTES, '
       <span class="adm-topbar-title">CH Car Booking <small><?= $__isAdmin ? 'Admin' : 'รปภ.' ?></small></span>
     </header>
     <div class="nav-backdrop" id="nav-backdrop"></div>
+    <div id="an-top" class="admin-bell-host"><span id="an-bell-slot"></span></div>
 
     <aside class="sidebar">
       <div class="sidebar-menu-group">
@@ -83,6 +84,12 @@ $__user = htmlspecialchars((string)($_SESSION['username'] ?? '-'), ENT_QUOTES, '
         <div id="gd-out" class="od-list"><p class="gd-empty">กำลังโหลด...</p></div>
       </div>
 
+      <div class="dash-panel gd-noprint" id="gd-wait-panel" hidden style="border-color:#ef4444">
+        <h2 class="panel-title" style="color:#ef4444"><i class="fa-solid fa-triangle-exclamation"></i> รถยังไม่มา — มีคนรอรับ</h2>
+        <p class="gd-empty" style="text-align:left;margin:0 0 8px">ผู้ใช้กด "รถยังไม่มา" ไว้ ให้ติดตามคนที่ถือรถอยู่ให้นำรถกลับมาคืน</p>
+        <div id="gd-wait" class="od-list"></div>
+      </div>
+
       <div class="dash-panel gd-noprint" id="gd-closed-panel" hidden>
         <h2 class="panel-title"><i class="fa-solid fa-robot"></i> ระบบปิดให้ — รอกรอกเลขไมล์คืน</h2>
         <p class="gd-empty" style="text-align:left;margin:0 0 8px">รถที่เลยเวลาคืนแล้วระบบปิดรายการให้เอง พิมพ์เลขไมล์ตอนนี้ของรถ (เลขเต็ม) แล้วกดบันทึก</p>
@@ -125,7 +132,8 @@ $__user = htmlspecialchars((string)($_SESSION['username'] ?? '-'), ENT_QUOTES, '
         document.addEventListener("keydown", (e) => e.key === "Escape" && set(false));
       })();
     </script>
-    <script src="guard.js?v=8"></script>
+    <script src="../Car/notify-bell.js?v=7"></script>
+    <script src="guard.js?v=9"></script>
     <script src="profile-menu.js?v=1"></script>
   </body>
 </html>

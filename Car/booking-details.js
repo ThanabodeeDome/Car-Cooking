@@ -213,12 +213,29 @@ function applyFilterAndRender(highlightPlate) {
             <i class="fa-solid fa-flag-checkered"></i> คืนรถ (ถ่ายรูปเลขไมล์)
           </a>
         </div>
+        ${
+          bk.WaitingCarAt
+            ? `<div class="waiting-box">
+          <div class="waiting-title"><i class="fa-solid fa-hourglass-half"></i> แจ้ง "รถยังไม่มา" แล้ว (${escapeHtml(String(bk.WaitingCarAt).slice(11, 16))} น.)</div>
+          <div class="waiting-text">ระบบแจ้ง รปภ. แอดมิน และคนที่ยังถือรถอยู่แล้ว — ถ้าได้รับรถแล้วกด "ได้รับรถแล้ว" ถ้ารอไม่ไหวกด "ไม่ได้รับรถ ยกเลิก"</div>
+          <div class="waiting-actions">
+            <button type="button" class="btn-got" onclick="carWaiting(${Number(bk.BookingID)}, 'got')"><i class="fa-solid fa-circle-check"></i> ได้รับรถแล้ว</button>
+            <button type="button" class="btn-release" onclick="markUnused(${Number(bk.BookingID)}, true)"><i class="fa-solid fa-ban"></i> ไม่ได้รับรถ ยกเลิก</button>
+          </div>
+        </div>`
+            : `<div class="detail-danger-zone">
+          <span>ไปถึงแล้วแต่รถยังไม่มา? แจ้งเพื่อให้ระบบรอและแจ้งคนที่ถือรถอยู่</span>
+          <button type="button" class="btn-waiting" onclick="carWaiting(${Number(bk.BookingID)}, 'wait')">
+            <i class="fa-solid fa-hourglass-half"></i> รถยังไม่มา
+          </button>
+        </div>
         <div class="detail-danger-zone">
           <span>ไม่ได้ใช้รถคันนี้จริงๆ?</span>
           <button type="button" class="btn-release" onclick="markUnused(${Number(bk.BookingID)})">
             <i class="fa-solid fa-key"></i> ไม่ได้ใช้รถ (ปล่อยรถ)
           </button>
         </div>`
+        }`
           : `<div class="detail-actions-row">
           <a href="scan.php?plate=${plateQ}" class="btn-action-checkin">
             <i class="fa-solid fa-qrcode"></i> เช็คอินรับรถ (สแกน QR)
@@ -506,9 +523,36 @@ async function cancelBooking(bookingId) {
 /**
  * "ไม่ได้ใช้รถ" — คิวที่ระบบเช็คอินให้ตามเวลาแล้วแต่ไม่ได้ใช้จริง
  */
-async function markUnused(bookingId) {
+async function carWaiting(bookingId, action) {
+  if (action === "wait") {
+    const ok = await AppDialog.confirm({
+      title: "แจ้งว่ารถยังไม่มา?",
+      message: "ระบบจะหยุดปิดรายการของคุณชั่วคราว และแจ้ง รปภ. แอดมิน และคนที่ยังถือรถอยู่ให้นำรถกลับมา",
+      confirmText: "แจ้งรถยังไม่มา",
+      cancelText: "กลับ",
+    });
+    if (!ok) return;
+  }
+  fetch("car_waiting.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ booking_id: bookingId, action }),
+  })
+    .then((res) => res.json())
+    .then((result) => {
+      if (result.success) {
+        notify("success", action === "wait" ? "แจ้งแล้ว ระบบกำลังแจ้งคนที่ถือรถอยู่" : "บันทึกว่าได้รับรถแล้ว");
+        fetchMyBookings();
+      } else {
+        notify("error", result.message || "ทำรายการไม่สำเร็จ");
+      }
+    })
+    .catch(() => notify("error", "ติดต่อ Server ไม่ได้ กรุณาลองใหม่อีกครั้ง"));
+}
+
+async function markUnused(bookingId, notReceived) {
   const ok = await AppDialog.confirm({
-    title: "ไม่ได้ใช้รถคันนี้จริงใช่ไหม?",
+    title: notReceived ? "ไม่ได้รับรถ ยกเลิกรายการนี้?" : "ไม่ได้ใช้รถคันนี้จริงใช่ไหม?",
     message: "ระบบจะปล่อยรถให้คนอื่นจองได้ทันที ถ้าใช้รถไปแล้วให้กด \"ไปหน้าคืนรถ\" แทน เพื่อบันทึกเลขไมล์",
     confirmText: "ไม่ได้ใช้รถ",
     cancelText: "กลับ",

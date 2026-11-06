@@ -139,6 +139,23 @@
         ? '<p class="gd-empty"><i class="fa-solid fa-magnifying-glass"></i> ไม่พบรายการที่ตรงกับ "' + esc($("gd-q").value) + '"</p>'
         : '<p class="gd-empty"><i class="fa-solid fa-circle-check"></i> ไม่มีรถค้างอยู่ — รถทุกคันกลับมาแล้ว</p>';
 
+    // ----- รถยังไม่มา (ผู้ใช้กดแจ้ง) -----
+    const waitList = data.waiting || [];
+    $("gd-wait-panel").hidden = waitList.length === 0;
+    $("gd-wait").innerHTML = waitList
+      .map(
+        (w) => `
+        <div class="od-row">
+          <div class="gd-lead"><div class="od-plate">${esc(w.CarPlate)}</div><div class="gd-code">รหัสจอง <b>${Number(w.BookingID)}</b></div></div>
+          <div class="od-info">
+            <b>ผู้รอรับ: ${esc(w.DriverName || "-")} <small>รอมา ${Number(w.WaitMin) >= 60 ? Math.floor(Number(w.WaitMin) / 60) + " ชม. " + (Number(w.WaitMin) % 60) + " นาที" : Number(w.WaitMin) + " นาที"} (แจ้งเมื่อ ${esc(String(w.WaitingAt || "").slice(11, 16))} น.)</small></b>
+            <span>ผู้ถือรถก่อนหน้า: <b>${esc(w.HolderName || "ไม่ทราบ")}</b></span>
+            ${callBtn(w.WaiterPhone)}${callBtn(w.HolderPhone)}
+          </div>
+        </div>`,
+      )
+      .join("");
+
     // ----- ระบบปิดให้ (เลยเวลา) รอกรอกเลขไมล์คืน -----
     const closedList = data.closed_pending || [];
     $("gd-closed-panel").hidden = closedList.length === 0;
