@@ -297,6 +297,31 @@
     }
   }
 
+  // ➜ เข้ามาหน้าไหนก็ตาม ถ้าบัญชีนี้มีรอบที่ค้างต้องทำ (ถึงเวลารับรถ / กำลังใช้รถ / ถึงเวลาคืน) พาไปหน้าเช็คอิน/คืนรถของรอบนั้นเลย (ไม่ต้องสแกน QR)
+  //   พาไปแค่ครั้งเดียวต่อรอบ+สถานะ+แท็บ (จำใน sessionStorage) ไม่งั้นผู้ใช้จะออกไปหน้าอื่นไม่ได้เลย
+  //   สถานะเปลี่ยน (เช่น ถึงเวลาคืน) จะพาไปอีกครั้ง • มีหลายรอบพร้อมกันไม่พาไป • หน้าเช็คอิน/คืนรถ/ล็อกอินไม่พา (กันวนลูป)
+  if (!["checkin", "return_scan", "index"].includes(page) && !new URLSearchParams(location.search).has("msg")) {
+    fetch("get_my_active.php", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => {
+        const items = (d && d.items) || [];
+        if (items.length !== 1) return;
+        const o = items[0];
+        const q = encodeURIComponent(o.CarPlate || "");
+        let url;
+        if (o.kind === "pickup") url = "scan.php?plate=" + q;
+        else if (o.auto && !o.waiting && !o.overdue) url = "checkin.html?plate=" + q + "&picked=1"; // ระบบเช็คอินให้ ยังไม่ยืนยัน (ยังไม่ถึงเวลาคืน): ยืนยันรับรถ หรือ "ฉันกำลังคืนรถ"
+        else url = "return_scan.html?plate=" + q; // ถึง/เลยเวลาคืน หรือแจ้งรถยังไม่มา: ไปหน้าคืนรถตรงๆ
+        const key = "aj:" + o.BookingID + ":" + o.kind + ":" + (o.auto ? "a" : "") + (o.waiting ? "w" : "") + (o.overdue ? "o" : "");
+        try {
+          if (sessionStorage.getItem(key)) return;
+          sessionStorage.setItem(key, "1");
+        } catch (e) { return; } // เก็บสถานะไม่ได้ = ไม่พาไป (กันวนลูป)
+        location.replace(url);
+      })
+      .catch(() => {});
+  }
+
   // ✓ ป้ายแจ้ง: ระบบเช็คอินให้อัตโนมัติแล้ว (ของฉัน) — ยังไม่ยืนยันรับรถ/ไม่ได้ปล่อยรถ จะขึ้นให้เห็นทุกหน้า (ปิดได้ต่อรอบเปิดแท็บ)
   if (!["checkin", "return_scan", "index", "homepage"].includes(page)) {
     const ACK = "ac-dismissed";

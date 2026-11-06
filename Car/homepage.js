@@ -204,32 +204,3 @@ function updateStatsCounters(bookings) {
   history.replaceState(null, "", window.location.pathname + (qs ? "?" + qs : "") + window.location.hash);
 })();
 
-/* =========================================
-   เปิดหน้าหลักตอนมีรอบที่ต้องทำอยู่ -> พาไปหน้าเช็คอิน/คืนรถของรอบนั้นเลย (ไม่ต้องสแกน QR)
-   (ลิงก์เป็นหน้าเดียวกับที่ QR บนรถเปิด) พาไปแค่ครั้งเดียวต่อรอบ+สถานะ (จำใน sessionStorage)
-   กดกลับ/กดเมนูหน้าหลักแล้วไม่ถูกเด้งซ้ำ ถ้ามีหลายรอบพร้อมกันไม่เด้ง
-   ========================================= */
-(function () {
-  const qs = new URLSearchParams(location.search);
-  if (qs.has("msg") || qs.has("stay")) return;
-  fetch("get_my_active.php", { cache: "no-store" })
-    .then((r) => r.json())
-    .then((d) => {
-      const items = (d && d.items) || [];
-      if (items.length !== 1) return;
-      const o = items[0];
-      const q = encodeURIComponent(o.CarPlate || "");
-      let url;
-      if (o.kind === "pickup") url = "scan.php?plate=" + q;
-      else if (o.auto && !o.waiting && !o.overdue) url = "checkin.html?plate=" + q + "&picked=1"; // ระบบเช็คอินให้ ยังไม่ยืนยัน (ยังไม่ถึงเวลาคืน): มีทั้งยืนยันรับรถ และ "ฉันกำลังคืนรถ"
-      // ถึง/เลยเวลาคืนแล้ว -> ไปหน้าคืนรถตรงๆ ไม่ต้องผ่านหน้ายืนยันรับรถ
-      else url = "return_scan.html?plate=" + q;
-      const key = "aj:" + o.BookingID + ":" + o.kind + ":" + (o.auto ? "a" : "") + (o.waiting ? "w" : "");
-      try {
-        if (sessionStorage.getItem(key)) return;
-        sessionStorage.setItem(key, "1");
-      } catch (e) { return; } // เก็บสถานะไม่ได้ = ไม่เด้ง (กันวนลูป)
-      location.replace(url);
-    })
-    .catch(() => {});
-})();
