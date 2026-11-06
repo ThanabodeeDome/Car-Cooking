@@ -156,3 +156,66 @@
     max-height: 260px;
   }
 }
+/* ===== โหมดตาราง (เลือกเวลา): 4 คอลัมน์ เห็นครบในหน้าเดียว ไม่ต้องเลื่อน ===== */
+.csel-panel.csel-gridmode {
+  max-height: none;
+  overflow-y: visible;
+  padding: 8px;
+}
+.csel-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.csel-gridmode .csel-option {
+  justify-content: center;
+  padding: 9px 0;
+  border: 1px solid var(--border-color);
+  font-variant-numeric: tabular-nums;
+}
+.csel-gridmode .csel-option:hover {
+  border-color: var(--accent);
+}
+.csel-gridmode .csel-option.csel-selected {
+  border-color: var(--accent);
+}
+
+/* แถวเลือกนาที (โหมด minutes) */
+.csel-minutes-title {
+  margin: 10px 2px 6px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.csel-minutes {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 5px;
+}
+.csel-min {
+  text-align: center;
+  padding: 7px 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  color: var(--text-main);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.csel-min:hover { border-color: var(--accent); }
+.csel-min.csel-selected {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+.csel-done {
+  margin-top: 10px;
+  text-align: center;
+  padding: 8px 0;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}

@@ -54,6 +54,7 @@
     const panel = document.createElement("div");
     panel.className = "csel-panel hidden";
     panel.style.position = "fixed"; // หนี overflow:hidden ของ .booking-card เหมือน datepicker
+    if (opts.grid) panel.classList.add("csel-gridmode"); // แสดงตัวเลือกเป็นตารางช่อง (ไม่ต้องเลื่อน) เหมาะกับรายการเวลา
 
     wrap.appendChild(trigger);
     document.body.appendChild(panel);
@@ -80,18 +81,61 @@
       triggerContent.innerHTML = `${optionVisual(selected)}<span class="csel-label">${label}</span>`;
     }
 
+    // ตั้งค่าเวลา HH:MM ที่ไม่มีใน <select> เดิม (เช่น 09:30) — เพิ่ม option ให้ แล้วส่ง change เหมือนเลือกปกติ
+    function setTimeValue(v) {
+      if (!Array.from(select.options).some((o) => o.value === v)) select.add(new Option(v, v));
+      select.value = v;
+      select.dispatchEvent(new Event("input", { bubbles: true }));
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      renderTrigger();
+    }
+
     function renderPanel() {
+      const curHH = (select.value || "").slice(0, 2);
+      const curMM = (select.value || "").slice(3, 5);
       const rows = Array.from(select.options)
-        .filter((o) => !o.disabled)
+        .filter((o) => !o.disabled && (!opts.minutes || /:00$/.test(o.value)))
         .map((o) => {
           const { label } = extractIcon(o.textContent || "");
-          const selectedClass = o.value === select.value ? " csel-selected" : "";
+          const selectedClass = (opts.minutes ? o.value.slice(0, 2) === curHH : o.value === select.value) ? " csel-selected" : "";
           return `<div class="csel-option${selectedClass}" data-value="${o.value.replace(/"/g, "&quot;")}">
             ${optionVisual(o)}<span class="csel-option-label">${label}</span>
           </div>`;
         })
         .join("");
-      panel.innerHTML = rows || '<div class="csel-empty">ไม่มีตัวเลือก</div>';
+      // โหมดเลือกนาที: ใต้ตารางชั่วโมงมีแถวนาที (ทีละ 5) + ปุ่ม "เสร็จ" — เลือกชั่วโมงแล้วค้างแผงไว้ให้เลือกนาทีต่อ
+      let minutesHtml = "";
+      if (opts.minutes) {
+        const mins = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
+        minutesHtml =
+          '<div class="csel-minutes-title">นาที</div><div class="csel-minutes">' +
+          mins.map((m) => `<div class="csel-min${m === curMM ? " csel-selected" : ""}" data-min="${m}">${m}</div>`).join("") +
+          '</div><div class="csel-done" role="button">เสร็จ</div>';
+      }
+      panel.innerHTML = rows ? (opts.grid ? '<div class="csel-grid">' + rows + "</div>" + minutesHtml : rows) : '<div class="csel-empty">ไม่มีตัวเลือก</div>';
+
+      if (opts.minutes) {
+        panel.querySelectorAll(".csel-min").forEach((m) =>
+          m.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const hh = (select.value || "").slice(0, 2);
+            if (!hh) return; // ยังไม่ได้เลือกชั่วโมง
+            setTimeValue(hh + ":" + m.dataset.min);
+            closePanel();
+          }),
+        );
+        const done = panel.querySelector(".csel-done");
+        if (done) done.addEventListener("click", (e) => { e.stopPropagation(); closePanel(); });
+        panel.querySelectorAll(".csel-option").forEach((row) =>
+          row.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const mm = (select.value || "").slice(3, 5) || "00"; // เปลี่ยนชั่วโมง คงนาทีเดิมไว้
+            setTimeValue(row.dataset.value.slice(0, 2) + ":" + mm);
+            renderPanel(); // อัปเดตไฮไลต์ ค้างแผงไว้ให้เลือกนาที
+          }),
+        );
+        return;
+      }
 
       panel.querySelectorAll(".csel-option").forEach((row) => {
         row.addEventListener("click", (e) => {
@@ -107,7 +151,8 @@
 
     function positionPanel() {
       const rect = trigger.getBoundingClientRect();
-      const panelWidth = rect.width;
+      // โหมดตาราง: กว้างอย่างน้อย 248px (ช่องเวลา 4 คอลัมน์) แต่ไม่ล้นจอ
+      const panelWidth = opts.grid ? Math.min(Math.max(rect.width, 248), window.innerWidth - 16) : rect.width;
       let left = rect.left;
       if (left + panelWidth > window.innerWidth - 8) left = window.innerWidth - panelWidth - 8;
       if (left < 8) left = 8;
@@ -195,8 +240,9 @@
     initCustomSelect("car-plate-select", { placeholder: "เลือกทะเบียนรถ", fallbackIcon: "🚗" });
     initCustomSelect("return-car-plate", { placeholder: "-- เลือกรถที่ต้องการคืน --", fallbackIcon: "🚗" });
     // 🌟 "time-slot" เดิมถูกแทนที่ด้วยเวลาไป/เวลากลับแบบ 24 ชม.ในเวอร์ชันนี้ อัปเดต id ตาม
-    initCustomSelect("out-time-select", { placeholder: "-- เลือกเวลาไป --" });
-    initCustomSelect("return-time-select", { placeholder: "-- เลือกเวลากลับ --" });
-    initCustomSelect("return-time", { placeholder: "-- เลือกเวลาที่คืน --" });
+    // เวลาเป็น "ตารางช่อง" 4 คอลัมน์ เห็นครบ 24 ชม. ในหน้าเดียว ไม่ต้องเลื่อน
+    initCustomSelect("out-time-select", { placeholder: "-- เลือกเวลาไป --", grid: true, minutes: true });
+    initCustomSelect("return-time-select", { placeholder: "-- เลือกเวลากลับ --", grid: true, minutes: true });
+    initCustomSelect("return-time", { placeholder: "-- เลือกเวลาที่คืน --", grid: true, minutes: true });
   });
 })();

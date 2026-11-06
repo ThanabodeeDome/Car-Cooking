@@ -72,6 +72,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const returnTimeEl = document.getElementById("return-time-select");
   if (outTimeEl) outTimeEl.addEventListener("change", checkOvernightHint);
   if (returnTimeEl) returnTimeEl.addEventListener("change", checkOvernightHint);
+  // ⏱ เลือกเวลาไปแล้ว ถ้าผู้ใช้ยังไม่ได้เลือกเวลากลับเอง ให้เติม "เวลาไป + 1 ชม." ให้ (ลดการกดไปหนึ่งครั้ง) แก้ทีหลังได้
+  if (outTimeEl && returnTimeEl) {
+    returnTimeEl.addEventListener("change", () => { if (!returnTimeEl.dataset.autoSet) returnTimeEl.dataset.manual = "1"; });
+    outTimeEl.addEventListener("change", () => {
+      if (returnTimeEl.dataset.manual === "1" && returnTimeEl.value) return;
+      const h = parseInt(outTimeEl.value, 10);
+      if (isNaN(h)) return;
+      const mm = (outTimeEl.value || "").slice(3, 5) || "00"; // คงนาทีของเวลาไปไว้ (เช่น 09:30 -> เติม 10:30)
+      const retVal = String((h + 1) % 24).padStart(2, "0") + ":" + mm;
+      if (!Array.from(returnTimeEl.options).some((o) => o.value === retVal)) returnTimeEl.add(new Option(retVal, retVal));
+      returnTimeEl.dataset.autoSet = "1";
+      returnTimeEl.value = retVal;
+      returnTimeEl.dispatchEvent(new Event("change", { bubbles: true }));
+      delete returnTimeEl.dataset.autoSet;
+    });
+  }
 });
 
 // 🌟 สร้างตัวเลือกเวลา 00:00 - 23:00 ทุก 60 นาที ใส่ลง <select> ตาม id ที่ระบุ
@@ -83,6 +99,21 @@ function populateTimeDropdown(selectId) {
     const value = `${hh}:00`;
     select.add(new Option(value, value));
   }
+}
+
+// ⏱ ปุ่มลัดช่วงเวลา (เช่น ครึ่งวันเช้า / ทั้งวัน) — ตั้งทั้งเวลาไปและเวลากลับในคลิกเดียว
+function setTimePreset(outHHMM, retHHMM) {
+  const o = document.getElementById("out-time-select");
+  const r = document.getElementById("return-time-select");
+  if (!o || !r) return;
+  [[o, outHHMM], [r, retHHMM]].forEach(([el, v]) => {
+    if (!Array.from(el.options).some((x) => x.value === v)) el.add(new Option(v, v));
+  });
+  o.value = outHHMM;
+  r.dataset.manual = "1";
+  r.value = retHHMM;
+  o.dispatchEvent(new Event("change", { bubbles: true }));
+  r.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
 // 🌟 ถ้าเวลากลับ <= เวลาไป ถือว่าข้ามคืน โชว์ hint เตือนให้รู้ตัว (ไม่บล็อกการจอง)
@@ -1373,7 +1404,10 @@ function openBookingModal(plate, dateStr, startHour) {
     const outSelect = document.getElementById("out-time-select");
     const retSelect = document.getElementById("return-time-select");
     if (outSelect) outSelect.value = String(startHour).padStart(2, "0") + ":00";
-    if (retSelect) retSelect.value = String((startHour + 1) % 24).padStart(2, "0") + ":00";
+    if (retSelect) {
+      delete retSelect.dataset.manual; // เปิดฟอร์มใหม่ = ให้เติมเวลากลับอัตโนมัติได้อีกครั้ง
+      retSelect.value = String((startHour + 1) % 24).padStart(2, "0") + ":00";
+    }
     checkOvernightHint();
     updateAvailableTimeSlots();
   };
