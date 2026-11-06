@@ -173,6 +173,14 @@ function nt_sort_items(array $items): array {
     return $items;
 }
 
+// หมายเหตุตอนคืนรถที่ "ไม่ได้แจ้งปัญหา": ข้อความปกติ เช่น ไม่พบปัญหา/ปกติ/เรียบร้อย (ทั้งข้อความ) หรือที่ระบบเขียนเองตอนปิดรายการอัตโนมัติ
+function nt_remark_is_benign(string $remark): bool {
+    $t = trim($remark);
+    if ($t === '' || $t === '-') return true;
+    if (mb_strpos($t, 'ระบบปิดอัตโนมัติ') === 0) return true;
+    return (bool)preg_match('/^(ไม่(พบ|มี|เจอ)(ปัญหา|อะไร|ความผิดปกติ|ข้อบกพร่อง)?|ปกติ(ดี)?|เรียบร้อย(ดี)?|ไม่มีอะไร|no\s*problem|ok)\s*[.!ๆ]*$/iu', $t);
+}
+
 // Admin-only items. Each block is isolated so a missing table/column can never break the bell.
 function nt_collect_admin(PDO $conn): array {
     $items = [];
@@ -202,6 +210,7 @@ function nt_collect_admin(PDO $conn): array {
         );
         $stmt->execute([':d' => (clone $now)->modify('-3 days')->format('Y-m-d')]);
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            if (nt_remark_is_benign((string)$r['ReturnRemark'])) continue; // "ไม่พบปัญหา" / ข้อความที่ระบบปิดให้ ไม่ใช่การแจ้งปัญหา
             $txt = mb_substr((string)$r['ReturnRemark'], 0, 90);
             $items[] = nt_item("a_remark:{$r['BookingID']}", 'warn', "แจ้งปัญหา: รถ {$r['CarPlate']}",
                 "{$r['DriverName']}: $txt", '../Admin/index.html');
