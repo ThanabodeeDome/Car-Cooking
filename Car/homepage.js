@@ -221,7 +221,8 @@ function updateStatsCounters(bookings) {
       const q = encodeURIComponent(o.CarPlate || "");
       let url;
       if (o.kind === "pickup") url = "scan.php?plate=" + q;
-      else if (o.auto && !o.waiting) url = "checkin.html?plate=" + q + "&picked=1"; // ระบบเช็คอินให้ ยังไม่ยืนยัน: มีทั้งยืนยันรับรถ และ "ฉันกำลังคืนรถ"
+      else if (o.auto && !o.waiting && !o.overdue) url = "checkin.html?plate=" + q + "&picked=1"; // ระบบเช็คอินให้ ยังไม่ยืนยัน (ยังไม่ถึงเวลาคืน): มีทั้งยืนยันรับรถ และ "ฉันกำลังคืนรถ"
+      // ถึง/เลยเวลาคืนแล้ว -> ไปหน้าคืนรถตรงๆ ไม่ต้องผ่านหน้ายืนยันรับรถ
       else url = "return_scan.html?plate=" + q;
       const key = "aj:" + o.BookingID + ":" + o.kind + ":" + (o.auto ? "a" : "") + (o.waiting ? "w" : "");
       try {
