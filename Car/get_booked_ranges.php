@@ -37,11 +37,22 @@ try {
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $ranges = array_map(function ($row) {
+        // start_at / end_at = เวลาเริ่ม-จบจริง (รอบข้ามคืน: เวลาคืน <= เวลาออก = วันถัดไป) ให้หน้าจองใช้เทาช่องเวลาที่ถูกจองแล้ว
+        $out = substr((string)$row['OutTime'], 0, 5);
+        $ret = substr((string)$row['PlannedReturnTime'], 0, 5);
+        $startAt = $endAt = null;
+        if (preg_match('/^\d{2}:\d{2}$/', $out) && preg_match('/^\d{2}:\d{2}$/', $ret)) {
+            $d = substr((string)$row['BookingDate'], 0, 10);
+            $startAt = $d . ' ' . $out;
+            $endAt = ($ret <= $out ? date('Y-m-d', strtotime($d . ' +1 day')) : $d) . ' ' . $ret;
+        }
         return [
             'driver_name' => $row['DriverName'],
             'booking_date' => $row['BookingDate'],
             'out_time' => $row['OutTime'],
             'planned_return_time' => $row['PlannedReturnTime'],
+            'start_at' => $startAt,
+            'end_at' => $endAt,
         ];
     }, $rows);
 

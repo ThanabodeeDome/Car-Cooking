@@ -297,3 +297,20 @@
 @media (max-width: 480px) {
   .csel-tp-big { font-size: 1.7rem; }
 }
+
+/* ช่วงเวลาที่รถคันนี้ถูกจองแล้ว: เทา กดไม่ได้ */
+.csel-h.csel-busy,
+.csel-m.csel-busy {
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.22);
+  text-decoration: line-through;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.csel-h.csel-busy:hover,
+.csel-m.csel-busy:hover,
+.csel-h.csel-busy:active,
+.csel-m.csel-busy:active {
+  background: rgba(255, 255, 255, 0.03);
+  transform: none;
+}

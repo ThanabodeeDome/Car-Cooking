@@ -754,6 +754,28 @@ function setupDateLimits() {
 // ตอนนี้เวลาเลือกได้อิสระ 24 ชม. ไม่มี "ตัวเลือกจำกัด" ให้ disable แบบเดิมแล้ว
 // เปลี่ยนมาโชว์ "รายการช่วงที่ถูกจองแล้ว" เป็นข้อความเตือนใต้ dropdown แทน (ไม่บล็อกการเลือก)
 // การกันชนจริงทำที่ save_booking.php ตอน submit เสมอ (กันคนแอบแก้ frontend)
+// ช่วงที่รถคันที่เลือกถูกจองแล้วในวันที่เลือก (นาทีนับจาก 00:00 ของวันนั้น, อาจติดลบ/เกิน 1440 ถ้าข้ามคืน)
+let CB_BUSY = [];
+// ให้ custom-select.js ถามว่าเวลา HH:MM นี้ของช่อง selectId ใช้ไม่ได้ (ชนรอบที่จองแล้ว) หรือไม่
+// ออก: จุดเวลาต้องไม่อยู่ใน [เริ่ม, จบ) / ถ้ามีเวลากลับแล้วทั้งช่วงต้องไม่คร่อมรอบอื่น  — ตรงกับกฎของ save_booking.php (ชนเมื่อ a<จบ และ b>เริ่ม)
+window.CB_isTimeBusy = function (selectId, hhmm) {
+  if (!CB_BUSY.length) return false;
+  const t = hhmmToMin(hhmm);
+  if (t === null || isNaN(t)) return false;
+  const other = hhmmToMin(
+    document.getElementById(selectId === "out-time-select" ? "return-time-select" : "out-time-select")?.value,
+  );
+  const hasOther = other !== null && !isNaN(other);
+  let a, b;
+  if (selectId === "out-time-select") {
+    a = t; b = t + 1; // เวลาไป: ดูเฉพาะจุดเวลานั้น (เวลากลับค่อยกรองในช่องเวลากลับ ไม่งั้นเวลากลับเดิมจะทำให้ชั่วโมงอื่นเทาตามไปด้วย)
+  } else {
+    if (hasOther) { a = other; b = t > other ? t : t + 1440; }
+    else { a = t - 1; b = t; }
+  }
+  return CB_BUSY.some(([s, e]) => a < e && b > s);
+};
+
 function updateAvailableTimeSlots() {
   const dateInput = document.getElementById("use-date");
   const plateSelectEl = document.getElementById("car-plate-select");
@@ -779,6 +801,7 @@ function updateAvailableTimeSlots() {
   const selectedDateVal = dateInput.value;
   const plate = plateSelectEl ? plateSelectEl.value : "";
   if (!selectedDateVal || !plate) {
+    CB_BUSY = [];
     setHintText("");
     return;
   }
@@ -788,6 +811,17 @@ function updateAvailableTimeSlots() {
   )
     .then((res) => res.json())
     .then((data) => {
+      // เก็บช่วงที่ถูกจองเป็น "นาทีนับจาก 00:00 ของวันที่เลือก" ไว้เทาช่องเวลาในแผงเลือกเวลา
+      CB_BUSY = [];
+      if (data.success && Array.isArray(data.ranges)) {
+        const base = new Date(selectedDateVal + "T00:00:00").getTime();
+        data.ranges.forEach((r) => {
+          if (!r.start_at || !r.end_at) return;
+          const s = Math.round((new Date(r.start_at.replace(" ", "T") + ":00").getTime() - base) / 60000);
+          const e = Math.round((new Date(r.end_at.replace(" ", "T") + ":00").getTime() - base) / 60000);
+          if (!isNaN(s) && !isNaN(e)) CB_BUSY.push([s, e]);
+        });
+      }
       if (!data.success || !Array.isArray(data.ranges) || data.ranges.length === 0) {
         setHintText("");
         return;

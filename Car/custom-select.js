@@ -106,7 +106,12 @@
       if (h >= 0 && night(h)) showNight = true;
       if (curMM && !["00", "15", "30", "45"].includes(curMM)) showAllMin = true;
 
-      const cell = (x) => `<div class="csel-h${x === h ? " csel-selected" : ""}" data-h="${pad2(x)}">${pad2(x)}</div>`;
+      // เทาช่วงเวลาที่รถคันนี้ถูกจองแล้ว (ข้อมูลมาจาก booking.js → window.CB_isTimeBusy) ใช้กับช่องเวลาไป/กลับของฟอร์มจองเท่านั้น
+      const useBusy = (select.id === "out-time-select" || select.id === "return-time-select") && typeof window.CB_isTimeBusy === "function";
+      const isBusy = (hh, mm) => useBusy && window.CB_isTimeBusy(select.id, hh + ":" + mm);
+      const hourBusy = (x) => useBusy && Array.from({ length: 12 }, (_, i) => pad2(i * 5)).every((m) => isBusy(pad2(x), m));
+      const cell = (x) =>
+        `<div class="csel-h${x === h ? " csel-selected" : ""}${hourBusy(x) ? " csel-busy" : ""}" data-h="${pad2(x)}"${hourBusy(x) ? ' title="มีคนจองช่วงนี้แล้ว"' : ""}>${pad2(x)}</div>`;
       const dayHours = Array.from({ length: 16 }, (_, i) => i + 6); // 06-21
       const nightHours = [22, 23, 0, 1, 2, 3, 4, 5];
       const mins = showAllMin ? Array.from({ length: 12 }, (_, i) => pad2(i * 5)) : ["00", "15", "30", "45"];
@@ -120,7 +125,7 @@
           : `<div class="csel-more" data-act="night">ช่วงดึก 22:00 – 05:59 ▾</div>`) +
         `<div class="csel-tp-label">นาที</div>` +
         `<div class="csel-mgrid${showAllMin ? " csel-mgrid-all" : ""}">${mins
-          .map((m) => `<div class="csel-m${m === curMM ? " csel-selected" : ""}" data-m="${m}">:${m}</div>`)
+          .map((m) => `<div class="csel-m${m === curMM ? " csel-selected" : ""}${curHH && isBusy(curHH, m) ? " csel-busy" : ""}" data-m="${m}">:${m}</div>`)
           .join("")}</div>` +
         (showAllMin ? "" : `<div class="csel-more" data-act="mins">นาทีอื่นๆ (ทีละ 5) ▾</div>`) +
         `<div class="csel-done" role="button">เสร็จ</div>`;
@@ -128,7 +133,13 @@
       panel.querySelectorAll(".csel-h").forEach((el) =>
         el.addEventListener("click", (e) => {
           e.stopPropagation();
-          const mm = (select.value || "").slice(3, 5) || "00"; // เปลี่ยนชั่วโมง คงนาทีเดิมไว้
+          if (el.classList.contains("csel-busy")) return; // ชั่วโมงที่ถูกจองเต็มแล้ว เลือกไม่ได้
+          let mm = (select.value || "").slice(3, 5) || "00"; // เปลี่ยนชั่วโมง คงนาทีเดิมไว้
+          if (isBusy(el.dataset.h, mm)) {
+            // นาทีเดิมชนรอบที่จองแล้ว -> ขยับไปนาทีแรกที่ว่าง
+            const free = Array.from({ length: 12 }, (_, i) => pad2(i * 5)).find((m) => !isBusy(el.dataset.h, m));
+            if (free) mm = free;
+          }
           setTimeValue(el.dataset.h + ":" + mm);
           renderTimePanel(); // อัปเดตไฮไลต์ ค้างแผงไว้ให้เลือกนาที
           positionPanel();
@@ -137,6 +148,7 @@
       panel.querySelectorAll(".csel-m").forEach((el) =>
         el.addEventListener("click", (e) => {
           e.stopPropagation();
+          if (el.classList.contains("csel-busy")) return; // นาทีนี้ชนรอบที่จองแล้ว
           const hh = (select.value || "").slice(0, 2);
           if (!hh) return; // ยังไม่ได้เลือกชั่วโมง
           setTimeValue(hh + ":" + el.dataset.m);
