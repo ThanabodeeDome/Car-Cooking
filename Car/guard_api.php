@@ -154,7 +154,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
         $waiting = cw_waiting_list($conn);
         if (autoCloseColumnsOk($conn)) {
             $closedPending = $conn->query(
-                "SELECT TOP 100 b.BookingID, b.CarPlate, b.DriverName, b.StartMileage, b.StartMileageEst, b.ClosedReason,
+                "SELECT TOP 100 b.BookingID, b.CarPlate, b.DriverName, b.StartMileage, b.StartMileageEst, b.ClosedReason, CONVERT(varchar(10), b.BookingDate, 23) AS BookingDay, LEFT(b.OutTime, 5) AS OutHM,
                         CONVERT(varchar(16), b.ClosedAt, 120) AS ClosedAt, c.Brand, c.Model, du.phone AS DriverPhone
                  FROM CarBookings b
                  LEFT JOIN Cars c ON REPLACE(c.Plate, ' ', '') = REPLACE(b.CarPlate, ' ', '')
@@ -224,7 +224,7 @@ if (!empty($_FILES['photo'])) {
 
 $data = json_decode(file_get_contents('php://input'), true);
 $action = is_array($data) ? ($data['action'] ?? '') : '';
-if (!in_array($action, ['return', 'edit_return', 'undo_return', 'fill_closed'], true)) {
+if (!in_array($action, ['return', 'edit_return', 'undo_return', 'fill_closed', 'fill_car'], true)) {
     echo json_encode(['success' => false, 'message' => 'คำสั่งไม่ถูกต้อง']);
     exit;
 }
@@ -300,6 +300,60 @@ try {
             'target_type' => 'booking', 'target' => $bi['no'], 'detail' => ['start_mileage' => $startMile, 'end_mileage' => $fillMile, 'guard' => $guardName],
         ]);
         echo json_encode(['success' => true, 'plate' => $b['CarPlate'], 'driver' => $b['DriverName'], 'distance' => $dist, 'message' => 'บันทึกเลขไมล์แล้ว'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // ================= กรอกเลขไมล์ "ต่อคันต่อวัน" ให้รอบที่ระบบปิดให้ทั้งกลุ่มพร้อมกัน =================
+    // กลุ่ม = รถคันเดียวกัน + วันที่จองเดียวกัน ที่เป็น "ปิดโดยระบบ" และยังไม่มีเลขไมล์คืน — รปภ. อ่านเลขไมล์ที่หน้าปัดครั้งเดียว
+    //   • รอบสุดท้ายของกลุ่ม (เวลาเริ่มล่าสุด) ได้เลขที่กรอกเป็นเลขไมล์คืน
+    //   • รอบก่อนหน้าในกลุ่มไม่มีใครรู้ระยะของแต่ละรอบ -> ปิดที่ระยะ 0 กม. (เลขคืน = เลขออก) และหมายเหตุว่ารวมระยะไว้ที่รอบสุดท้าย
+    if ($action === 'fill_car') {
+        $fillMile = isset($data['end_mile']) && is_scalar($data['end_mile']) && preg_match('/^\d{1,7}$/', (string)$data['end_mile']) ? (int)$data['end_mile'] : 0;
+        if ($b['BookingStatus'] !== AUTO_CLOSE_STATUS || (int)$b['EndMileage'] > 0) {
+            echo json_encode(['success' => false, 'code' => 'stale', 'message' => 'รายการนี้ไม่อยู่ในสถานะรอกรอกเลขไมล์แล้ว (รีเฟรช)']);
+            exit;
+        }
+        $g = $conn->prepare(
+            "SELECT p.BookingID, p.StartMileage, p.DriverName, p.CarPlate,
+                    CAST(p.BookingDate AS DATETIME) + CASE WHEN ISDATE(p.OutTime) = 1 THEN CAST(p.OutTime AS DATETIME) ELSE CAST('00:00' AS DATETIME) END AS StartAt
+             FROM CarBookings p
+             WHERE REPLACE(p.CarPlate, ' ', '') = REPLACE(:plate, ' ', '')
+               AND CAST(p.BookingDate AS DATE) = (SELECT CAST(BookingDate AS DATE) FROM CarBookings WHERE BookingID = :id)
+               AND p.BookingStatus = N'" . AUTO_CLOSE_STATUS . "' AND (p.EndMileage IS NULL OR p.EndMileage <= 0)
+             ORDER BY StartAt, p.BookingID"
+        );
+        $g->execute([':plate' => $b['CarPlate'], ':id' => $bookingId]);
+        $group = $g->fetchAll(PDO::FETCH_ASSOC);
+        if (!$group) { echo json_encode(['success' => false, 'code' => 'stale', 'message' => 'ไม่พบรอบที่รอกรอกเลขไมล์ (รีเฟรช)']); exit; }
+        $last = $group[count($group) - 1];
+        $lastStart = (int)$last['StartMileage'];
+        if ($fillMile <= 0 || $fillMile <= $lastStart) {
+            echo json_encode(['success' => false, 'message' => 'เลขไมล์ต้องมากกว่าตอนออกของรอบสุดท้าย (' . number_format($lastStart) . ' กม.) — ถ้าเลขไมล์ออกเป็นค่าประมาณและไม่ตรง ให้แจ้งแอดมินแก้เลขไมล์ออกก่อน']);
+            exit;
+        }
+        $dist = $fillMile - $lastStart;
+        if ($dist > 1500 && empty($data['confirm_far']) && !startMileageIsEstimate($conn, (int)$last['BookingID'])) {
+            echo json_encode(['success' => false, 'code' => 'far_distance', 'message' => 'ระยะทาง ' . number_format($dist) . ' กม. ดูผิดปกติ (เกิน 1,500) ตรวจเลขไมล์ให้แน่ใจ']);
+            exit;
+        }
+        $conn->beginTransaction();
+        $when = date('d/m H:i');
+        $upLast = $conn->prepare("UPDATE CarBookings SET EndMileage = :m, ReturnRemark = LEFT(ISNULL(ReturnRemark, N'') + :n, 1000) WHERE BookingID = :id AND BookingStatus = N'" . AUTO_CLOSE_STATUS . "' AND (EndMileage IS NULL OR EndMileage <= 0)");
+        $upLast->execute([':m' => $fillMile, ':n' => ' | ' . $whoLabel . ' ' . $guardName . ' กรอกเลขไมล์คืนย้อนหลัง (ต่อคันต่อวัน) ' . $when, ':id' => (int)$last['BookingID']]);
+        if ($upLast->rowCount() === 0) { $conn->rollBack(); echo json_encode(['success' => false, 'code' => 'stale', 'message' => 'มีคนกรอกไปแล้ว (รีเฟรช)']); exit; }
+        $upPrev = $conn->prepare("UPDATE CarBookings SET EndMileage = StartMileage, ReturnRemark = LEFT(ISNULL(ReturnRemark, N'') + :n, 1000) WHERE BookingID = :id AND BookingStatus = N'" . AUTO_CLOSE_STATUS . "' AND (EndMileage IS NULL OR EndMileage <= 0)");
+        $prevCount = 0;
+        foreach (array_slice($group, 0, -1) as $p) {
+            $upPrev->execute([':n' => ' | ' . $whoLabel . ' ' . $guardName . ' กรอกเลขไมล์ต่อคันต่อวัน: ไม่ทราบระยะของรอบนี้ รวมไว้ที่รอบสุดท้ายของวัน (รหัสจอง ' . (int)$last['BookingID'] . ') ' . $when, ':id' => (int)$p['BookingID']]);
+            $prevCount += $upPrev->rowCount();
+        }
+        $conn->prepare("UPDATE Cars SET Mileage = :m WHERE Plate = :p AND (Mileage IS NULL OR Mileage < :m2)")->execute([':m' => $fillMile, ':p' => $last['CarPlate'], ':m2' => $fillMile]);
+        $conn->commit();
+        $bi = sl_booking_info($conn, (int)$last['BookingID']);
+        sl_log($conn, 'return_fill', $whoLabel . ' กรอกเลขไมล์คืนย้อนหลังต่อคันต่อวัน ' . trim($bi['plate'] . ' ' . $bi['driver']) . ' ไมล์ ' . number_format($fillMile) . ' กม. (' . (1 + $prevCount) . ' รอบ)', [
+            'target_type' => 'booking', 'target' => $bi['no'], 'detail' => ['start_mileage' => $lastStart, 'end_mileage' => $fillMile, 'guard' => $guardName, 'trips' => 1 + $prevCount],
+        ]);
+        echo json_encode(['success' => true, 'plate' => $last['CarPlate'], 'trips' => 1 + $prevCount, 'distance' => $dist, 'message' => 'บันทึกเลขไมล์แล้ว (' . (1 + $prevCount) . ' รอบ)'], JSON_UNESCAPED_UNICODE);
         exit;
     }
 

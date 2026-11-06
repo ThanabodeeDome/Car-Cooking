@@ -159,22 +159,38 @@
     // ----- ระบบปิดให้ (เลยเวลา) รอกรอกเลขไมล์คืน -----
     const closedList = data.closed_pending || [];
     $("gd-closed-panel").hidden = closedList.length === 0;
-    $("gd-closed").innerHTML = closedList
-      .map(
-        (c) => `
-        <div class="od-row" data-id="${Number(c.BookingID)}">
-          <div class="gd-lead"><div class="od-plate">${esc(c.CarPlate)}</div><div class="gd-code">รหัสจอง <b>${Number(c.BookingID)}</b></div></div>
+    // รวมเป็นกลุ่ม "รถคันเดียวกัน + วันที่จองเดียวกัน" — รปภ. อ่านเลขไมล์หน้าปัดครั้งเดียว บันทึกทั้งกลุ่ม (รอบสุดท้ายของวันได้เลขนี้, รอบก่อนหน้าปิดที่ 0 กม.)
+    const closedGroups = [];
+    const gIndex = {};
+    closedList.forEach((c) => {
+      const k = String(c.CarPlate || "").replace(/\s/g, "") + "|" + (c.BookingDay || "");
+      if (!(k in gIndex)) { gIndex[k] = closedGroups.length; closedGroups.push([]); }
+      closedGroups[gIndex[k]].push(c);
+    });
+    closedGroups.forEach((g) => g.sort((a, b) => String(a.OutHM || "").localeCompare(String(b.OutHM || "")) || Number(a.BookingID) - Number(b.BookingID)));
+    $("gd-closed").innerHTML = closedGroups
+      .map((g) => {
+        const last = g[g.length - 1];
+        const trips = g
+          .map(
+            (c, i) => `<span>${i === g.length - 1 && g.length > 1 ? "รอบสุดท้าย • " : ""}รหัสจอง <b>${Number(c.BookingID)}</b> • ${esc(c.DriverName || "-")} • ออก ${esc(c.OutHM || "-")} น. • ระบบปิดเมื่อ ${esc(String(c.ClosedAt || "").slice(11, 16))} น. (${c.ClosedReason === "next_queue" ? "คิวถัดไปถึงเวลา" : "เลยเวลาคืน"})</span>`,
+          )
+          .join("");
+        return `
+        <div class="od-row" data-id="${Number(last.BookingID)}" data-n="${g.length}">
+          <div class="gd-lead"><div class="od-plate">${esc(last.CarPlate)}</div><div class="gd-code">${g.length > 1 ? "<b>" + g.length + "</b> รอบ" : "รหัสจอง <b>" + Number(last.BookingID) + "</b>"}</div></div>
           <div class="od-info">
-            <b>${esc(((c.Brand || "") + " " + (c.Model || "")).trim() || "รถยนต์")} <small>${esc(c.DriverName || "-")}</small></b>
-            <span>ระบบปิดเมื่อ ${esc(String(c.ClosedAt || "").slice(0, 16))} น. (${c.ClosedReason === "next_queue" ? "คิวถัดไปถึงเวลา" : "เลยเวลาคืน"}) • ไมล์ตอนออก ${num(c.StartMileage)} กม.${Number(c.StartMileageEst) ? " (ประมาณการ)" : ""}</span>
-            ${callBtn(c.DriverPhone)}
+            <b>${esc(((last.Brand || "") + " " + (last.Model || "")).trim() || "รถยนต์")} <small>${esc(String(last.BookingDay || ""))}</small></b>
+            ${trips}
+            <span>ไมล์ตอนออก (รอบสุดท้าย) ${num(last.StartMileage)} กม.${Number(last.StartMileageEst) ? " (ประมาณการ)" : ""}${g.length > 1 ? " • รอบก่อนหน้าปิดที่ 0 กม. รวมระยะไว้ที่รอบสุดท้าย" : ""}</span>
+            ${callBtn(last.DriverPhone)}
           </div>
           <div class="od-actions" style="display:flex;gap:6px;align-items:center">
-            <input type="text" inputmode="numeric" class="gd-fill-in" placeholder="เลขไมล์เต็ม" style="width:120px" />
-            <button type="button" class="od-btn primary gd-fill"><i class="fa-solid fa-floppy-disk"></i> บันทึก</button>
+            <input type="text" inputmode="numeric" class="gd-fill-in" placeholder="เลขไมล์ตอนนี้ของรถ" style="width:150px" />
+            <button type="button" class="od-btn primary gd-fill"><i class="fa-solid fa-floppy-disk"></i> ${g.length > 1 ? "บันทึกทั้งคัน" : "บันทึก"}</button>
           </div>
-        </div>`,
-      )
+        </div>`;
+      })
       .join("");
 
     // ----- จองวันนี้ ยังไม่มารับรถ -----
@@ -546,12 +562,12 @@
     if (!mile) return toast("กรอกเลขไมล์ก่อน", false);
     b.disabled = true;
     const send = (extra) =>
-      fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.assign({ action: "fill_closed", booking_id: Number(row.dataset.id), end_mile: mile }, extra || {})) }).then((x) => x.json());
+      fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.assign({ action: "fill_car", booking_id: Number(row.dataset.id), end_mile: mile }, extra || {})) }).then((x) => x.json());
     try {
       let r = await send();
       if (!r.success && r.code === "far_distance" && confirm(r.message + "\nยืนยันบันทึกตามนี้?")) r = await send({ confirm_far: true });
       if (r.success) {
-        toast("บันทึกเลขไมล์แล้ว", true);
+        toast(r.message || "บันทึกเลขไมล์แล้ว", true);
         load(true);
       } else {
         toast(r.message || "บันทึกไม่สำเร็จ", false);
