@@ -205,110 +205,30 @@ function updateStatsCounters(bookings) {
 })();
 
 /* =========================================
-   งานของฉันตอนนี้ — การ์ดบนหน้าหลัก: เช็คอิน/ยืนยันรับรถ/รถยังไม่มา/คืนรถ ได้เลยโดยไม่ต้องสแกน QR
-   (ลิงก์ไป scan.php?plate=… ซึ่งเป็นหน้าเดียวกับที่ QR บนรถเปิด)
+   เปิดหน้าหลักตอนมีรอบที่ต้องทำอยู่ -> พาไปหน้าเช็คอิน/คืนรถของรอบนั้นเลย (ไม่ต้องสแกน QR)
+   (ลิงก์เป็นหน้าเดียวกับที่ QR บนรถเปิด) พาไปแค่ครั้งเดียวต่อรอบ+สถานะ (จำใน sessionStorage)
+   กดกลับ/กดเมนูหน้าหลักแล้วไม่ถูกเด้งซ้ำ ถ้ามีหลายรอบพร้อมกันไม่เด้ง
    ========================================= */
 (function () {
-  const box = document.getElementById("my-active");
-  if (!box) return;
-  const ask = async (title, message, confirmText, danger) => {
-    if (window.AppDialog) return window.AppDialog.confirm({ title, message, confirmText, cancelText: "กลับ", danger: !!danger });
-    return window.confirm(title);
-  };
-  const toast = (type, msg) => { if (typeof showToast === "function") showToast(type, msg, 4000); };
-  const post = (url, body) =>
-    fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then((r) => r.json());
-
-  function cardHtml(o) {
-    const q = encodeURIComponent(o.CarPlate || "");
-    const plate = escHtml(o.CarPlate);
-    const who = escHtml(o.DriverName || "-");
-    if (o.kind === "pickup") {
-      return `<div class="ma-card ma-pickup" data-id="${o.BookingID}">
-        <div class="ma-head"><span class="ma-tag">ถึงเวลารับรถ</span><b class="ma-plate">${plate}</b></div>
-        <p>${who} · เวลาจอง ${escHtml(o.OutHM)}–${escHtml(o.DueHM)} น.${o.Destination ? " · " + escHtml(o.Destination) : ""}</p>
-        <div class="ma-btns"><a class="ma-main ma-blue" href="scan.php?plate=${q}"><i class="fa-solid fa-key"></i> เช็คอินรับรถ</a></div>
-      </div>`;
-    }
-    const tag = o.waiting ? "รอรถอยู่" : o.overdue ? "เลยเวลาคืน" : "กำลังใช้งาน";
-    const note = o.auto
-      ? `ระบบเช็คอินให้ ${escHtml(o.CheckinHM || "-")} น. ตามเวลาจอง · กำหนดคืน ${escHtml(o.DueHM)} น.`
-      : `กำหนดคืน ${escHtml(o.DueHM)} น.${o.overdue ? " (เลยกำหนดแล้ว)" : ""}`;
-    let sec = "";
-    if (o.waiting) {
-      sec = `<div class="ma-sub"><span>แจ้ง "รถยังไม่มา" แล้ว ระบบกำลังแจ้งคนที่ถือรถ</span>
-        <button type="button" class="ma-ghost ma-ok" data-act="got">ได้รับรถแล้ว</button>
-        <button type="button" class="ma-ghost ma-danger" data-act="unused-wait">ไม่ได้รับรถ ยกเลิก</button></div>`;
-    } else if (o.auto) {
-      sec = `<div class="ma-sub"><a class="ma-ghost ma-ok" href="checkin.html?plate=${q}&picked=1">ยืนยันรับรถ</a>
-        <button type="button" class="ma-ghost ma-wait" data-act="wait"><i class="fa-solid fa-hourglass-half"></i> รถยังไม่มา</button>
-        <button type="button" class="ma-ghost" data-act="unused">ไม่ได้ใช้รถ</button></div>`;
-    }
-    return `<div class="ma-card ma-inuse${o.overdue ? " ma-late" : ""}" data-id="${o.BookingID}">
-      <div class="ma-head"><span class="ma-tag">${tag}</span><b class="ma-plate">${plate}</b></div>
-      <p>${who} · ${note}</p>
-      <div class="ma-btns"><a class="ma-main ma-green" href="return_scan.html?plate=${q}"><i class="fa-solid fa-flag-checkered"></i> คืนรถ (ถ่ายรูปเลขไมล์)</a></div>
-      ${sec}
-    </div>`;
-  }
-
-  // เปิดหน้าหลักตอนมีรอบที่ต้องทำอยู่ -> พาไปหน้าเช็คอิน/คืนรถเลย (ไม่ต้องสแกน QR)
-  // พาไปแค่ครั้งเดียวต่อรอบ+สถานะ (จำใน sessionStorage) กดกลับ/กดเมนูหน้าหลักแล้วไม่ถูกเด้งซ้ำ ถ้ามีหลายรอบพร้อมกันไม่เด้ง (ให้เลือกเองจากการ์ด)
-  function autoJump(items) {
-    if (items.length !== 1) return;
-    const qs = new URLSearchParams(location.search);
-    if (qs.has("msg") || qs.has("stay")) return;
-    const o = items[0];
-    const q = encodeURIComponent(o.CarPlate || "");
-    let url;
-    if (o.kind === "pickup") url = "scan.php?plate=" + q;
-    else if (o.auto && !o.waiting) url = "checkin.html?plate=" + q + "&picked=1"; // ระบบเช็คอินให้ ยังไม่ยืนยัน: มีทั้งยืนยันรับรถ และ "ฉันกำลังคืนรถ"
-    else url = "return_scan.html?plate=" + q;
-    const key = "aj:" + o.BookingID + ":" + o.kind + ":" + (o.auto ? "a" : "") + (o.waiting ? "w" : "");
-    try {
-      if (sessionStorage.getItem(key)) return;
-      sessionStorage.setItem(key, "1");
-    } catch (e) { return; } // เก็บสถานะไม่ได้ = ไม่เด้ง (กันวนลูป)
-    location.replace(url);
-  }
-
-  function load() {
-    fetch("get_my_active.php", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((d) => {
-        const items = (d && d.items) || [];
-        box.hidden = items.length === 0;
-        box.innerHTML = items.map(cardHtml).join("");
-        autoJump(items);
-      })
-      .catch(() => {});
-  }
-
-  box.addEventListener("click", async (e) => {
-    const btn = e.target.closest("[data-act]");
-    if (!btn) return;
-    const id = Number(btn.closest(".ma-card").dataset.id);
-    const act = btn.dataset.act;
-    try {
-      if (act === "wait") {
-        if (!(await ask("แจ้งว่ารถยังไม่มา?", "ระบบจะหยุดปิดรายการของคุณชั่วคราว และแจ้ง รปภ. แอดมิน และคนที่ยังถือรถอยู่ให้นำรถกลับมา", "แจ้งรถยังไม่มา"))) return;
-        const r = await post("car_waiting.php", { booking_id: id, action: "wait" });
-        toast(r.success ? "success" : "error", r.success ? "แจ้งแล้ว ระบบกำลังแจ้งคนที่ถือรถอยู่" : r.message || "ทำรายการไม่สำเร็จ");
-      } else if (act === "got") {
-        const r = await post("car_waiting.php", { booking_id: id, action: "got" });
-        toast(r.success ? "success" : "error", r.success ? "บันทึกว่าได้รับรถแล้ว" : r.message || "ทำรายการไม่สำเร็จ");
-      } else {
-        if (!(await ask(act === "unused-wait" ? "ไม่ได้รับรถ ยกเลิกรายการนี้?" : "ไม่ได้ใช้รถคันนี้จริงใช่ไหม?", "ระบบจะปล่อยรถให้คนอื่นจองได้ทันที", "ไม่ได้ใช้รถ", true))) return;
-        const r = await post("cancel_booking.php", { booking_id: id, unused: true });
-        toast(r.success ? "success" : "error", r.success ? "ปล่อยรถเรียบร้อยแล้ว" : r.message || "ทำรายการไม่สำเร็จ");
-      }
-    } catch (err) {
-      toast("error", "ติดต่อ Server ไม่ได้ กรุณาลองใหม่อีกครั้ง");
-    }
-    load();
-  });
-
-  load();
-  setInterval(() => { if (!document.hidden) load(); }, 60000); // ถึงเวลาเช็คอิน/ระบบเช็คอินให้ การ์ดขึ้นเองโดยไม่ต้องรีเฟรช
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+  const qs = new URLSearchParams(location.search);
+  if (qs.has("msg") || qs.has("stay")) return;
+  fetch("get_my_active.php", { cache: "no-store" })
+    .then((r) => r.json())
+    .then((d) => {
+      const items = (d && d.items) || [];
+      if (items.length !== 1) return;
+      const o = items[0];
+      const q = encodeURIComponent(o.CarPlate || "");
+      let url;
+      if (o.kind === "pickup") url = "scan.php?plate=" + q;
+      else if (o.auto && !o.waiting) url = "checkin.html?plate=" + q + "&picked=1"; // ระบบเช็คอินให้ ยังไม่ยืนยัน: มีทั้งยืนยันรับรถ และ "ฉันกำลังคืนรถ"
+      else url = "return_scan.html?plate=" + q;
+      const key = "aj:" + o.BookingID + ":" + o.kind + ":" + (o.auto ? "a" : "") + (o.waiting ? "w" : "");
+      try {
+        if (sessionStorage.getItem(key)) return;
+        sessionStorage.setItem(key, "1");
+      } catch (e) { return; } // เก็บสถานะไม่ได้ = ไม่เด้ง (กันวนลูป)
+      location.replace(url);
+    })
+    .catch(() => {});
 })();
