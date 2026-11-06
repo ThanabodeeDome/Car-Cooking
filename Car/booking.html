@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>จองรถยนต์ - Corporate Car</title>
     <link rel="stylesheet" href="navbar.css" />
-    <link rel="stylesheet" href="booking.css?v=16" />
+    <link rel="stylesheet" href="booking.css?v=17" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="status-badge.css?v=6" />
     <link
@@ -15,7 +15,7 @@
     />
     <link rel="stylesheet" href="toast.css" />
     <link rel="stylesheet" href="custom-datepicker.css" />
-    <link rel="stylesheet" href="custom-select.css?v=3" />
+    <link rel="stylesheet" href="custom-select.css?v=4" />
     <link rel="stylesheet" href="form-ios-zoom.css?v=3" />
   </head>
 
@@ -191,6 +191,14 @@
                   <button type="button" onclick="setTimePreset('13:00', '17:00')">บ่าย 13–17</button>
                   <button type="button" onclick="setTimePreset('08:00', '17:00')">ทั้งวัน 08–17</button>
                 </div>
+                <div class="bm-presets" aria-label="ระยะเวลา">
+                  <span>ระยะเวลา:</span>
+                  <button type="button" onclick="setDuration(30)">30 นาที</button>
+                  <button type="button" onclick="setDuration(60)">1 ชม.</button>
+                  <button type="button" onclick="setDuration(120)">2 ชม.</button>
+                  <button type="button" onclick="setDuration(240)">4 ชม.</button>
+                </div>
+                <div id="time-summary" class="bm-summary hidden"></div>
                 <p id="overnight-hint" class="hidden bm-note">
                   🌙 เวลากลับก่อนหรือเท่ากับเวลาไป ระบบจะนับว่าข้ามคืนไปจบเช้าวันถัดไป
                 </p>
@@ -327,10 +335,10 @@
     </div>
     <script src="toast.js?v=5"></script>
     <script src="custom-datepicker.js"></script>
-    <script src="custom-select.js?v=3"></script>
+    <script src="custom-select.js?v=4"></script>
     <script src="status-badge.js?v=8"></script>
     <script src="geo.js?v=3"></script>
-    <script src="booking.js?v=26"></script>
+    <script src="booking.js?v=27"></script>
     <script src="main.js?v=2"></script>
     <script src="app-nav.js?v=19"></script>
     <script src="notify-bell.js?v=8"></script>

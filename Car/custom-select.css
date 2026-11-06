@@ -180,42 +180,120 @@
   border-color: var(--accent);
 }
 
-/* แถวเลือกนาที (โหมด minutes) */
-.csel-minutes-title {
-  margin: 10px 2px 6px;
-  font-size: 0.78rem;
-  color: var(--text-muted);
+/* ===== แผงเลือกเวลา (โหมด minutes) ===== */
+.csel-time .csel-trigger {
+  font-size: 1.05rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  padding: 12px 14px;
 }
-.csel-minutes {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 5px;
+.csel-clock {
+  color: var(--accent);
+  font-size: 0.95rem;
+  flex-shrink: 0;
 }
-.csel-min {
-  text-align: center;
-  padding: 7px 0;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  font-size: 0.85rem;
+.csel-panel.csel-gridmode {
+  padding: 14px;
+  border-radius: 18px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+}
+.csel-tp-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 2px 10px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+.csel-tp-big {
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: 1px;
   color: var(--text-main);
-  cursor: pointer;
   font-variant-numeric: tabular-nums;
 }
-.csel-min:hover { border-color: var(--accent); }
-.csel-min.csel-selected {
-  background: var(--accent-dim);
+.csel-tp-sub {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  text-align: right;
+}
+.csel-tp-label {
+  margin: 10px 2px 6px;
+  font-size: 0.72rem;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+.csel-hgrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.csel-h,
+.csel-m {
+  text-align: center;
+  padding: 10px 0;
+  border-radius: 12px;
+  background: var(--bg-input);
+  border: 1px solid transparent;
+  color: var(--text-main);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.08s ease;
+  user-select: none;
+}
+.csel-h:hover,
+.csel-m:hover {
   border-color: var(--accent);
+}
+.csel-h:active,
+.csel-m:active {
+  transform: scale(0.95);
+}
+.csel-h.csel-selected,
+.csel-m.csel-selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+.csel-mgrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.csel-mgrid-all {
+  grid-template-columns: repeat(6, 1fr);
+}
+.csel-mgrid-all .csel-m {
+  padding: 9px 0;
+  font-size: 0.88rem;
+}
+.csel-more {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  padding: 6px 0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.csel-more:hover {
   color: var(--accent);
-  font-weight: 600;
+  background: var(--accent-dim);
 }
 .csel-done {
-  margin-top: 10px;
+  margin-top: 12px;
   text-align: center;
-  padding: 8px 0;
-  border-radius: var(--radius-sm);
-  background: var(--accent);
+  padding: 11px 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), #ff6b6b);
   color: #fff;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   cursor: pointer;
+}
+@media (max-width: 480px) {
+  .csel-tp-big { font-size: 1.7rem; }
 }

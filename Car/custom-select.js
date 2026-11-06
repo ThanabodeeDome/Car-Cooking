@@ -54,6 +54,7 @@
     const panel = document.createElement("div");
     panel.className = "csel-panel hidden";
     panel.style.position = "fixed"; // หนี overflow:hidden ของ .booking-card เหมือน datepicker
+    if (opts.minutes) wrap.classList.add("csel-time");
     if (opts.grid) panel.classList.add("csel-gridmode"); // แสดงตัวเลือกเป็นตารางช่อง (ไม่ต้องเลื่อน) เหมาะกับรายการเวลา
 
     wrap.appendChild(trigger);
@@ -72,13 +73,14 @@
 
     function renderTrigger() {
       const selected = select.options[select.selectedIndex];
+      const clock = opts.minutes ? '<i class="fa-regular fa-clock csel-clock"></i>' : "";
       if (!selected || !selected.value) {
         triggerContent.innerHTML =
-          '<span class="csel-placeholder">' + (opts.placeholder || "-- เลือก --") + "</span>";
+          clock + '<span class="csel-placeholder">' + (opts.placeholder || "-- เลือก --") + "</span>";
         return;
       }
       const { label } = extractIcon(selected.textContent || "");
-      triggerContent.innerHTML = `${optionVisual(selected)}<span class="csel-label">${label}</span>`;
+      triggerContent.innerHTML = `${clock}${opts.minutes ? "" : optionVisual(selected)}<span class="csel-label">${label}</span>`;
     }
 
     // ตั้งค่าเวลา HH:MM ที่ไม่มีใน <select> เดิม (เช่น 09:30) — เพิ่ม option ให้ แล้วส่ง change เหมือนเลือกปกติ
@@ -90,52 +92,83 @@
       renderTrigger();
     }
 
+    // ===== แผงเลือกเวลา (โหมด minutes): ชั่วโมงเป็นช่อง + นาทีเป็นปุ่ม พร้อมเวลาที่เลือกแสดงตัวใหญ่ด้านบน =====
+    let showNight = false; // แสดงช่วงดึก 22:00-05:59 หรือไม่ (ซ่อนไว้ก่อน เพราะส่วนใหญ่ใช้ 06:00-21:59)
+    let showAllMin = false; // แสดงนาทีทุก 5 นาทีหรือไม่ (ปกติโชว์ 00/15/30/45)
+    const pad2 = (n) => String(n).padStart(2, "0");
+
+    function renderTimePanel() {
+      const val = select.value || "";
+      const curHH = val.slice(0, 2);
+      const curMM = val.slice(3, 5);
+      const h = curHH === "" ? -1 : parseInt(curHH, 10);
+      const night = (x) => x >= 22 || x <= 5;
+      if (h >= 0 && night(h)) showNight = true;
+      if (curMM && !["00", "15", "30", "45"].includes(curMM)) showAllMin = true;
+
+      const cell = (x) => `<div class="csel-h${x === h ? " csel-selected" : ""}" data-h="${pad2(x)}">${pad2(x)}</div>`;
+      const dayHours = Array.from({ length: 16 }, (_, i) => i + 6); // 06-21
+      const nightHours = [22, 23, 0, 1, 2, 3, 4, 5];
+      const mins = showAllMin ? Array.from({ length: 12 }, (_, i) => pad2(i * 5)) : ["00", "15", "30", "45"];
+
+      panel.innerHTML =
+        `<div class="csel-tp-head"><span class="csel-tp-big">${val || "--:--"}</span><span class="csel-tp-sub">${h < 0 ? "แตะชั่วโมงก่อน" : "แตะนาที หรือกด เสร็จ"}</span></div>` +
+        `<div class="csel-tp-label">ชั่วโมง</div>` +
+        `<div class="csel-hgrid">${dayHours.map(cell).join("")}</div>` +
+        (showNight
+          ? `<div class="csel-tp-label">ช่วงดึก</div><div class="csel-hgrid">${nightHours.map(cell).join("")}</div>`
+          : `<div class="csel-more" data-act="night">ช่วงดึก 22:00 – 05:59 ▾</div>`) +
+        `<div class="csel-tp-label">นาที</div>` +
+        `<div class="csel-mgrid${showAllMin ? " csel-mgrid-all" : ""}">${mins
+          .map((m) => `<div class="csel-m${m === curMM ? " csel-selected" : ""}" data-m="${m}">:${m}</div>`)
+          .join("")}</div>` +
+        (showAllMin ? "" : `<div class="csel-more" data-act="mins">นาทีอื่นๆ (ทีละ 5) ▾</div>`) +
+        `<div class="csel-done" role="button">เสร็จ</div>`;
+
+      panel.querySelectorAll(".csel-h").forEach((el) =>
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const mm = (select.value || "").slice(3, 5) || "00"; // เปลี่ยนชั่วโมง คงนาทีเดิมไว้
+          setTimeValue(el.dataset.h + ":" + mm);
+          renderTimePanel(); // อัปเดตไฮไลต์ ค้างแผงไว้ให้เลือกนาที
+          positionPanel();
+        }),
+      );
+      panel.querySelectorAll(".csel-m").forEach((el) =>
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const hh = (select.value || "").slice(0, 2);
+          if (!hh) return; // ยังไม่ได้เลือกชั่วโมง
+          setTimeValue(hh + ":" + el.dataset.m);
+          closePanel();
+        }),
+      );
+      panel.querySelectorAll(".csel-more").forEach((el) =>
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (el.dataset.act === "night") showNight = true;
+          else showAllMin = true;
+          renderTimePanel();
+          positionPanel();
+        }),
+      );
+      const done = panel.querySelector(".csel-done");
+      if (done) done.addEventListener("click", (e) => { e.stopPropagation(); closePanel(); });
+    }
+
     function renderPanel() {
-      const curHH = (select.value || "").slice(0, 2);
-      const curMM = (select.value || "").slice(3, 5);
+      if (opts.minutes) return renderTimePanel();
       const rows = Array.from(select.options)
-        .filter((o) => !o.disabled && (!opts.minutes || /:00$/.test(o.value)))
+        .filter((o) => !o.disabled)
         .map((o) => {
           const { label } = extractIcon(o.textContent || "");
-          const selectedClass = (opts.minutes ? o.value.slice(0, 2) === curHH : o.value === select.value) ? " csel-selected" : "";
+          const selectedClass = o.value === select.value ? " csel-selected" : "";
           return `<div class="csel-option${selectedClass}" data-value="${o.value.replace(/"/g, "&quot;")}">
             ${optionVisual(o)}<span class="csel-option-label">${label}</span>
           </div>`;
         })
         .join("");
-      // โหมดเลือกนาที: ใต้ตารางชั่วโมงมีแถวนาที (ทีละ 5) + ปุ่ม "เสร็จ" — เลือกชั่วโมงแล้วค้างแผงไว้ให้เลือกนาทีต่อ
-      let minutesHtml = "";
-      if (opts.minutes) {
-        const mins = Array.from({ length: 12 }, (_, i) => String(i * 5).padStart(2, "0"));
-        minutesHtml =
-          '<div class="csel-minutes-title">นาที</div><div class="csel-minutes">' +
-          mins.map((m) => `<div class="csel-min${m === curMM ? " csel-selected" : ""}" data-min="${m}">${m}</div>`).join("") +
-          '</div><div class="csel-done" role="button">เสร็จ</div>';
-      }
-      panel.innerHTML = rows ? (opts.grid ? '<div class="csel-grid">' + rows + "</div>" + minutesHtml : rows) : '<div class="csel-empty">ไม่มีตัวเลือก</div>';
-
-      if (opts.minutes) {
-        panel.querySelectorAll(".csel-min").forEach((m) =>
-          m.addEventListener("click", (e) => {
-            e.stopPropagation();
-            const hh = (select.value || "").slice(0, 2);
-            if (!hh) return; // ยังไม่ได้เลือกชั่วโมง
-            setTimeValue(hh + ":" + m.dataset.min);
-            closePanel();
-          }),
-        );
-        const done = panel.querySelector(".csel-done");
-        if (done) done.addEventListener("click", (e) => { e.stopPropagation(); closePanel(); });
-        panel.querySelectorAll(".csel-option").forEach((row) =>
-          row.addEventListener("click", (e) => {
-            e.stopPropagation();
-            const mm = (select.value || "").slice(3, 5) || "00"; // เปลี่ยนชั่วโมง คงนาทีเดิมไว้
-            setTimeValue(row.dataset.value.slice(0, 2) + ":" + mm);
-            renderPanel(); // อัปเดตไฮไลต์ ค้างแผงไว้ให้เลือกนาที
-          }),
-        );
-        return;
-      }
+      panel.innerHTML = rows ? (opts.grid ? '<div class="csel-grid">' + rows + "</div>" : rows) : '<div class="csel-empty">ไม่มีตัวเลือก</div>';
 
       panel.querySelectorAll(".csel-option").forEach((row) => {
         row.addEventListener("click", (e) => {

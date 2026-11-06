@@ -116,8 +116,51 @@ function setTimePreset(outHHMM, retHHMM) {
   r.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
+// ⏱ HH:MM -> นาทีนับจากเที่ยงคืน
+function hhmmToMin(v) {
+  const m = /^(\d{2}):(\d{2})$/.exec(v || "");
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+}
+
+// ⏱ สรุปบรรทัดเดียว: "09:30 → 11:45 · รวม 2 ชม. 15 นาที" (เวลากลับ <= เวลาไป = ข้ามคืน)
+function updateTimeSummary() {
+  const box = document.getElementById("time-summary");
+  if (!box) return;
+  const o = hhmmToMin(document.getElementById("out-time-select")?.value);
+  const r = hhmmToMin(document.getElementById("return-time-select")?.value);
+  if (o === null || r === null) {
+    box.classList.add("hidden");
+    return;
+  }
+  const overnight = r <= o;
+  const dur = overnight ? r + 1440 - o : r - o;
+  const h = Math.floor(dur / 60);
+  const m = dur % 60;
+  const txt = (h ? `${h} ชม.` : "") + (h && m ? " " : "") + (m ? `${m} นาที` : "");
+  box.innerHTML = `<i class="fa-regular fa-clock"></i> ใช้รถ <b>${txt || "0 นาที"}</b>${overnight ? " · ข้ามคืน 🌙" : ""}`;
+  box.classList.remove("hidden");
+}
+
+// ⏱ ปุ่มระยะเวลา: เวลากลับ = เวลาไป + ระยะที่เลือก (ต้องเลือกเวลาไปก่อน)
+function setDuration(minutes) {
+  const o = document.getElementById("out-time-select");
+  const r = document.getElementById("return-time-select");
+  const start = hhmmToMin(o?.value);
+  if (start === null) {
+    if (typeof showToast === "function") showToast("warning", "เลือกเวลาไปก่อน แล้วค่อยกดระยะเวลา");
+    return;
+  }
+  const t = (start + minutes) % 1440;
+  const v = String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0");
+  if (!Array.from(r.options).some((x) => x.value === v)) r.add(new Option(v, v));
+  r.dataset.manual = "1";
+  r.value = v;
+  r.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
 // 🌟 ถ้าเวลากลับ <= เวลาไป ถือว่าข้ามคืน โชว์ hint เตือนให้รู้ตัว (ไม่บล็อกการจอง)
 function checkOvernightHint() {
+  updateTimeSummary();
   const outVal = document.getElementById("out-time-select")?.value;
   const returnVal = document.getElementById("return-time-select")?.value;
   const hint = document.getElementById("overnight-hint");
