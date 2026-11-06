@@ -80,7 +80,7 @@ try {
     $status      = $data['booking_status'] ?? $booking['BookingStatus'];
 
     // สถานะจริงในระบบ (เดิมมี 'ขากลับ' ซึ่งไม่ใช่สถานะจริง ทำให้ตั้ง จองแล้ว/คืนแล้ว ไม่ได้)
-    $allowedStatuses = ['จองแล้ว', 'ขาไป', 'คืนแล้ว', 'ยกเลิก', 'ยกเลิก (ไม่มาใช้งาน)', 'ยกเลิก (ไม่ได้ใช้รถ)'];
+    $allowedStatuses = ['จองแล้ว', 'ขาไป', 'คืนแล้ว', 'ปิดโดยระบบ', 'ยกเลิก', 'ยกเลิก (ไม่มาใช้งาน)', 'ยกเลิก (ไม่ได้ใช้รถ)'];
     if (!in_array($status, $allowedStatuses, true)) {
         $status = $booking['BookingStatus'];
     }
@@ -198,6 +198,12 @@ try {
             )->execute([':rd' => date('Y-m-d'), ':rt' => date('H:i:s'), ':id' => $bookingId]);
             // sync ไมล์ล่าสุดเข้าตาราง Cars (ไม่ลดค่าลง ถ้ารถคันนี้มีทริปหลังจากนี้ไปแล้ว)
             // 🔒 ใช้ $originalCarPlate (รถที่ขับจริง) ไม่ใช่ $carPlate ที่อาจถูกแอดมินเปลี่ยนทะเบียนไปแล้วในคำขอเดียวกัน
+            $conn->prepare("UPDATE Cars SET Mileage = :m WHERE Plate = :p AND (Mileage IS NULL OR Mileage < :m2)")
+                 ->execute([':m' => (int)$endMile, ':p' => $originalCarPlate, ':m2' => (int)$endMile]);
+        }
+
+        // รายการ 'ปิดโดยระบบ' ที่แอดมินเพิ่งกรอกเลขไมล์คืนย้อนหลัง: ยังคงสถานะเดิม (ไม่นับคืนช้า) แต่ sync ไมล์ล่าสุดเข้าตาราง Cars
+        if ($status === 'ปิดโดยระบบ' && (int)$endMile > (int)$startMile && (int)$endMile > (int)($booking['EndMileage'] ?? 0)) {
             $conn->prepare("UPDATE Cars SET Mileage = :m WHERE Plate = :p AND (Mileage IS NULL OR Mileage < :m2)")
                  ->execute([':m' => (int)$endMile, ':p' => $originalCarPlate, ':m2' => (int)$endMile]);
         }

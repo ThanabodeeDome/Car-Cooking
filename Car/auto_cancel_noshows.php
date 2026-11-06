@@ -50,40 +50,88 @@ function autoRulesStart() {
 
 function autoCancelNoShows($conn) {
     autoReleaseNoShows($conn);
+    if (AUTO_CLOSE_ENABLED) autoCloseOverdueReturns($conn); // ปิดรายการที่ค้างก่อน เพื่อให้คิวถัดไปถูกเช็คอินในรอบเดียวกัน
     autoCheckInByTime($conn);
-    if (AUTO_CLOSE_ENABLED) autoCloseOverdueReturns($conn);
 }
 
-// รอบปิดรายการที่ไม่ได้คืนรถ: ทุกวันเวลานี้ (ชั่วโมง 0-23) ระบบปิดรายการ 'ขาไป' ที่ "เลยเวลากลับตามที่จอง" ให้เป็น 'คืนแล้ว'
-// ไม่เขียนเลขไมล์/ไม่แก้ Cars.Mileage (ไม่รู้เลขจริง) แต่ใส่หมายเหตุขึ้นต้นด้วย AUTO_CLOSE_TAG ให้หน้ารปภ./แอดมินแยกได้
-// รายการที่จองข้ามวันและยังไม่ถึงเวลากลับ ไม่ถูกปิด
-// ปิดการทำงานไว้ก่อน (ใช้วิธีคืนรถแบบเดิม: ผู้ขับคืนเอง / รปภ. จดให้) — เปลี่ยนเป็น true เมื่อจะเปิดใช้กฎนี้
-const AUTO_CLOSE_ENABLED = false;
-const AUTO_CLOSE_HOUR = 20;
-const AUTO_CLOSE_TAG  = 'ระบบปิดอัตโนมัติ';
+// ปิดรายการ 'ขาไป' ที่เลยเวลากลับตามที่จอง ให้เป็นสถานะ 'ปิดโดยระบบ' (ไม่ใช่ 'คืนแล้ว' จึงไม่นับเป็นคืนช้า / ไม่มีเลขไมล์คืน)
+// ปิดเมื่อ "เวลาใดเวลาหนึ่งมาถึงก่อน" (นับจากเวลากลับตามที่จอง = EndAt ซึ่งจองข้ามคืนคำนวณไว้แล้ว):
+//   1) ถึงเวลาเริ่มของคิวถัดไป (สถานะ 'จองแล้ว' ของรถคันเดียวกัน) -> ปิดทันทีให้คิวถัดไปรับรถ
+//   2) เลยเวลากลับมา AUTO_CLOSE_GRACE_HOURS ชั่วโมง
+// ข้ามรายการที่ผู้ใช้กด "รถยังไม่มา" (WaitingCarAt) และรายการที่ EndAt เก่ากว่าเวลาเปิดใช้กฎ (แอดมินปิดเองครั้งเดียว)
+// ไม่เขียนเลขไมล์/ไม่แก้ Cars.Mileage — แอดมิน/รปภ. กรอกเลขไมล์ย้อนหลังได้
+// ต้องรัน SQL คอลัมน์ใหม่ (db/migrations/2026-11-06_auto-close.sql) ก่อน ไม่งั้นข้ามเงียบๆ
+const AUTO_CLOSE_ENABLED     = true;
+const AUTO_CLOSE_GRACE_HOURS = 3;
+const AUTO_CLOSE_STATUS      = 'ปิดโดยระบบ';
+const AUTO_CLOSE_TAG         = 'ระบบปิดอัตโนมัติ';
 
-function autoCloseOverdueReturns($conn, ?int $nowTs = null) {
+function autoCloseColumnsOk($conn): bool {
+    static $ok = null;
+    if ($ok === null) {
+        try {
+            $ok = (int)$conn->query("SELECT COUNT(*) FROM sys.columns WHERE object_id = OBJECT_ID('CarBookings') AND name IN ('ClosedReason','ClosedAt','StartMileageEst','WaitingCarAt')")->fetchColumn() === 4;
+        } catch (Throwable $e) { $ok = false; }
+    }
+    return $ok;
+}
+
+// เส้นแบ่งเวลาของกฎนี้โดยเฉพาะ (เก็บไฟล์เหมือน autoRulesStart): รายการที่ค้างมาก่อนเปิดใช้ ให้แอดมินปิดเองครั้งเดียว ระบบไม่ปิดย้อนหลัง
+function autoCloseStart() {
+    static $cut = null;
+    if ($cut !== null) return $cut;
+    $cut = date('Y-m-d H:i:s');
     try {
-        $nowTs = $nowTs ?? time();
-        $hh = sprintf('%02d:00:00', AUTO_CLOSE_HOUR);
-        // รอบล่าสุดที่ถึงแล้ว: วันนี้ถ้าเลยเวลาแล้ว ไม่งั้นเมื่อวาน
-        $cutDay = (int)date('G', $nowTs) >= AUTO_CLOSE_HOUR ? date('Y-m-d', $nowTs) : date('Y-m-d', strtotime('-1 day', $nowTs));
-        $cut = $cutDay . ' ' . $hh;
-        $remark = AUTO_CLOSE_TAG . ' ' . sprintf('%02d:00', AUTO_CLOSE_HOUR) . ' (ไม่มีบันทึกเลขไมล์)';
-        $where = "FROM CarBookings b
-             JOIN (" . bookingTimesSql("N'ขาไป'") . ") t ON t.BookingID = b.BookingID
-             WHERE b.BookingStatus = N'ขาไป'
-               AND t.EndAt IS NOT NULL AND t.EndAt <= '$cut' AND t.EndAt >= '" . autoRulesStart() . "'";
-        $due = $conn->query("SELECT b.BookingID, b.BookingNumber, b.CarPlate, b.DriverName $where")->fetchAll(PDO::FETCH_ASSOC);
+        require_once __DIR__ . '/../session_policy.php';
+        $dir = cb_state_dir();
+        if ($dir) {
+            $file = $dir . DIRECTORY_SEPARATOR . 'auto_close_start.txt';
+            $v = is_file($file) ? trim((string)@file_get_contents($file)) : '';
+            if (!preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $v)) {
+                $v = date('Y-m-d H:i:s');
+                @file_put_contents($file, $v, LOCK_EX);
+            }
+            $cut = $v;
+        }
+    } catch (Throwable $e) { error_log('autoCloseStart: ' . $e->getMessage()); }
+    return $cut;
+}
+
+function autoCloseOverdueReturns($conn) {
+    try {
+        if (!autoCloseColumnsOk($conn)) return;
+        $grace = (int)AUTO_CLOSE_GRACE_HOURS;
+        $sql = "SELECT b.BookingID, b.BookingNumber, b.CarPlate, b.DriverName, t.EndAt, nx.NextStart
+                FROM CarBookings b
+                JOIN (" . bookingTimesSql("N'ขาไป'") . ") t ON t.BookingID = b.BookingID
+                OUTER APPLY (SELECT TOP 1 n.StartAt AS NextStart
+                             FROM (" . bookingTimesSql("N'จองแล้ว'") . ") n
+                             WHERE REPLACE(n.CarPlate, ' ', '') = REPLACE(b.CarPlate, ' ', '')
+                               AND n.StartAt >= t.StartAt AND n.StartAt <= GETDATE()
+                               AND (n.EndAt IS NULL OR n.EndAt > GETDATE())
+                             ORDER BY n.StartAt) nx
+                WHERE b.BookingStatus = N'ขาไป' AND b.WaitingCarAt IS NULL
+                  AND t.EndAt IS NOT NULL AND t.EndAt <= GETDATE() AND t.EndAt >= '" . autoCloseStart() . "'
+                  AND (nx.NextStart IS NOT NULL OR DATEADD(HOUR, $grace, t.EndAt) <= GETDATE())";
+        $due = $conn->query($sql)->fetchAll(PDO::FETCH_ASSOC);
         if (!$due) return;
+        require_once __DIR__ . '/log_lib.php';
         $up = $conn->prepare(
-            "UPDATE b SET b.BookingStatus = N'คืนแล้ว', b.ReturnDate = :d, b.ReturnTime = :t, b.ReturnRemark = :r $where"
+            "UPDATE CarBookings SET BookingStatus = N'" . AUTO_CLOSE_STATUS . "', ReturnDate = :d, ReturnTime = :t, ReturnRemark = :r,
+                    ClosedReason = :why, ClosedAt = :at
+             WHERE BookingID = :id AND BookingStatus = N'ขาไป'"
         );
-        $up->execute([':d' => $cutDay, ':t' => $hh, ':r' => $remark]);
-        if ($up->rowCount() > 0) {
-            require_once __DIR__ . '/log_lib.php';
-            foreach ($due as $d) {
-                sl_log($conn, 'return_auto', 'ระบบปิดรายการที่ไม่ได้คืนรถ ' . trim($d['CarPlate'] . ' ' . $d['DriverName']), [
+        foreach ($due as $d) {
+            $endTs   = strtotime($d['EndAt']);
+            $graceTs = $endTs + $grace * 3600;
+            $nextTs  = !empty($d['NextStart']) ? strtotime($d['NextStart']) : null;
+            $byQueue = $nextTs !== null && $nextTs <= $graceTs;
+            $closeTs = $byQueue ? max($nextTs, $endTs) : $graceTs;
+            $why     = $byQueue ? 'next_queue' : 'timeout';
+            $remark  = AUTO_CLOSE_TAG . ($byQueue ? ': คิวถัดไปถึงเวลารับรถ' : ": เลยเวลาคืน $grace ชม.") . ' (ไม่มีบันทึกเลขไมล์คืน — รอแอดมิน/รปภ. กรอก)';
+            $up->execute([':d' => date('Y-m-d', $closeTs), ':t' => date('H:i:s', $closeTs), ':r' => $remark, ':why' => $why, ':at' => date('Y-m-d H:i:s', $closeTs), ':id' => $d['BookingID']]);
+            if ($up->rowCount() > 0) {
+                sl_log($conn, 'return_auto', 'ระบบปิดรายการที่ไม่ได้คืนรถ ' . trim($d['CarPlate'] . ' ' . $d['DriverName']) . ($byQueue ? ' (คิวถัดไปถึงเวลา)' : " (เลยเวลา $grace ชม.)"), [
                     'system' => true, 'target_type' => 'booking', 'target' => (string)$d['BookingNumber'],
                 ]);
             }
@@ -122,6 +170,11 @@ function autoCheckInByTime($conn) {
     try {
         require_once __DIR__ . '/geo_lib.php';
         $mark = geo_columns_ok($conn) ? ", b.CheckInGeo = 'auto'" : ''; // ให้แอดมินเห็นว่าเป็นการเช็คอินอัตโนมัติ
+        // เลขไมล์เริ่มดึงจาก Cars.Mileage: ถ้ารถคันนี้มีรอบที่ระบบปิดเองและยังไม่มีใครกรอกเลขไมล์คืน เลขนี้อาจเก่า -> ติดป้าย "ประมาณการ"
+        if (autoCloseColumnsOk($conn)) {
+            $mark .= ", b.StartMileageEst = CASE WHEN EXISTS (SELECT 1 FROM CarBookings p WHERE REPLACE(p.CarPlate, ' ', '') = REPLACE(b.CarPlate, ' ', '')
+                          AND p.BookingStatus = N'" . AUTO_CLOSE_STATUS . "' AND p.EndMileage IS NULL) THEN 1 ELSE 0 END";
+        }
         $dueSql = "FROM CarBookings b
              JOIN (SELECT BookingID, StartAt,
                           ROW_NUMBER() OVER (PARTITION BY REPLACE(CarPlate, ' ', '') ORDER BY StartAt, BookingID) AS rn

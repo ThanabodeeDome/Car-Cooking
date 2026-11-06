@@ -14,6 +14,7 @@
 .st-night { --c: #8b5cf6; --fg: #b79cff; }
 .st-late { --c: #f97316; --fg: #fdba74; }
 .st-lateret { --c: #ec4899; --fg: #f9a8d4; }
+.st-sys { --c: #0ea5e9; --fg: #7dd3fc; }
 @keyframes st-pop { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
 @keyframes st-ring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 55%, transparent); } 70%, 100% { box-shadow: 0 0 0 8px transparent; } }
 @keyframes st-drive { 0%, 100% { transform: translateX(-1px); } 50% { transform: translateX(1.5px); } }

@@ -147,9 +147,23 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
         $overdue = 0;
         foreach ($out as $o) if ((int)$o['OverdueMin'] > 60) $overdue++;
 
+        // รายการที่ระบบปิดให้ (เลยเวลา) และยังไม่มีเลขไมล์คืน — รปภ./แอดมินกรอกย้อนหลัง
+        $closedPending = [];
+        if (autoCloseColumnsOk($conn)) {
+            $closedPending = $conn->query(
+                "SELECT TOP 100 b.BookingID, b.CarPlate, b.DriverName, b.StartMileage, b.StartMileageEst, b.ClosedReason,
+                        CONVERT(varchar(16), b.ClosedAt, 120) AS ClosedAt, c.Brand, c.Model, du.phone AS DriverPhone
+                 FROM CarBookings b
+                 LEFT JOIN Cars c ON REPLACE(c.Plate, ' ', '') = REPLACE(b.CarPlate, ' ', '')
+                 LEFT JOIN Users du ON du.employee_id = b.EmployeeID
+                 WHERE b.BookingStatus = N'" . AUTO_CLOSE_STATUS . "' AND (b.EndMileage IS NULL OR b.EndMileage <= 0)
+                 ORDER BY b.ClosedAt DESC, b.BookingID DESC"
+            )->fetchAll(PDO::FETCH_ASSOC);
+        }
+
         echo json_encode([
             'success' => true, 'guard' => $guardName, 'is_admin' => $isAdminUser, 'date' => $date, 'is_today' => $isToday,
-            'out' => $out, 'upcoming' => $upcoming, 'returned' => $done, 'returned_today' => $isToday ? $done : [],
+            'out' => $out, 'closed_pending' => $closedPending, 'upcoming' => $upcoming, 'returned' => $done, 'returned_today' => $isToday ? $done : [],
             'summary' => ['returned' => count($done), 'auto' => count(array_filter($done, fn($x) => $x['auto_closed'])), 'km' => $km, 'out' => count($out), 'overdue' => $overdue, 'upcoming' => count($upcoming)],
         ], JSON_UNESCAPED_UNICODE);
     } catch (PDOException $e) {
@@ -207,7 +221,7 @@ if (!empty($_FILES['photo'])) {
 
 $data = json_decode(file_get_contents('php://input'), true);
 $action = is_array($data) ? ($data['action'] ?? '') : '';
-if (!in_array($action, ['return', 'edit_return', 'undo_return'], true)) {
+if (!in_array($action, ['return', 'edit_return', 'undo_return', 'fill_closed'], true)) {
     echo json_encode(['success' => false, 'message' => 'คำสั่งไม่ถูกต้อง']);
     exit;
 }
@@ -250,6 +264,39 @@ try {
             'target_type' => 'booking', 'target' => $bi['no'], 'detail' => ['guard' => $guardName, 'was_end_mileage' => (int)$b['EndMileage']],
         ]);
         echo json_encode(['success' => true, 'message' => 'ยกเลิกการจดแล้ว รถกลับไปอยู่ในรายการ "ยังไม่คืน"'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    // ================= กรอกเลขไมล์คืนย้อนหลัง ให้รายการที่ระบบปิดให้ =================
+    if ($action === 'fill_closed') {
+        $fillMile = isset($data['end_mile']) && is_scalar($data['end_mile']) && preg_match('/^\d{1,7}$/', (string)$data['end_mile']) ? (int)$data['end_mile'] : 0;
+        if ($b['BookingStatus'] !== AUTO_CLOSE_STATUS || (int)$b['EndMileage'] > 0) {
+            echo json_encode(['success' => false, 'code' => 'stale', 'message' => 'รายการนี้ไม่อยู่ในสถานะรอกรอกเลขไมล์แล้ว (รีเฟรช)']);
+            exit;
+        }
+        $startMile = (int)$b['StartMileage'];
+        if ($fillMile <= 0 || $fillMile <= $startMile) {
+            echo json_encode(['success' => false, 'message' => 'เลขไมล์ต้องมากกว่าตอนออก (' . number_format($startMile) . ' กม.) — ถ้าเลขไมล์ออกเป็นค่าประมาณและไม่ตรง ให้แจ้งแอดมินแก้เลขไมล์ออกก่อน']);
+            exit;
+        }
+        $dist = $fillMile - $startMile;
+        if ($dist > 1500 && empty($data['confirm_far'])) {
+            echo json_encode(['success' => false, 'code' => 'far_distance', 'message' => 'ระยะทาง ' . number_format($dist) . ' กม. ดูผิดปกติ (เกิน 1,500) ตรวจเลขไมล์ให้แน่ใจ']);
+            exit;
+        }
+        $conn->beginTransaction();
+        $fillNote = ' | ' . $whoLabel . ' ' . $guardName . ' กรอกเลขไมล์คืนย้อนหลัง ' . date('d/m H:i');
+        $up = $conn->prepare("UPDATE CarBookings SET EndMileage = :m, ReturnRemark = LEFT(ISNULL(ReturnRemark, N'') + :n, 1000) WHERE BookingID = :id AND BookingStatus = N'" . AUTO_CLOSE_STATUS . "' AND (EndMileage IS NULL OR EndMileage <= 0)");
+        $up->execute([':m' => $fillMile, ':n' => $fillNote, ':id' => $bookingId]);
+        if ($up->rowCount() === 0) { $conn->rollBack(); echo json_encode(['success' => false, 'code' => 'stale', 'message' => 'มีคนกรอกไปแล้ว (รีเฟรช)']); exit; }
+        // ไมล์ล่าสุดของรถ: เพิ่มเฉพาะเมื่อมากกว่าค่าเดิม (รถอาจมีรอบหลังจากนี้ไปแล้ว)
+        $conn->prepare("UPDATE Cars SET Mileage = :m WHERE Plate = :p AND (Mileage IS NULL OR Mileage < :m2)")->execute([':m' => $fillMile, ':p' => $b['CarPlate'], ':m2' => $fillMile]);
+        $conn->commit();
+        $bi = sl_booking_info($conn, $bookingId);
+        sl_log($conn, 'return_fill', $whoLabel . ' กรอกเลขไมล์คืนย้อนหลัง (ระบบปิดให้) ' . trim($bi['plate'] . ' ' . $bi['driver']) . ' ไมล์คืน ' . number_format($fillMile) . ' กม.', [
+            'target_type' => 'booking', 'target' => $bi['no'], 'detail' => ['start_mileage' => $startMile, 'end_mileage' => $fillMile, 'guard' => $guardName],
+        ]);
+        echo json_encode(['success' => true, 'plate' => $b['CarPlate'], 'driver' => $b['DriverName'], 'distance' => $dist, 'message' => 'บันทึกเลขไมล์แล้ว'], JSON_UNESCAPED_UNICODE);
         exit;
     }
 

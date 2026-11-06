@@ -1867,6 +1867,7 @@ input[type="file"].ctrl-input::file-selector-button:hover {
 .rp-tag { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
 .rp-tag.red { background: #fee2e2; color: #b91c1c; }
 .rp-tag.violet { background: #ede9fe; color: #6d28d9; }
+.rp-tag.sky { background: #e0f2fe; color: #0369a1; }
 .rp-rank { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: #f1f5f9; color: #475569; font-size: 12px; font-weight: 700; }
 .rp-rank.r1 { background: #fef3c7; color: #b45309; }
 .rp-rank.r2 { background: #e2e8f0; color: #334155; }
@@ -2578,6 +2579,7 @@ tr.clickable-row:hover td { background: #fafbff; }
 .st-night { --c: #8b5cf6; --bg: #f0eaff; --fg: #6d28d9; }
 .st-late { --c: #f97316; --bg: #fff0e6; --fg: #c2410c; }
 .st-lateret { --c: #ec4899; --bg: #fdeaf3; --fg: #be185d; }
+.st-sys { --c: #0ea5e9; --bg: #e6f6fd; --fg: #0369a1; }
 @keyframes st-pop { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
 @keyframes st-ring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 55%, transparent); } 70%, 100% { box-shadow: 0 0 0 8px transparent; } }
 @keyframes st-drive { 0%, 100% { transform: translateX(-1px); } 50% { transform: translateX(1.5px); } }

@@ -21,7 +21,8 @@ function adminDistanceText(bk) {
   const start = Number(bk.StartMileage);
   const end = Number(bk.EndMileage);
   if (!end || !start || end <= start) return "-";
-  return (end - start).toLocaleString("th-TH") + " กม.";
+  // เลขไมล์ออกเป็นค่าประมาณ (ระบบเติมให้หลังรอบก่อนหน้าถูกปิดอัตโนมัติ) ระยะทางจึงเป็นค่าประมาณด้วย
+  return (end - start).toLocaleString("th-TH") + " กม." + (Number(bk.StartMileageEst) ? " (ประมาณ)" : "");
 }
 
 function switchTab(tabId) {
@@ -758,7 +759,7 @@ function loadAdminBookings() {
           // ใช้ badge ชุดเดียวกับ homepage.js/.css (.status-badge + .status-xxx)
           // สถานะจริงในระบบ: จองแล้ว(ติดจอง) → ขาไป(กำลังใช้งาน) → คืนแล้ว | ยกเลิก | ยกเลิก (ไม่มาใช้งาน)
           let statusClass = "status-booked";
-          if (bk.BookingStatus === "คืนแล้ว" || bk.BookingStatus === "ขากลับ") statusClass = "status-returned";
+          if (bk.BookingStatus === "คืนแล้ว" || bk.BookingStatus === "ขากลับ" || bk.BookingStatus === "ปิดโดยระบบ") statusClass = "status-returned";
           else if (bk.BookingStatus && bk.BookingStatus.includes("ยกเลิก")) statusClass = "status-cancelled";
           else if (bk.BookingStatus === "ขาไป") statusClass = "status-inuse";
 
@@ -900,7 +901,7 @@ function renderCalendar() {
     displayEventTime: false, // ปิดเวลาดิบ (08:00) ที่ทำให้งง ใช้ label ในชื่อ event แทน
     eventClassNames: (arg) => {
       const st = (arg.event.extendedProps && arg.event.extendedProps.status) || "";
-      return ["cal-ev", st === "คืนแล้ว" ? "cal-st-done" : st === "ขาไป" ? "cal-st-out" : "cal-st-booked"];
+      return ["cal-ev", st === "คืนแล้ว" || st === "ปิดโดยระบบ" ? "cal-st-done" : st === "ขาไป" ? "cal-st-out" : "cal-st-booked"];
     },
     eventContent: (arg) => {
       const p = arg.event.extendedProps || {};
@@ -1078,8 +1079,9 @@ function openBookingDetailModal(bk) {
 
       <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; margin-bottom: 18px; padding: 12px; background:#f8fafc; border-radius:8px;">
         <div><strong>เวลาเช็คอิน:</strong> ${bk.CheckInTime || "ยังไม่เช็คอิน"}</div>
-        <div><strong>เลขไมล์ตอนออก:</strong> ${bk.StartMileage ?? "-"}</div>
-        <div><strong>วันที่/เวลาคืน:</strong> ${bk.ReturnDate ? `${bk.ReturnDate} ${bk.ReturnTime || ""}` : "ยังไม่คืน"}</div>
+        <div><strong>เลขไมล์ตอนออก:</strong> ${bk.StartMileage ?? "-"}${Number(bk.StartMileageEst) ? ` <span class="rp-tag amber" title="ระบบเติมจากเลขไมล์ล่าสุดของรถ เพราะรอบก่อนหน้าถูกปิดอัตโนมัติและยังไม่มีเลขไมล์คืน">ประมาณการ ไม่ใช่เลขจริง</span>` : ""}</div>
+        <div><strong>วันที่/เวลาคืน:</strong> ${bk.ReturnDate ? `${bk.ReturnDate} ${bk.ReturnTime || ""}` : "ยังไม่คืน"}${bk.BookingStatus === "ปิดโดยระบบ" ? ` <span class="rp-tag sky">ระบบปิดให้${bk.ClosedReason === "next_queue" ? " (คิวถัดไปถึงเวลา)" : " (เลยเวลา 3 ชม.)"}</span>` : ""}</div>
+        ${bk.WaitingCarAt ? `<div style="grid-column: span 2;"><strong>รอรถ:</strong> ผู้ใช้กด "รถยังไม่มา" เมื่อ ${escapeHtml(String(bk.WaitingCarAt).slice(0, 16))}</div>` : ""}
         <div><strong>เลขไมล์ตอนคืน:</strong> ${bk.EndMileage ?? "-"}</div>
         <div><strong>ระยะทางที่ใช้:</strong> ${adminDistanceText(bk)}</div>
         ${geoLine("พิกัดเช็คอิน", bk.CheckInGeo, bk.CheckInLat, bk.CheckInLng, bk.CheckInDist, !!bk.CheckInTime)}
@@ -1141,8 +1143,8 @@ function openBookingEditModal(bk) {
   overlay.id = "booking-edit-modal-overlay";
   overlay.addEventListener("mousedown", (e) => e.target === overlay && closeBookingEditModal());
 
-  const statuses = ["จองแล้ว", "ขาไป", "คืนแล้ว", "ยกเลิก", "ยกเลิก (ไม่มาใช้งาน)", "ยกเลิก (ไม่ได้ใช้รถ)"];
-  const statusClass = (bk.BookingStatus || "").includes("ยกเลิก") ? "status-cancelled" : bk.BookingStatus === "คืนแล้ว" ? "status-returned" : bk.BookingStatus === "ขาไป" ? "status-inuse" : "status-booked";
+  const statuses = ["จองแล้ว", "ขาไป", "คืนแล้ว", "ปิดโดยระบบ", "ยกเลิก", "ยกเลิก (ไม่มาใช้งาน)", "ยกเลิก (ไม่ได้ใช้รถ)"];
+  const statusClass = (bk.BookingStatus || "").includes("ยกเลิก") ? "status-cancelled" : bk.BookingStatus === "คืนแล้ว" || bk.BookingStatus === "ปิดโดยระบบ" ? "status-returned" : bk.BookingStatus === "ขาไป" ? "status-inuse" : "status-booked";
 
   overlay.innerHTML = `
     <div class="modal-content ef-modal">

@@ -30,7 +30,7 @@ try {
     $events = [];
     foreach ($rows as $r) {
         [$startT, $endT, $slotLabel] = $slotTimes[$r['TimeSlot']] ?? ['08:00:00', '17:00:00', ''];
-        $isReturned = $r['BookingStatus'] === 'คืนแล้ว';
+        $isReturned = in_array($r['BookingStatus'], ['คืนแล้ว', 'ปิดโดยระบบ'], true);
 
         // 🩹 'กลางคืน' จบข้ามเที่ยงคืน ต้อง +1 วันให้ end date ไม่งั้น end เวลาน้อยกว่า start ปฏิทินจะพัง
         $endDate = $r['BookingDate'];

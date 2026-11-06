@@ -139,6 +139,27 @@
         ? '<p class="gd-empty"><i class="fa-solid fa-magnifying-glass"></i> ไม่พบรายการที่ตรงกับ "' + esc($("gd-q").value) + '"</p>'
         : '<p class="gd-empty"><i class="fa-solid fa-circle-check"></i> ไม่มีรถค้างอยู่ — รถทุกคันกลับมาแล้ว</p>';
 
+    // ----- ระบบปิดให้ (เลยเวลา) รอกรอกเลขไมล์คืน -----
+    const closedList = data.closed_pending || [];
+    $("gd-closed-panel").hidden = closedList.length === 0;
+    $("gd-closed").innerHTML = closedList
+      .map(
+        (c) => `
+        <div class="od-row" data-id="${Number(c.BookingID)}">
+          <div class="gd-lead"><div class="od-plate">${esc(c.CarPlate)}</div><div class="gd-code">รหัสจอง <b>${Number(c.BookingID)}</b></div></div>
+          <div class="od-info">
+            <b>${esc(((c.Brand || "") + " " + (c.Model || "")).trim() || "รถยนต์")} <small>${esc(c.DriverName || "-")}</small></b>
+            <span>ระบบปิดเมื่อ ${esc(String(c.ClosedAt || "").slice(0, 16))} น. (${c.ClosedReason === "next_queue" ? "คิวถัดไปถึงเวลา" : "เลยเวลาคืน"}) • ไมล์ตอนออก ${num(c.StartMileage)} กม.${Number(c.StartMileageEst) ? " (ประมาณการ)" : ""}</span>
+            ${callBtn(c.DriverPhone)}
+          </div>
+          <div class="od-actions" style="display:flex;gap:6px;align-items:center">
+            <input type="text" inputmode="numeric" class="gd-fill-in" placeholder="เลขไมล์เต็ม" style="width:120px" />
+            <button type="button" class="od-btn primary gd-fill"><i class="fa-solid fa-floppy-disk"></i> บันทึก</button>
+          </div>
+        </div>`,
+      )
+      .join("");
+
     // ----- จองวันนี้ ยังไม่มารับรถ -----
     $("gd-up-panel").hidden = false;
     $("gd-up").innerHTML = upcomingList.length
@@ -499,6 +520,30 @@
   $("gd-out").addEventListener("click", (e) => {
     const b = e.target.closest(".gd-go");
     if (b) openModal(outList[Number(b.dataset.i)], "return");
+  });
+  $("gd-closed").addEventListener("click", async (e) => {
+    const b = e.target.closest(".gd-fill");
+    if (!b) return;
+    const row = b.closest(".od-row");
+    const mile = (row.querySelector(".gd-fill-in").value || "").replace(/\D/g, "");
+    if (!mile) return toast("กรอกเลขไมล์ก่อน", false);
+    b.disabled = true;
+    const send = (extra) =>
+      fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.assign({ action: "fill_closed", booking_id: Number(row.dataset.id), end_mile: mile }, extra || {})) }).then((x) => x.json());
+    try {
+      let r = await send();
+      if (!r.success && r.code === "far_distance" && confirm(r.message + "\nยืนยันบันทึกตามนี้?")) r = await send({ confirm_far: true });
+      if (r.success) {
+        toast("บันทึกเลขไมล์แล้ว", true);
+        load(true);
+      } else {
+        toast(r.message || "บันทึกไม่สำเร็จ", false);
+        if (r.code === "stale") load(true);
+      }
+    } catch (_) {
+      toast("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", false);
+    }
+    b.disabled = false;
   });
   $("gd-done").addEventListener("click", (e) => {
     const b = e.target.closest(".gd-edit");

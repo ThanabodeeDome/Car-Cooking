@@ -51,7 +51,7 @@ function updateHistoryTable() {
         .map((item) => {
           const status = item.booking_status || "";
           const isCancelled = status.includes("ยกเลิก");
-          const isReturned = status === "คืนแล้ว";
+          const isReturned = status === "คืนแล้ว" || status === "ปิดโดยระบบ";
 
           let badgeClass, badgeText;
           if (isCancelled) {
@@ -59,7 +59,7 @@ function updateHistoryTable() {
             badgeText = "ยกเลิก";
           } else if (isReturned) {
             badgeClass = "status-returned";
-            badgeText = "คืนแล้ว";
+            badgeText = status === "ปิดโดยระบบ" ? "ปิดโดยระบบ" : "คืนแล้ว";
           } else if (item.checkin_time) {
             badgeClass = "status-inuse";
             badgeText = "กำลังใช้งาน";
@@ -176,7 +176,7 @@ function updateStatsCounters(bookings) {
     (item) => item.booking_status === "ขาไป",
   ).length;
   const complete = bookings.filter(
-    (item) => item.booking_status === "คืนแล้ว",
+    (item) => item.booking_status === "คืนแล้ว" || item.booking_status === "ปิดโดยระบบ",
   ).length;
 
   totalElement.innerText = total;

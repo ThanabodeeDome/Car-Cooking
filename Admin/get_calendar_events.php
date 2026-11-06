@@ -28,7 +28,7 @@ try {
               AND BookingStatus NOT LIKE N'ยกเลิก%'";
     $rows = $conn->query($sql)->fetchAll(PDO::FETCH_ASSOC);
 
-    $colors = ['คืนแล้ว' => '#8b5cf6', 'ขาไป' => '#2563eb', 'จองแล้ว' => '#f59e0b'];
+    $colors = ['คืนแล้ว' => '#8b5cf6', 'ปิดโดยระบบ' => '#8b5cf6', 'ขาไป' => '#2563eb', 'จองแล้ว' => '#f59e0b'];
 
     $events = [];
     foreach ($rows as $r) {

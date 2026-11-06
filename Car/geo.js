@@ -6,7 +6,7 @@
   let cached = null; // {pos, at}
   let inflight = null;
 
-  function ask(timeoutMs, fresh) {
+  function ask(timeoutMs, fresh, high) {
     return new Promise((resolve) => {
       if (!navigator.geolocation) return resolve(null);
       let done = false;
@@ -20,7 +20,7 @@
       navigator.geolocation.getCurrentPosition(
         (p) => fin({ lat: p.coords.latitude, lng: p.coords.longitude, acc: Math.round(p.coords.accuracy || 0), ts: p.timestamp, sent: Date.now() }),
         () => fin(null),
-        { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: fresh ? 0 : 60000 },
+        { enableHighAccuracy: high !== false, timeout: timeoutMs, maximumAge: fresh ? 0 : 60000 },
       );
     });
   }
@@ -30,7 +30,8 @@
     if (!force && cached && Date.now() - cached.at < 120000) return Promise.resolve(cached.pos);
     if (force) { cached = null; inflight = null; }
     if (!inflight) {
-      inflight = ask(force ? 12000 : 8000, !!force).then((pos) => {
+      // ลองแบบ GPS ก่อน ถ้าไม่ได้ (อยู่ในอาคาร/สัญญาณอ่อน) ลองซ้ำแบบตำแหน่งจากเครือข่าย/WiFi (ยอมค่าที่เก่าไม่เกิน 2 นาที)
+      inflight = ask(force ? 10000 : 8000, !!force, true).then((p1) => p1 || ask(10000, false, false)).then((pos) => {
         inflight = null;
         if (pos) cached = { pos: Object.assign({}, pos), at: Date.now() };
         return pos;

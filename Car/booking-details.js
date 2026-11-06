@@ -73,7 +73,7 @@ function updateSummaryMetrics(bookings) {
 
   bookings.forEach((bk) => {
     const isCancelled = bk.BookingStatus && bk.BookingStatus.includes("ยกเลิก");
-    const isReturned = bk.BookingStatus === "คืนแล้ว";
+    const isReturned = bk.BookingStatus === "คืนแล้ว" || bk.BookingStatus === "ปิดโดยระบบ";
 
     if (isCancelled) {
       countCancelled++;
@@ -116,7 +116,7 @@ function applyFilterAndRender(highlightPlate) {
 
   const filtered = allBookings.filter((bk) => {
     const isCancelled = bk.BookingStatus && bk.BookingStatus.includes("ยกเลิก");
-    const isReturned = bk.BookingStatus === "คืนแล้ว";
+    const isReturned = bk.BookingStatus === "คืนแล้ว" || bk.BookingStatus === "ปิดโดยระบบ";
     const isActive = !isCancelled && !isReturned;
 
     // Filter by tab
@@ -170,7 +170,7 @@ function applyFilterAndRender(highlightPlate) {
   // Render cards
   filtered.forEach((bk) => {
     const isCancelled = bk.BookingStatus && bk.BookingStatus.includes("ยกเลิก");
-    const isReturned = bk.BookingStatus === "คืนแล้ว";
+    const isReturned = bk.BookingStatus === "คืนแล้ว" || bk.BookingStatus === "ปิดโดยระบบ";
     const dropdownId = `bk-${bk.BookingID}`;
 
     let statusClass, statusText, statusIcon;
@@ -180,8 +180,8 @@ function applyFilterAndRender(highlightPlate) {
       statusIcon = "fa-solid fa-ban";
     } else if (isReturned) {
       statusClass = "status-returned";
-      statusText = "คืนแล้ว";
-      statusIcon = "fa-solid fa-circle-check";
+      statusText = bk.BookingStatus === "ปิดโดยระบบ" ? "ปิดโดยระบบ" : "คืนแล้ว";
+      statusIcon = bk.BookingStatus === "ปิดโดยระบบ" ? "fa-solid fa-robot" : "fa-solid fa-circle-check";
     } else if (bk.CheckInTime) {
       statusClass = "status-inuse";
       statusText = "กำลังใช้งาน";
@@ -193,7 +193,7 @@ function applyFilterAndRender(highlightPlate) {
     }
 
     // สถานะดิบสำหรับป้ายกลาง (ยกเลิกใช้ค่าจริงเพื่อแยก "ไม่ได้ใช้รถ" / "ไม่มาใช้งาน")
-    const rawStatus = isCancelled ? bk.BookingStatus : isReturned ? "คืนแล้ว" : bk.CheckInTime ? "ขาไป" : "จองแล้ว";
+    const rawStatus = isCancelled ? bk.BookingStatus : isReturned ? bk.BookingStatus : bk.CheckInTime ? "ขาไป" : "จองแล้ว";
 
     const row = document.createElement("article");
     row.className = "booking-row-container";

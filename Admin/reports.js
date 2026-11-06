@@ -11,6 +11,7 @@ const RP_STATUS_COLOR = {
   ยกเลิก: RP_COLORS.red,
   "ยกเลิก (ไม่มาใช้งาน)": RP_COLORS.violet,
   "ยกเลิก (ไม่ได้ใช้รถ)": RP_COLORS.slate,
+  ปิดโดยระบบ: RP_COLORS.sky,
 };
 const rpCharts = {};
 let rpData = null;
@@ -142,6 +143,8 @@ function renderAlert(k) {
   if (!el) return;
   const msgs = [];
   if (k.geo_flags) msgs.push(`<i class="fa-solid fa-location-crosshairs"></i> พิกัดผิดปกติ ${k.geo_flags} ครั้ง (เช็คอิน/คืนรถนอกจุดบริษัทหรือไม่มีพิกัด)`);
+  if (k.mileage_missing) msgs.push(`<i class="fa-solid fa-gauge-high"></i> ระบบปิดรายการให้ที่ยังไม่มีเลขไมล์คืน ${k.mileage_missing} รายการ (แอดมิน/รปภ. กรอกย้อนหลังได้)`);
+  if (k.start_est) msgs.push(`<i class="fa-solid fa-circle-question"></i> เลขไมล์ออกเป็นค่าประมาณ ${k.start_est} รายการ (ไม่ใช่เลขจริง)`);
   if (k.noshow) msgs.push(`<i class="fa-solid fa-user-clock"></i> จองแล้วไม่มาใช้งาน ${k.noshow} รายการ`);
   el.hidden = msgs.length === 0;
   el.innerHTML = msgs.map((m) => `<span>${m}</span>`).join("");
@@ -284,7 +287,7 @@ function renderAccountability(list) {
   tb.innerHTML = list.length
     ? list
         .map(
-          (r, i) => `<tr><td><span class="rp-rank r${i + 1}">${i + 1}</span></td><td>${rpEsc(r.employee_id) || "-"}</td><td>${rpEsc(r.name)}</td><td>${rpEsc(r.division) || "-"}</td><td>${rpEsc(r.dept) || "-"}</td><td>${rpEsc(r.unit) || "-"}</td><td><b>${tag(r.late_total, "red")}</b></td><td>${tag(r.not_returned, "red")}</td><td>${tag(r.late_returns, "amber")}</td><td>${rpDur(r.late_minutes)}</td><td>${tag(r.unused, "slate")}</td><td>${tag(r.noshow, "violet")}</td><td>${rpNum(r.trips)}</td></tr>`,
+          (r, i) => `<tr><td><span class="rp-rank r${i + 1}">${i + 1}</span></td><td>${rpEsc(r.employee_id) || "-"}</td><td>${rpEsc(r.name)}</td><td>${rpEsc(r.division) || "-"}</td><td>${rpEsc(r.dept) || "-"}</td><td>${rpEsc(r.unit) || "-"}</td><td><b>${tag(r.late_total, "red")}</b></td><td>${tag(r.not_returned, "red")}</td><td>${tag(r.late_returns, "amber")}</td><td>${rpDur(r.late_minutes)}</td><td>${tag(r.system_closed, "sky")}</td><td>${tag(r.unused, "slate")}</td><td>${tag(r.noshow, "violet")}</td><td>${rpNum(r.trips)}</td></tr>`,
         )
         .join("")
     : '<tr><td colspan="13" class="rp-td-empty">ไม่มีใครค้างคืน/คืนช้า/ไม่ได้ใช้รถในช่วงนี้ 🎉</td></tr>';
@@ -326,7 +329,7 @@ function exportAllReports() {
   const add = (name, rows) => XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows.length ? rows : [{ ข้อมูล: "ไม่มีข้อมูลในช่วงนี้" }]), name);
 
   add("สรุป", [
-    { หัวข้อ: "การจองทั้งหมด", ค่า: k.total }, { หัวข้อ: "คืนรถแล้ว", ค่า: k.returned }, { หัวข้อ: "ระหว่างดำเนินการ", ค่า: k.active },
+    { หัวข้อ: "การจองทั้งหมด", ค่า: k.total }, { หัวข้อ: "คืนรถแล้ว", ค่า: k.returned }, { หัวข้อ: "ระบบปิดให้ (เลยเวลา)", ค่า: k.sys_closed }, { หัวข้อ: "ปิดโดยระบบ ยังไม่มีเลขไมล์คืน", ค่า: k.mileage_missing }, { หัวข้อ: "เลขไมล์ออกเป็นค่าประมาณ", ค่า: k.start_est }, { หัวข้อ: "ระหว่างดำเนินการ", ค่า: k.active },
     { หัวข้อ: "ยกเลิก", ค่า: k.cancelled }, { หัวข้อ: "อัตราการยกเลิก %", ค่า: k.cancel_rate }, { หัวข้อ: "ไม่มาใช้งาน", ค่า: k.noshow },
     { หัวข้อ: "ระยะทางรวม (กม.)", ค่า: k.km_total }, { หัวข้อ: "ชั่วโมงใช้รถรวม", ค่า: k.hours_total }, { หัวข้อ: "การใช้งานรวมทั้งกอง %", ค่า: k.fleet_util },
     { หัวข้อ: "ความพอใจ %", ค่า: k.satisfaction ?? "-" }, { หัวข้อ: "พิกัดผิดปกติ (ครั้ง)", ค่า: k.geo_flags },

@@ -18,6 +18,7 @@ try {
     $geoCols = geo_columns_ok($conn)
         ? ", CheckInLat, CheckInLng, CheckInGeo, CheckInDist, ReturnLat, ReturnLng, ReturnGeo, ReturnDist"
         : '';
+    $acCols = autoCloseColumnsOk($conn) ? ", ClosedReason, ClosedAt, StartMileageEst, WaitingCarAt" : '';
     $sql = "SELECT BookingID, BookingNumber, DriverName, EmployeeID, Department, Destination,
                    CarPlate, BookingDate, TimeSlot,
                    CONVERT(varchar(8), OutTime, 108) AS OutTime,
@@ -25,7 +26,7 @@ try {
                    BookingStatus,
                    StartMileage, EndMileage, CheckInTime, ReturnDate, ReturnTime, ReturnRemark,
                    CheckinPhotoPath, OdometerPhotoPath, ReturnPhotoPath,
-                   Passengers, PassengerIDs$geoCols
+                   Passengers, PassengerIDs$geoCols$acCols
             FROM CarBookings
             ORDER BY BookingID DESC";
     $stmt = $conn->query($sql);
