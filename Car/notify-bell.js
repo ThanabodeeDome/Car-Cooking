@@ -55,7 +55,11 @@
   .nb-empty{padding:26px 14px;text-align:center;color:#9a9aa5;font-size:13px}
   .nb-foot{padding:10px 14px;text-align:center}
   .nb-foot button{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#e5e7eb;border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer}
-  .nb-foot button:hover{border-color:#ff4d4d}`;
+  .nb-foot button:hover{border-color:#ff4d4d}
+  .nb-msg{margin:0 0 8px;padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.45;text-align:left;background:rgba(59,130,246,.12);color:#bfdbfe;border:1px solid rgba(59,130,246,.35)}
+  .nb-msg.ok{background:rgba(34,197,94,.12);color:#bbf7d0;border-color:rgba(34,197,94,.4)}
+  .nb-msg.err{background:rgba(245,158,11,.12);color:#fde68a;border-color:rgba(245,158,11,.4)}
+  .nb-msg[hidden]{display:none}`;
   const style = document.createElement("style");
   style.textContent = css;
   document.head.appendChild(style);
@@ -71,7 +75,7 @@
     <div class="nb-panel" id="nb-panel" hidden>
       <div class="nb-head"><span>แจ้งเตือน</span><button type="button" class="nb-clear" id="nb-clear">ซ่อนทั้งหมด</button></div>
       <div id="nb-list"></div>
-      <div class="nb-foot" id="nb-foot" hidden><button type="button" id="nb-perm">เปิดแจ้งเตือนบนเครื่องนี้</button></div>
+      <div class="nb-foot" id="nb-foot" hidden><div class="nb-msg" id="nb-msg" hidden></div><button type="button" id="nb-perm">เปิดแจ้งเตือนบนเครื่องนี้</button></div>
     </div>`;
   if (slot) {
     slot.appendChild(wrap);
@@ -155,6 +159,20 @@
 
   // ปุ่มท้ายแผง: เปิด/ปิดแจ้งเตือนในเครื่อง (Web Push — เด้งแม้ปิดหน้าเว็บ) ผ่าน push.js
   const permBtn = () => panel.querySelector("#nb-perm");
+  // ข้อความสถานะในแผง (แทน alert): สำเร็จ = เขียว หายเองใน 4 วินาที, ไม่สำเร็จ = เหลือง ค้างไว้จนกดอีกครั้ง
+  let msgTimer = null;
+  function showMsg(text, ok) {
+    const m = panel.querySelector("#nb-msg");
+    clearTimeout(msgTimer);
+    if (!text) {
+      m.hidden = true;
+      return;
+    }
+    m.textContent = text;
+    m.className = "nb-msg " + (ok ? "ok" : "err");
+    m.hidden = false;
+    if (ok) msgTimer = setTimeout(() => (m.hidden = true), 4000);
+  }
   async function refreshPushFoot() {
     if (!window.CBPush) {
       foot.hidden = !("Notification" in window) || Notification.permission !== "default";
@@ -168,7 +186,8 @@
       denied: "แจ้งเตือนถูกบล็อก (ดูวิธีแก้)",
       unsupported: "",
     }[st];
-    foot.hidden = !label;
+    foot.hidden = !label && panel.querySelector("#nb-msg").hidden;
+    permBtn().hidden = !label;
     permBtn().textContent = label || "";
     permBtn().dataset.st = st;
   }
@@ -249,7 +268,7 @@
     b.disabled = true;
     const r = b.dataset.st === "on" ? await window.CBPush.disable() : await window.CBPush.enable();
     b.disabled = false;
-    if (r && r.message) alert(r.message);
+    showMsg(r && r.message, r && r.ok);
     refreshPushFoot();
   });
   // โหลด push.js (อยู่โฟลเดอร์ Car/ เดียวกับไฟล์นี้) แล้วอัปเดตปุ่มเมื่อพร้อม
