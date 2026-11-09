@@ -1265,6 +1265,7 @@ function renderWeekGrid() {
       el.style.top = ev.start * CAL_HOUR_PX + "px";
       const evH = Math.max(26, (ev.end - ev.start) * CAL_HOUR_PX - 3);
       el.style.height = evH + "px";
+      el.style.setProperty("--evh", evH + "px"); // hover ขยายได้ แต่ห้ามหดต่ำกว่าความสูงเดิม (ไม่งั้นการ์ดสูงหดใต้เมาส์ -> หลุด hover -> ขยาย วนจนกะพริบ)
       if (evH < 50) el.classList.add("is-compact"); // รอบสั้น (< ~45 นาที) แสดงบรรทัดเดียว: เวลา + ชื่อ
       if (!ev.overdue) calTint(el, ev.id);
       el.innerHTML =
